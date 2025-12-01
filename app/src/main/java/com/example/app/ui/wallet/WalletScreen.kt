@@ -32,7 +32,7 @@ fun WalletScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = "This is an empty wallet screen placeholder.",
+            text = "This is an empty wallet screen placeholder. ",
             style = MaterialTheme.typography.bodyMedium
         )
 
