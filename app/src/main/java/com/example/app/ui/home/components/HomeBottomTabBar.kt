@@ -5,6 +5,7 @@ import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Text
@@ -20,7 +21,10 @@ fun HomeBottomTabBar(
     modifier: Modifier = Modifier,
     elevation: Dp
 ) {
-    NavigationBar(modifier = modifier) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
+    ) {
         NavigationBarItem(
             selected = selected == HomeTab.CALLS,
             onClick = { onTabSelected(HomeTab.CALLS) },
