@@ -21,8 +21,8 @@ fun WalletScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .statusBarsPadding()  // prevents overlap with status bar
-            .navigationBarsPadding()   // prevents overlap with nav bar
+            .statusBarsPadding()
+            .navigationBarsPadding()
     ) {
         Text(
             text = "Wallet Screen",

@@ -33,7 +33,7 @@ fun HomeScreen(
     navController: NavController,                         // required param
     initialTab: HomeTab = HomeTab.CALLS,                 // default param
     onContactClick: (HomeTab, String) -> Unit = { _, _ -> }, // lambda
-    modifier: Modifier = Modifier                         // modifier last
+    modifier: Modifier = Modifier
 ) {
 
     var currentTab by remember { mutableStateOf(initialTab) }
@@ -56,8 +56,8 @@ fun HomeScreen(
                 onTabSelected = { selected -> currentTab = selected },
                 elevation = 0.dp,
                 modifier = Modifier
-                    .height(100.dp)
-                    .navigationBarsPadding()
+                    .height(120.dp)
+//                    .navigationBarsPadding()
             )
         },
         modifier = modifier.fillMaxSize()
@@ -68,7 +68,6 @@ fun HomeScreen(
                 .fillMaxSize()
                 .padding(horizontal = 12.dp)
         ) {
-
             // Scrollable Main Content
             Surface(
                 modifier = Modifier.fillMaxSize(),
