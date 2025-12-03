@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -63,6 +62,18 @@ fun CallListScreen(
                         .fillMaxWidth()
                         .padding(vertical = 12.dp)
                 ) {
+
+//                        Icon(
+//                            modifier = Modifier
+//                                .size(26.dp)
+//                                .clickable {
+//                                    onBackClick()
+//                                },
+//                            imageVector = WhatsAppIcons.ArrowBack,
+//                            tint = MaterialTheme.colorScheme.tertiary,
+//                            contentDescription = null
+//                        )
+
                     Text(
                         text = call,
                         style = MaterialTheme.typography.titleMedium
@@ -71,7 +82,7 @@ fun CallListScreen(
                         text = "Yesterday",
                         style = MaterialTheme.typography.bodySmall
                     )
-                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
+//                    HorizontalDivider(modifier = Modifier.padding(top = 8.dp))
                 }
             }
 
