@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -18,10 +17,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.app.ui.call.CallListScreen
 import com.example.app.ui.chat.ChatListScreen
 import com.example.app.ui.home.components.HomeBottomTabBar
 import com.example.app.ui.home.components.HomeTopBar
+import com.example.app.ui.listeners.CallListScreen
 import com.example.app.ui.navigation.Routes
 import com.example.app.ui.user.UserInfoScreen
 
@@ -49,6 +48,7 @@ fun HomeScreen(
                 balance = "₹1200",
                 onWalletClick = { navController.navigate(Routes.WALLET) }
             )
+//            HorizontalDivider()
         },
         bottomBar = {
             HomeBottomTabBar(
@@ -94,25 +94,6 @@ fun HomeScreen(
         }
     }
 }
-
-/** Drawer Content */
-//@Composable
-//private fun HomeDrawerContent(onClose: () -> Unit) {
-//    Column(modifier = Modifier.padding(16.dp)) {
-//        Text(text = "Menu", style = MaterialTheme.typography.headlineSmall)
-//
-//        Spacer(modifier = Modifier.height(8.dp))
-//        TextButton(onClick = onClose) { Text("Close") }
-//
-//        Divider(modifier = Modifier.padding(vertical = 8.dp))
-//
-//        Text("Profile")
-//        Spacer(modifier = Modifier.height(6.dp))
-//        Text("Settings")
-//        Spacer(modifier = Modifier.height(6.dp))
-//        Text("Help")
-//    }
-//}
 
 
 /** Sample contact data */

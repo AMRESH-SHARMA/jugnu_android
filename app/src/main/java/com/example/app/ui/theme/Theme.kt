@@ -5,16 +5,6 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 
-//val background = Color("#075E54".toColorInt())
-//
-//val WhatsAppDarkBackground = Color("#075E54".toColorInt())
-//val WhatsAppTopBar = Color("#075E54".toColorInt())
-//val WhatsAppBubbleReceived = Color(0xFF262D31)
-//val WhatsAppBubbleSent = Color(0xFF056162)
-//val WhatsAppFAB = Color(0xFF075E54)
-//val WhatsAppTextPrimary = Color(0xFFECE5DD)
-//val WhatsAppTextSecondary = Color(0xFFAEBAC1)
-
 private val DarkColorScheme = darkColorScheme(
     primary = DARK_GREEN200,
     primaryContainer = DARK_GREEN300,
