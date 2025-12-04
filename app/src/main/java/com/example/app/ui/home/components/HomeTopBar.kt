@@ -23,7 +23,6 @@ fun HomeTopBar(
     title: String,
     showWalletSection: Boolean = true,
     balance: String = "₹2500",
-//    modifier: Modifier = Modifier,
     onWalletClick: () -> Unit
 ) {
     TopAppBar(
@@ -39,11 +38,14 @@ fun HomeTopBar(
                 ) {
                     Icon(
                         imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = "Wallet"
-                    )
+                        contentDescription = "Wallet",
+                        tint = MaterialTheme.colorScheme.onTertiary,
+
+                        )
                     Spacer(modifier = Modifier.width(10.dp))
-                    Text(text = balance)
+                    Text(text = balance, color = MaterialTheme.colorScheme.onTertiary)
                     Spacer(modifier = Modifier.width(8.dp))
+
                 }
             }
         }
