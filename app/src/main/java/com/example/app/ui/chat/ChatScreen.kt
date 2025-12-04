@@ -53,7 +53,7 @@ fun ChatScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             ChatHeader(
-                title = "Contact $chatId",
+                title = " $chatId",
                 onBack = onBack,
                 scrollBehavior = scrollBehavior
             )
