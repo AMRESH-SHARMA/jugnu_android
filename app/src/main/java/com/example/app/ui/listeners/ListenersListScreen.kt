@@ -16,11 +16,19 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,6 +43,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -49,11 +58,20 @@ fun ListenerListScreen(
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    val listeners = List(12) { idx -> "Listener item $idx" }
+    // ⭐ Dialog State
+    var showImageDialog by remember { mutableStateOf(false) }
+    var selectedListener by remember { mutableStateOf<String?>(null) }
+
+    val listeners = remember {
+        List(12) { idx -> "Listener item $idx" }
+    }
 
     val filteredListeners = listeners.filter {
         it.contains(searchQuery, ignoreCase = true)
     }
+
+    val callIcon = remember { Icons.Default.Call }
+    val videoIcon = remember { Icons.Default.VideoCall }
 
     Column(
         modifier = modifier.fillMaxSize()
@@ -70,102 +88,87 @@ fun ListenerListScreen(
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(8.dp)
+            contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            items(filteredListeners) { listener ->
-                var showImageDialog by remember { mutableStateOf(false) }
-                Row(
+
+            items(
+                items = filteredListeners,
+                key = { it },
+                contentType = { "listener_item" }
+            ) { listener ->
+
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    tonalElevation = 0.dp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp)
-                        .clickable { onOpenListener(listener) },
-//                        .clickable { onOpenChat(listener) },
-                    verticalAlignment = Alignment.CenterVertically
                 ) {
-//                    UserCard(
-//                        name = "A",
-//                        age = 21,
-//                        rating = "10"
-//                    ) { }
-
-                    // ⭐ Avatar + online indicator
-                    AvatarWithStatus(
-                        onAvatarClick = { showImageDialog = true }
-                    )
-
-                    Spacer(modifier = Modifier.width(12.dp))
-
-                    Column(
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onOpenListener(listener) }
+                            .padding(horizontal = 2.dp, vertical = 12.dp)
                     ) {
-                        Text(
-                            text = listener,
-                            style = MaterialTheme.typography.titleMedium
+
+                        // ⭐ Avatar
+                        AvatarWithStatus(
+                            modifier = Modifier.size(80.dp),
+                            onAvatarClick = {
+                                selectedListener = listener
+                                showImageDialog = true
+                            }
                         )
-                        Text(
-                            text = "Yesterday",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Gray
-                        )
-                    }
-                }
 
-                val imageScale by animateFloatAsState(
-                    targetValue = if (showImageDialog) 1f else 0.8f,
-                    animationSpec = tween(220, easing = FastOutSlowInEasing),
-                    label = "imageScale"
-                )
+                        Spacer(modifier = Modifier.width(12.dp))
 
-                val imageAlpha by animateFloatAsState(
-                    targetValue = if (showImageDialog) 1f else 0f,
-                    animationSpec = tween(180),
-                    label = "imageAlpha"
-                )
-
-                // background alpha separately (optional: smoother control)
-                val bgAlpha by animateFloatAsState(
-                    targetValue = if (showImageDialog) 0.6f else 0f,
-                    animationSpec = tween(180),
-                    label = "bgAlpha"
-                )
-
-                // ⭐ WhatsApp-style animated popup
-                if (showImageDialog) {
-                    Dialog(
-                        onDismissRequest = { showImageDialog = false },
-                        properties = DialogProperties(usePlatformDefaultWidth = false)
-                    ) {
-                        Box(
+                        // ⭐ Middle info
+                        Column(
                             modifier = Modifier
-                                .fillMaxSize()
-                                .background(Color.Black.copy(alpha = bgAlpha))
-                                .pointerInput(Unit) {
-                                    detectTapGestures(onTap = { showImageDialog = false })
-                                },
-                            contentAlignment = Alignment.TopCenter
-
+                                .weight(1f)
+                                .padding(vertical = 4.dp)
                         ) {
-                            // Zoom + Fade animation applied here
-                            Box(
-                                modifier = Modifier
-                                    .padding(top = 130.dp) // ⭐ shift dialog up/down
-                                    .graphicsLayer {
-                                        // explicitly reference 'this' to avoid ambiguity
-                                        scaleX = imageScale
-                                        scaleY = imageScale
-                                        this.alpha = imageAlpha
-                                    }
-                                    .clip(RoundedCornerShape(20.dp))
-                            ) {
-                                AsyncImage(
-                                    model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
-                                    contentDescription = null,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxWidth(0.70f) // ⭐ reduce this % to shrink image and modal
-                                        .aspectRatio(1f)
-                                        .clip(RoundedCornerShape(20.dp))
+                            Text(
+                                text = listener,
+                                style = MaterialTheme.typography.titleSmall,
+                                overflow = TextOverflow.Ellipsis,
+                                maxLines = 1,
+                            )
+
+                            Spacer(modifier = Modifier.height(12.dp))
+
+                            Text(
+                                "M-20 yrs",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+
+                            Spacer(modifier = Modifier.height(6.dp))
+
+                            Text(
+                                "5.0⭐ (1k+)",
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                        }
+
+                        // ⭐ Call + Video buttons
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            IconButton(
+                                onClick = { /* call */ },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = Color.Transparent
                                 )
+                            ) {
+                                Icon(callIcon, contentDescription = "Call")
+                            }
+
+                            IconButton(
+                                onClick = { /* video */ },
+                                colors = IconButtonDefaults.iconButtonColors(
+                                    containerColor = Color.Transparent
+                                )
+                            ) {
+                                Icon(videoIcon, contentDescription = "Video Call")
                             }
                         }
                     }
@@ -183,4 +186,120 @@ fun ListenerListScreen(
             }
         }
     }
+
+    // ⭐ Popup dialog outside LazyColumn (smooth scrolling)
+    if (showImageDialog && selectedListener != null) {
+        ProfilePopupDialog(
+            show = true,
+            imageUrl = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+            rating = "4.8 / 5",
+            experienceHours = 120,
+            description = "Very friendly and experienced listener.\nAvailable now for chat.",
+            onDismiss = {
+                showImageDialog = false
+                selectedListener = null
+            }
+        )
+    }
 }
+
+
+@Composable
+fun ProfilePopupDialog(
+    show: Boolean,
+    imageUrl: String,
+    rating: String,
+    experienceHours: Int,
+    description: String,
+    onDismiss: () -> Unit
+) {
+
+    val imageScale by animateFloatAsState(
+        targetValue = if (show) 1f else 0.8f,
+        animationSpec = tween(220, easing = FastOutSlowInEasing),
+        label = "imageScale"
+    )
+
+    val imageAlpha by animateFloatAsState(
+        targetValue = if (show) 1f else 0f,
+        animationSpec = tween(180),
+        label = "imageAlpha"
+    )
+
+    val bgAlpha by animateFloatAsState(
+        targetValue = if (show) 0.6f else 0f,
+        animationSpec = tween(180),
+        label = "bgAlpha"
+    )
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = bgAlpha))
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { onDismiss() })
+                },
+            contentAlignment = Alignment.TopCenter
+        ) {
+
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(top = 100.dp)
+            ) {
+
+                // ⭐ Image
+                Box(
+                    modifier = Modifier
+                        .graphicsLayer {
+                            scaleX = imageScale
+                            scaleY = imageScale
+                            this.alpha = imageAlpha
+                        }
+                        .clip(RoundedCornerShape(20.dp))
+                ) {
+                    AsyncImage(
+                        model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier
+                            .fillMaxWidth(0.70f)
+                            .aspectRatio(1f)
+                            .clip(RoundedCornerShape(20.dp))
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                Text(
+                    text = "⭐ $rating",
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = "Experience: $experienceHours hours",
+                    color = Color.White.copy(alpha = 0.9f),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                Text(
+                    text = description,
+                    textAlign = TextAlign.Center,
+                    color = Color.White.copy(alpha = 0.85f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.fillMaxWidth(0.8f)
+                )
+            }
+        }
+    }
+}
+
+
