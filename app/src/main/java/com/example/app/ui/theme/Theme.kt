@@ -7,12 +7,12 @@ import androidx.compose.runtime.CompositionLocalProvider
 
 private val DarkColorScheme = darkColorScheme(
     primary = DARK_GREEN200,
+    secondary = GRAY100,
     primaryContainer = DARK_GREEN300,
     secondaryContainer = GRAY200,
     background = DARK_GREEN300,
     surface = DARK_GREEN300,
-    secondary = GRAY100,
-    tertiary = GRAY200,
+    tertiary = DARK_GREEN200,
     onTertiary = WHITE200,
 )
 

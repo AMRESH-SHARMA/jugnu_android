@@ -87,7 +87,7 @@ fun HomeScreen(
                         )
 
                         HomeTab.USER -> UserInfoScreen(
-                            modifier = Modifier.fillMaxSize()
+//                            modifier = Modifier.fillMaxSize()
                         )
                     }
                 }
