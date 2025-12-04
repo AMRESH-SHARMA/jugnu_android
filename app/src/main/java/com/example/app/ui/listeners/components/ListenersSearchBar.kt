@@ -34,8 +34,8 @@ fun ListenersSearchBar(
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            unfocusedContainerColor = MaterialTheme.colorScheme.onTertiary,
-            focusedContainerColor = MaterialTheme.colorScheme.onTertiary,
+            unfocusedContainerColor = MaterialTheme.colorScheme.tertiary,
+            focusedContainerColor = MaterialTheme.colorScheme.tertiary,
             focusedBorderColor = Color.Transparent,
             unfocusedBorderColor = Color.Transparent,
         ),

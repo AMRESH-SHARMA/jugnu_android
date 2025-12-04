@@ -19,7 +19,8 @@ val DARK_GREEN200 = Color(0xFF232D36)
 //whats app like
 val DARK_GREEN300 = Color(0xFF12171B)
 
-val WHITE200 = Color(0xFFe0e0e0)
+//val WHITE200 = Color(0xFFe0e0e0)
+val WHITE200 = Color(0xFFFDFDFD)
 val BLACK200 = Color(0xFA212020)
 val GRAY100 = Color(0xC1EFF0F3)
 val GRAY200 = Color(0xFF2B2D30)

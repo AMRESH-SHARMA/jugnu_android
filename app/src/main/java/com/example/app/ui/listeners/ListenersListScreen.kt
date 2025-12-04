@@ -82,6 +82,11 @@ fun ListenerListScreen(
 //                        .clickable { onOpenChat(listener) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+//                    UserCard(
+//                        name = "A",
+//                        age = 21,
+//                        rating = "10"
+//                    ) { }
 
                     // ⭐ Avatar + online indicator
                     AvatarWithStatus(

@@ -73,8 +73,9 @@ val Typography = Typography(
         lineHeight = 16.sp,
         letterSpacing = 0.4.sp
     ),
+    //nav bar labels
     labelLarge = TextStyle(
-        fontWeight = FontWeight.W400,
+        fontWeight = FontWeight.W700,
         fontSize = 14.sp,
         lineHeight = 20.sp,
         letterSpacing = 0.1.sp

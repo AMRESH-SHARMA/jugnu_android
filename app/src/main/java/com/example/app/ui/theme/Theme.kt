@@ -8,18 +8,19 @@ import androidx.compose.runtime.CompositionLocalProvider
 private val DarkColorScheme = darkColorScheme(
     primary = DARK_GREEN200,
     primaryContainer = DARK_GREEN300,
+    secondaryContainer = GRAY200,
     background = DARK_GREEN300,
     surface = DARK_GREEN300,
-    secondary = GREEN500,
-    tertiary = WHITE200,
-    onTertiary = GRAY200,
+    secondary = GRAY100,
+    tertiary = GRAY200,
+    onTertiary = WHITE200,
 )
 
 private val DarkAndroidBackgroundTheme = BackgroundTheme(color = DARK_GREEN300)
 
 @Composable
 fun AppTheme(
-//    darkTheme: Boolean = isSystemInDarkTheme(),
+    // darkTheme: Boolean = isSystemInDarkTheme(),
     // Dynamic color is available on Android 12+
     // dynamicColor: Boolean = true,
     content: @Composable () -> Unit
