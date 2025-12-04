@@ -26,10 +26,10 @@ fun HomeBottomTabBar(
         containerColor = MaterialTheme.colorScheme.background,
     ) {
         NavigationBarItem(
-            selected = selected == HomeTab.CALLS,
-            onClick = { onTabSelected(HomeTab.CALLS) },
-            icon = { Icon(Icons.Default.Call, contentDescription = "Calls") },
-            label = { Text("Calls") }
+            selected = selected == HomeTab.LISTENERS,
+            onClick = { onTabSelected(HomeTab.LISTENERS) },
+            icon = { Icon(Icons.Default.Call, contentDescription = "Listeners") },
+            label = { Text("Listeners") }
         )
         NavigationBarItem(
             selected = selected == HomeTab.CHATS,

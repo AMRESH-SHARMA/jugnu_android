@@ -4,7 +4,6 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
@@ -17,11 +16,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,19 +39,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import com.example.app.ui.components.AvatarWithStatus
 import com.example.app.ui.listeners.components.ListenersSearchBar
-import com.example.app.ui.theme.STATUS_ACTIVE
 
 @Composable
-fun CallListScreen(
+fun ListenerListScreen(
     modifier: Modifier = Modifier,
-    onOpenCall: (String) -> Unit = {}
+    onOpenListener: (String) -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
-    val calls = List(12) { idx -> "Call item $idx" }
+    val listeners = List(12) { idx -> "Listener item $idx" }
 
-    val filteredCalls = calls.filter {
+    val filteredListeners = listeners.filter {
         it.contains(searchQuery, ignoreCase = true)
     }
 
@@ -66,7 +63,7 @@ fun CallListScreen(
         ListenersSearchBar(
             query = searchQuery,
             onQueryChange = { searchQuery = it },
-            hint = "Search call contacts"
+            hint = "Search listeners"
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -75,56 +72,21 @@ fun CallListScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(8.dp)
         ) {
-
-            items(filteredCalls) { call ->
-
+            items(filteredListeners) { listener ->
                 var showImageDialog by remember { mutableStateOf(false) }
-
-                // For animation
-                val scale by animateFloatAsState(
-                    targetValue = if (showImageDialog) 1f else 0.8f,
-                    animationSpec = tween(220, easing = FastOutSlowInEasing),
-                    label = "scaleAnim"
-                )
-
-                val alpha by animateFloatAsState(
-                    targetValue = if (showImageDialog) 1f else 0f,
-                    animationSpec = tween(180),
-                    label = "alphaAnim"
-                )
-
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onOpenCall(call) }
-                        .padding(vertical = 12.dp),
+                        .padding(vertical = 12.dp)
+                        .clickable { onOpenListener(listener) },
+//                        .clickable { onOpenChat(listener) },
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
                     // ⭐ Avatar + online indicator
-                    Box(
-                        modifier = Modifier.size(58.dp)
-                    ) {
-                        AsyncImage(
-                            model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .clip(RoundedCornerShape(12.dp))
-                                .clickable { showImageDialog = true }
-                        )
-
-                        // Status dot
-                        Box(
-                            modifier = Modifier
-                                .size(14.dp)
-                                .align(Alignment.BottomEnd)
-                                .clip(CircleShape)
-                                .background(STATUS_ACTIVE)
-                                .border(2.dp, Color.White, CircleShape)
-                        )
-                    }
+                    AvatarWithStatus(
+                        onAvatarClick = { showImageDialog = true }
+                    )
 
                     Spacer(modifier = Modifier.width(12.dp))
 
@@ -132,7 +94,7 @@ fun CallListScreen(
                         modifier = Modifier.weight(1f)
                     ) {
                         Text(
-                            text = call,
+                            text = listener,
                             style = MaterialTheme.typography.titleMedium
                         )
                         Text(
@@ -142,6 +104,7 @@ fun CallListScreen(
                         )
                     }
                 }
+
                 val imageScale by animateFloatAsState(
                     targetValue = if (showImageDialog) 1f else 0.8f,
                     animationSpec = tween(220, easing = FastOutSlowInEasing),
@@ -154,7 +117,7 @@ fun CallListScreen(
                     label = "imageAlpha"
                 )
 
-// background alpha separately (optional: smoother control)
+                // background alpha separately (optional: smoother control)
                 val bgAlpha by animateFloatAsState(
                     targetValue = if (showImageDialog) 0.6f else 0f,
                     animationSpec = tween(180),

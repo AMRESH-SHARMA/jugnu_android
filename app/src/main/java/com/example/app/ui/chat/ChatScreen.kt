@@ -1,16 +1,23 @@
 package com.example.app.ui.chat
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.app.ui.chat.components.ChatMessageBubble
-import com.example.app.ui.chat.components.ChatInputBar
 import com.example.app.ui.chat.components.ChatHeader
+import com.example.app.ui.chat.components.ChatInputBar
+import com.example.app.ui.chat.components.ChatMessageBubble
 
 @Composable
 fun ChatScreen(
@@ -62,13 +69,14 @@ fun ChatScreen(
                     }
                 }
             )
-        }
-    ) { padding ->
+        },
+
+        ) { padding ->
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
-            reverseLayout = true, // WhatsApp-like scroll from bottom
+            reverseLayout = true,
             contentPadding = PaddingValues(12.dp)
         ) {
             items(messageList.reversed(), key = { it.id }) { msg ->
@@ -84,11 +92,3 @@ data class ChatMessage(
     val text: String,
     val isSender: Boolean
 )
-
-@Preview(showBackground = true, widthDp = 360, heightDp = 800)
-@Composable
-fun ChatScreenPreview() {
-    MaterialTheme {
-        ChatScreen(chatId = "123", onBack = {})
-    }
-}

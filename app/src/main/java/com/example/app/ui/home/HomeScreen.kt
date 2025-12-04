@@ -20,17 +20,17 @@ import androidx.navigation.NavController
 import com.example.app.ui.chat.ChatListScreen
 import com.example.app.ui.home.components.HomeBottomTabBar
 import com.example.app.ui.home.components.HomeTopBar
-import com.example.app.ui.listeners.CallListScreen
+import com.example.app.ui.listeners.ListenerListScreen
 import com.example.app.ui.navigation.Routes
 import com.example.app.ui.user.UserInfoScreen
 
-enum class HomeTab { CALLS, CHATS, USER }
+enum class HomeTab { LISTENERS, CHATS, USER }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,                         // required param
-    initialTab: HomeTab = HomeTab.CALLS,                 // default param
+    navController: NavController,                            // required param
+    initialTab: HomeTab = HomeTab.LISTENERS,                 // default param
     onContactClick: (HomeTab, String) -> Unit = { _, _ -> }, // lambda
     modifier: Modifier = Modifier
 ) {
@@ -40,7 +40,7 @@ fun HomeScreen(
         topBar = {
             HomeTopBar(
                 title = when (currentTab) {
-                    HomeTab.CALLS -> "Calls"
+                    HomeTab.LISTENERS -> "Listeners"
                     HomeTab.CHATS -> "Chats"
                     HomeTab.USER -> "User"
                 },
@@ -81,8 +81,9 @@ fun HomeScreen(
                             onOpenChat = { id -> onContactClick(HomeTab.CHATS, id) }
                         )
 
-                        HomeTab.CALLS -> CallListScreen(
-                            modifier = Modifier.fillMaxSize()
+                        HomeTab.LISTENERS -> ListenerListScreen(
+                            modifier = Modifier.fillMaxSize(),
+                            onOpenListener = { id -> onContactClick(HomeTab.CHATS, id) }
                         )
 
                         HomeTab.USER -> UserInfoScreen(
