@@ -20,10 +20,11 @@ import com.example.app.ui.theme.STATUS_ACTIVE
 
 @Composable
 fun AvatarWithStatus(
-    onAvatarClick: () -> Unit = {}
+    onAvatarClick: () -> Unit = {},
+    modifier: Modifier
 ) {
     Box(
-        modifier = Modifier.size(58.dp)
+        modifier = modifier
     ) {
         AsyncImage(
             model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
