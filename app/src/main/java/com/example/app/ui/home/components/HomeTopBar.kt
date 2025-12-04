@@ -44,6 +44,7 @@ fun HomeTopBar(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(text = balance)
                     Spacer(modifier = Modifier.width(8.dp))
+
                 }
             }
         }
