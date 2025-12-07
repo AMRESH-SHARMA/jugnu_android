@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,27 +48,35 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.app.domain.model.Listener
 import com.example.app.ui.components.AvatarWithStatus
 import com.example.app.ui.listeners.components.ListenersSearchBar
 
 @Composable
 fun ListenerListScreen(
     modifier: Modifier = Modifier,
-    onOpenListener: (String) -> Unit = {},
+    navController: NavController,
+    onOpenListener: (Listener) -> Unit = {},
 ) {
     var searchQuery by remember { mutableStateOf("") }
 
     // ⭐ Dialog State
     var showImageDialog by remember { mutableStateOf(false) }
-    var selectedListener by remember { mutableStateOf<String?>(null) }
+    var selectedListener by remember { mutableStateOf<Listener?>(null) }
 
-    val listeners = remember {
-        List(12) { idx -> "Listener item $idx" }
-    }
+
+//    val listeners = remember {
+//        List(12) { idx -> "Listener item $idx" }
+//    }
+
+    val vm: ListenerViewModel = hiltViewModel()
+    val listeners by vm.listeners.collectAsState()
 
     val filteredListeners = listeners.filter {
-        it.contains(searchQuery, ignoreCase = true)
+        it.name.contains(searchQuery, ignoreCase = true)
     }
 
     val callIcon = remember { Icons.Default.Call }
@@ -93,7 +102,7 @@ fun ListenerListScreen(
 
             items(
                 items = filteredListeners,
-                key = { it },
+                key = { it.id },
                 contentType = { "listener_item" }
             ) { listener ->
 
@@ -106,13 +115,16 @@ fun ListenerListScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onOpenListener(listener) }
+                            .clickable {
+                                onOpenListener(listener)
+                            }
                             .padding(horizontal = 2.dp, vertical = 12.dp)
                     ) {
 
                         // ⭐ Avatar
                         AvatarWithStatus(
                             modifier = Modifier.size(80.dp),
+                            imageUrl = listener.avatar,
                             onAvatarClick = {
                                 selectedListener = listener
                                 showImageDialog = true
@@ -128,7 +140,7 @@ fun ListenerListScreen(
                                 .padding(vertical = 4.dp)
                         ) {
                             Text(
-                                text = listener,
+                                text = listener.name,
                                 style = MaterialTheme.typography.titleSmall,
                                 overflow = TextOverflow.Ellipsis,
                                 maxLines = 1,
@@ -154,7 +166,9 @@ fun ListenerListScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(
-                                onClick = { /* call */ },
+                                onClick = {
+                                    navController.navigate("incoming_call/${listener.id}")
+                                },
                                 colors = IconButtonDefaults.iconButtonColors(
                                     containerColor = Color.Transparent
                                 )
@@ -163,7 +177,9 @@ fun ListenerListScreen(
                             }
 
                             IconButton(
-                                onClick = { /* video */ },
+                                onClick = {
+                                    navController.navigate("incoming_call/${listener.id}")
+                                },
                                 colors = IconButtonDefaults.iconButtonColors(
                                     containerColor = Color.Transparent
                                 )
@@ -191,7 +207,7 @@ fun ListenerListScreen(
     if (showImageDialog && selectedListener != null) {
         ProfilePopupDialog(
             show = true,
-            imageUrl = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+            imageUrl = selectedListener!!.avatar,
             rating = "4.8 / 5",
             experienceHours = 120,
             description = "Very friendly and experienced listener.\nAvailable now for chat.",
@@ -207,7 +223,7 @@ fun ListenerListScreen(
 @Composable
 fun ProfilePopupDialog(
     show: Boolean,
-    imageUrl: String,
+    imageUrl: String?,
     rating: String,
     experienceHours: Int,
     description: String,
@@ -262,7 +278,7 @@ fun ProfilePopupDialog(
                         .clip(RoundedCornerShape(20.dp))
                 ) {
                     AsyncImage(
-                        model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+                        model = imageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.example.app.domain.model.Listener
 import com.example.app.ui.chat.ChatListScreen
 import com.example.app.ui.home.components.HomeBottomTabBar
 import com.example.app.ui.home.components.HomeTopBar
@@ -31,7 +32,7 @@ enum class HomeTab { LISTENERS, CHATS, USER }
 fun HomeScreen(
     navController: NavController,                            // required param
     initialTab: HomeTab = HomeTab.LISTENERS,                 // default param
-    onContactClick: (HomeTab, String) -> Unit = { _, _ -> }, // lambda
+    onContactClick: (HomeTab, Listener) -> Unit = { _, _ -> }, // lambda
     modifier: Modifier = Modifier
 ) {
 
@@ -78,12 +79,15 @@ fun HomeScreen(
                     when (currentTab) {
                         HomeTab.CHATS -> ChatListScreen(
                             modifier = Modifier.fillMaxSize(),
-                            onOpenChat = { id -> onContactClick(HomeTab.CHATS, id) }
+                            onOpenChat = { }
                         )
 
                         HomeTab.LISTENERS -> ListenerListScreen(
                             modifier = Modifier.fillMaxSize(),
-                            onOpenListener = { id -> onContactClick(HomeTab.CHATS, id) }
+                            navController = navController,
+                            onOpenListener = { listener ->
+                                onContactClick(HomeTab.CHATS, listener)
+                            }
                         )
 
                         HomeTab.USER -> UserInfoScreen(

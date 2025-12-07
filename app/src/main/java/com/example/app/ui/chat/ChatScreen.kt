@@ -18,6 +18,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.app.domain.model.Listener
 import com.example.app.ui.chat.components.ChatHeader
 import com.example.app.ui.chat.components.ChatInputBar
 import com.example.app.ui.chat.components.ChatMessageBubble
@@ -25,7 +27,8 @@ import com.example.app.ui.chat.components.ChatMessageBubble
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    chatId: String,
+    navController: NavController,
+    listener: Listener?,
     onBack: () -> Unit
 ) {
     // -------------------------------
@@ -38,7 +41,7 @@ fun ChatScreen(
         mutableStateOf(List(20) { idx ->
             ChatMessage(
                 id = "$idx",
-                text = "Message $idx from $chatId",
+                text = "Message $idx from aaa",
                 isSender = idx % 2 == 0
             )
         })
@@ -53,7 +56,13 @@ fun ChatScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             ChatHeader(
-                title = " $chatId",
+                listener = listener,
+                onVoiceCall = {
+//                    navController.navigate("incoming_call/$chatId")
+                },
+                onVideoCall = {
+                    // navController.navigate("incoming_video_call/$chatId")
+                },
                 onBack = onBack,
                 scrollBehavior = scrollBehavior
             )

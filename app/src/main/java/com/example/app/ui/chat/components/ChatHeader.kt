@@ -27,13 +27,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.app.domain.model.Listener
 import com.example.app.ui.components.AvatarWithStatus
 import com.example.app.ui.listeners.ProfilePopupDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatHeader(
-    title: String,
+    listener: Listener?,
+    onVoiceCall: () -> Unit,
+    onVideoCall: () -> Unit,
     onBack: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
@@ -68,13 +71,14 @@ fun ChatHeader(
                 ) {
                     AvatarWithStatus(
                         modifier = Modifier.size(40.dp),
+                        imageUrl = listener?.avatar ?: "",
                         onAvatarClick = { showImageDialog = true } // ⭐ also clickable directly
                     )
 
                     Spacer(modifier = Modifier.width(10.dp))
 
                     Text(
-                        text = title,
+                        text = listener?.name ?: "Unknown",
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onTertiary
                     )
@@ -82,7 +86,7 @@ fun ChatHeader(
 
                 // RIGHT SIDE — Call + Video buttons
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = { /* TODO call */ }) {
+                    IconButton(onClick = onVoiceCall) {
                         Icon(
                             Icons.Default.Call,
                             contentDescription = "Call",
@@ -90,7 +94,7 @@ fun ChatHeader(
                         )
                     }
 
-                    IconButton(onClick = { /* TODO video */ }) {
+                    IconButton(onClick = onVideoCall) {
                         Icon(
                             Icons.Default.VideoCall,
                             contentDescription = "Video Call",
@@ -111,7 +115,7 @@ fun ChatHeader(
     if (showImageDialog) {
         ProfilePopupDialog(
             show = true,
-            imageUrl = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+            imageUrl = listener?.avatar,
             rating = "4.8 / 5",
             experienceHours = 120,
             description = "Very friendly and experienced listener.\nAvailable now for chat.",
