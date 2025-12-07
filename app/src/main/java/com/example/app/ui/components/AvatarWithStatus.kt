@@ -20,14 +20,15 @@ import com.example.app.ui.theme.STATUS_ACTIVE
 
 @Composable
 fun AvatarWithStatus(
-    onAvatarClick: () -> Unit = {},
-    modifier: Modifier
+    modifier: Modifier,
+    imageUrl: String?,
+    onAvatarClick: () -> Unit = {}
 ) {
     Box(
         modifier = modifier
     ) {
         AsyncImage(
-            model = "https://mdbcdn.b-cdn.net/img/new/avatars/2.webp",
+            model = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
             modifier = Modifier

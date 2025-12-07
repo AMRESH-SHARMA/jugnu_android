@@ -20,9 +20,9 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
         composable(HomeRoutes.ROOT) {
             HomeScreen(
                 navController,
-                onContactClick = { tab, chatId ->
+                onContactClick = { tab, listener ->
                     if (tab == HomeTab.CHATS) {
-                        navController.openChat(chatId)
+                        navController.openChat(listener)
                     }
                 }
             )
@@ -30,6 +30,7 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
     }
 
     chatNavGraph(
+        navController = navController,
         onBack = { navController.popBackStack() }
     )
 }

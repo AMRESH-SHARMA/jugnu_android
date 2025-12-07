@@ -12,7 +12,9 @@ import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
 import com.example.app.ui.navigation.AppNavGraph
 import com.example.app.ui.theme.AppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 

@@ -15,5 +15,6 @@ fun AppNavGraph() {
 //        authNavGraph(navController)
         homeNavGraph(navController)
         walletNavGraph(navController)
+        callNavGraph(navController)
     }
 }
