@@ -31,6 +31,9 @@ fun ChatScreen(
     listener: Listener?,
     onBack: () -> Unit
 ) {
+    val data = remember { listener }
+
+    if (data == null) return
     // -------------------------------
     // TODO: Replace this with ViewModel call
     // val viewModel = hiltViewModel<ChatViewModel>()
@@ -56,7 +59,7 @@ fun ChatScreen(
             .nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             ChatHeader(
-                listener = listener,
+                listener = data,
                 onVoiceCall = {
 //                    navController.navigate("incoming_call/$chatId")
                 },
