@@ -54,6 +54,7 @@ import coil.compose.AsyncImage
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.components.ListenersSearchBar
+import com.example.app.feature.navigation.ui.openOngoingCall
 
 // ---------------- MAIN SCREEN ---------------------------------------
 
@@ -183,11 +184,13 @@ private fun ListenerListContent(
                         }
 
                         IconButton({
-                            navController.navigate("incoming_call/${listener.id}")
+//                            navController.navigate("incoming_call/${listener.id}")
+                            navController.openOngoingCall(listener)
                         }) { Icon(Icons.Default.Call, null) }
 
                         IconButton({
-                            navController.navigate("incoming_call/${listener.id}")
+//                            navController.navigate("incoming_call/${listener.id}")
+                            navController.openOngoingCall(listener)
                         }) { Icon(Icons.Default.VideoCall, null) }
                     }
                 }

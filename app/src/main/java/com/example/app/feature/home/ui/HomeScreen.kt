@@ -22,7 +22,6 @@ import com.example.app.feature.home.ui.components.HomeBottomTabBar
 import com.example.app.feature.home.ui.components.HomeTopBar
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.ListenerListScreen
-import com.example.app.feature.navigation.ui.Routes
 import com.example.app.feature.user.ui.UserInfoScreen
 
 enum class HomeTab { LISTENERS, CHATS, USER }
@@ -47,7 +46,7 @@ fun HomeScreen(
                 },
                 showWalletSection = currentTab != HomeTab.USER,
                 balance = "₹1200",
-                onWalletClick = { navController.navigate(Routes.WALLET) }
+                onWalletClick = { }
             )
 //            HorizontalDivider()
         },
