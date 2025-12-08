@@ -2,8 +2,8 @@ package com.example.app.preview
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.compose.rememberNavController
-import com.example.app.ui.theme.AppTheme
-import com.example.app.ui.wallet.WalletScreen
+import com.example.app.feature.theme.AppTheme
+import com.example.app.feature.wallet.ui.WalletScreen
 
 @AllDevicesPreview
 @Composable
