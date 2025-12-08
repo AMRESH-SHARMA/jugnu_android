@@ -21,6 +21,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,24 +32,43 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.app.feature.listeners.domain.ListenerModel
+import com.example.app.feature.navigation.ui.Routes
 
 @Composable
 fun OnGoingCallScreen(
-    callerName: String,
-    image: String?,
-    callDuration: String,
-    onEndCall: () -> Unit,
-    onToggleMute: () -> Unit,
-    onToggleSpeaker: () -> Unit
+    listener: ListenerModel,
+    navController: NavController,
 ) {
+    val vm: CallViewModel = hiltViewModel()
+    val ui by vm.uiState.collectAsState()
+    val callState by vm.callState.collectAsState()
+
+    // START TIMER only when accepted
+    LaunchedEffect(listener.id) {
+        vm.startCall(
+            callerId = "1",          // replace TODO userId
+            calleeId = listener.id,  // selected listener
+            channel = listener.id    // any string
+        )
+    }
+
+    // START TIMER only when accepted
+    val status = callState?.status
+    LaunchedEffect(status) {
+        if (status == "ACCEPTED") {
+            vm.startTimer()
+        }
+    }
+
 
     var isMuted by remember { mutableStateOf(false) }
     var isSpeakerOn by remember { mutableStateOf(false) }
 
-    Box(
-        Modifier.fillMaxSize()
-    ) {
+    Box(Modifier.fillMaxSize()) {
 
         Column(
             Modifier
@@ -56,18 +77,24 @@ fun OnGoingCallScreen(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             AsyncImage(
-                model = image,
+                model = listener.avatar,
                 contentDescription = null,
                 modifier = Modifier
                     .size(150.dp)
                     .clip(CircleShape)
             )
 
-            Text(text = callerName, style = MaterialTheme.typography.headlineMedium)
+            Text(listener.name, style = MaterialTheme.typography.headlineMedium)
 
             Spacer(Modifier.height(4.dp))
 
-            Text(text = callDuration, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = when (status) {
+                    "ACCEPTED" -> ui.durationLabel
+                    else -> "Ringing…"
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
         }
 
         Row(
@@ -76,11 +103,10 @@ fun OnGoingCallScreen(
                 .padding(bottom = 32.dp)
         ) {
 
-            // 🎤 Mic toggle
             IconButton(
                 onClick = {
                     isMuted = !isMuted
-                    onToggleMute()
+                    vm.toggleMute()
                 }
             ) {
                 Icon(
@@ -89,11 +115,10 @@ fun OnGoingCallScreen(
                 )
             }
 
-            // 🔊 Speaker toggle
             IconButton(
                 onClick = {
                     isSpeakerOn = !isSpeakerOn
-                    onToggleSpeaker()
+                    vm.toggleSpeaker()
                 }
             ) {
                 Icon(
@@ -103,7 +128,10 @@ fun OnGoingCallScreen(
             }
 
             FloatingActionButton(
-                onClick = onEndCall,
+                onClick = {
+                    vm.endCall()
+                    navController.popBackStack(Routes.CALL_ROOT, inclusive = true)
+                },
                 containerColor = Color.Red,
                 shape = CircleShape,
                 modifier = Modifier.size(60.dp)

@@ -2,7 +2,9 @@ package com.example.app.feature.listeners.domain
 
 import android.os.Parcelable
 import kotlinx.parcelize.Parcelize
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Parcelize
 data class ListenerModel(
     val id: String,

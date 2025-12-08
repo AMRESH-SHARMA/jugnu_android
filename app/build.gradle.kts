@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.kotlinAndroidKsp)
     alias(libs.plugins.hiltAndroid)
     id("kotlin-parcelize")
+//    id("kotlinx-serialization")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
 
 }
 
@@ -64,6 +66,8 @@ dependencies {
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.ui.text)
     implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.runtime)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -92,4 +96,9 @@ dependencies {
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+
+    // Json
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+
 }

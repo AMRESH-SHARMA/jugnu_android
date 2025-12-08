@@ -20,31 +20,40 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.app.feature.listeners.domain.ListenerModel
+import com.example.app.feature.navigation.ui.openOngoingCall
+import kotlinx.coroutines.launch
 
 @Composable
 fun IncomingCallScreen(
-    callerName: String,
-    callerImage: String?,
-    onAccept: () -> Unit,
-    onDecline: () -> Unit
+    listener: ListenerModel,
+    navController: NavController,
 ) {
+    val vm: CallViewModel = hiltViewModel()
+    val scope = rememberCoroutineScope()
+
     Box(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
     ) {
+
         Column(
             modifier = Modifier.align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
+
             AsyncImage(
-                model = callerImage,
+                model = listener.avatar,
                 contentDescription = null,
                 modifier = Modifier
                     .size(180.dp)
@@ -54,12 +63,12 @@ fun IncomingCallScreen(
             Spacer(Modifier.height(20.dp))
 
             Text(
-                text = callerName,
+                text = listener.name,
                 style = MaterialTheme.typography.headlineMedium
             )
 
             Text(
-                text = "Voice Call",
+                text = "Incoming voice call",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -71,8 +80,14 @@ fun IncomingCallScreen(
                 .padding(bottom = 40.dp),
             horizontalArrangement = Arrangement.Center
         ) {
+            // DECLINE
             FloatingActionButton(
-                onClick = onDecline,
+                onClick = {
+                    scope.launch {
+                        vm.rejectCall()
+                        navController.popBackStack()
+                    }
+                },
                 containerColor = Color.Red,
                 shape = CircleShape,
                 modifier = Modifier.size(70.dp)
@@ -82,8 +97,14 @@ fun IncomingCallScreen(
 
             Spacer(Modifier.width(60.dp))
 
+            // ACCEPT
             FloatingActionButton(
-                onClick = onAccept,
+                onClick = {
+                    scope.launch {
+                        vm.acceptCall()
+                        navController.openOngoingCall(listener)
+                    }
+                },
                 containerColor = Color.Green,
                 shape = CircleShape,
                 modifier = Modifier.size(70.dp)
@@ -93,4 +114,3 @@ fun IncomingCallScreen(
         }
     }
 }
-
