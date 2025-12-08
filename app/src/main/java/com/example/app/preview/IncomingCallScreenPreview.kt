@@ -1,8 +1,8 @@
 package com.example.app.preview
 
 import androidx.compose.runtime.Composable
-import com.example.app.ui.call.IncomingCallScreen
-import com.example.app.ui.theme.AppTheme
+import com.example.app.feature.call.ui.IncomingCallScreen
+import com.example.app.feature.theme.AppTheme
 
 @AllDevicesPreview
 @Composable
