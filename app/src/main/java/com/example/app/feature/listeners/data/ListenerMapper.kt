@@ -4,7 +4,7 @@ import com.example.app.feature.listeners.domain.ListenerModel
 
 fun ListenerDto.toDomain(): ListenerModel {
     return ListenerModel(
-        id = publicId,
+        id = accountId,
         name = name,
         avatar = avatar,
         tagLine = tagLine,

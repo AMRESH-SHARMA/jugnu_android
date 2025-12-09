@@ -51,8 +51,8 @@ fun OnGoingCallScreen(
     LaunchedEffect(listener.id) {
         vm.startCall(
             callerId = "1",          // replace TODO userId
-            calleeId = listener.id,  // selected listener
-            channel = listener.id    // any string
+            calleeId = listener.id,
+            channel = "dummy channel"
         )
     }
 

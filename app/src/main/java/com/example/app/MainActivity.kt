@@ -27,6 +27,11 @@ class MainActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
 
+//        FirebaseMessaging.getInstance().token
+//            .addOnSuccessListener { token ->
+//                Log.d("FCM", "TOKEN FROM REQUEST: $token")
+//            }
+
         WindowCompat.getInsetsController(window, window.decorView).apply {
             // Make navigation bar icons white
             isAppearanceLightNavigationBars = false
