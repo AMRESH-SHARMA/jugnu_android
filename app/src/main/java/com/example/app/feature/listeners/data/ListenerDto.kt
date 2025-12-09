@@ -1,7 +1,7 @@
 package com.example.app.feature.listeners.data
 
 data class ListenerDto(
-    val publicId: String,
+    val accountId: String,
     val name: String,
     val age: Int,
     val gender: String,

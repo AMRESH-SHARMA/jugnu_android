@@ -7,6 +7,7 @@ plugins {
     id("kotlin-parcelize")
 //    id("kotlinx-serialization")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    id("com.google.gms.google-services")
 
 }
 
@@ -68,6 +69,7 @@ dependencies {
     implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.runtime)
+    implementation(libs.androidx.datastore.core)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -100,5 +102,13 @@ dependencies {
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+
+    // Add the dependency for the Firebase SDK for Google Analytics
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
 
 }

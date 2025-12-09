@@ -1,0 +1,14 @@
+package com.example.app.core.device.data
+
+import retrofit2.http.Body
+import retrofit2.http.POST
+
+data class DeviceTokenRequest(
+    val userId: String,
+    val deviceToken: String
+)
+
+interface DeviceApi {
+    @POST("api/v1/user/device-token")
+    suspend fun sendDeviceToken(@Body body: DeviceTokenRequest)
+}
