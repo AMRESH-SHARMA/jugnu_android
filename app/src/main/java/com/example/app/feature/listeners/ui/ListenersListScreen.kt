@@ -130,7 +130,7 @@ private fun ListenerListContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            items(filtered, key = { it.id }) { listener ->
+            items(filtered, key = { it.accountId }) { listener ->
 
                 Surface(
                     shape = RoundedCornerShape(20.dp),

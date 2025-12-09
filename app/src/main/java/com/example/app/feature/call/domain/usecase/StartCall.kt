@@ -7,8 +7,7 @@ class StartCall @Inject constructor(
     private val repo: CallRepository
 ) {
     suspend operator fun invoke(
-        callerId: String,
-        calleeId: String,
-        channel: String
-    ) = repo.startCall(callerId, calleeId, channel)
+        callerId: Long,
+        calleeId: Long
+    ) = repo.startCall(callerId, calleeId)
 }

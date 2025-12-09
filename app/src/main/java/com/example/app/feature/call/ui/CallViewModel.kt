@@ -32,10 +32,10 @@ class CallViewModel @Inject constructor(
     val error = MutableStateFlow<String?>(null)
 
     private var timerJob: Job? = null
-    fun startCall(callerId: String, calleeId: String, channel: String) {
+    fun startCall(callerId: Long, calleeId: Long) {
         viewModelScope.launch {
             try {
-                callState.value = startCallUseCase(callerId, calleeId, channel)
+                callState.value = startCallUseCase(callerId, calleeId)
             } catch (e: Exception) {
                 error.value = e.message
             }

@@ -1,9 +1,8 @@
 package com.example.app.feature.call.data
 
 data class StartCallRequest(
-    val callerId: String,
-    val calleeId: String,
-    val channel: String
+    val callerId: Long,
+    val calleeId: Long,
 )
 
 data class AcceptCallRequest(

@@ -7,7 +7,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Parcelize
 data class ListenerModel(
-    val id: String,
+    val accountId: Long,
     val name: String,
     val avatar: String?,
     val tagLine: String?,
