@@ -25,28 +25,33 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(
             navigationBarStyle = transparentSystemBarStyle
         )
+
         super.onCreate(savedInstanceState)
 
-//        FirebaseMessaging.getInstance().token
-//            .addOnSuccessListener { token ->
-//                Log.d("FCM", "TOKEN FROM REQUEST: $token")
-//            }
-
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            // Make navigation bar icons white
             isAppearanceLightNavigationBars = false
         }
+
+        // 🔥 read FCM extras here
+        val route = intent.getStringExtra("route")
+        val callerId = intent.getLongExtra("callerId", 0L)
+        val calleeId = intent.getLongExtra("calleeId", 0L)
+        val callId = intent.getStringExtra("callId")
 
         setContent {
             AppTheme {
                 Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    AppNavGraph()
+                    // 🔥 pass to AppNavGraph
+                    AppNavGraph(
+                        route = route,
+                        callerId = callerId,
+                        calleeId = calleeId,
+                        callId = callId,
+                    )
                 }
             }
         }
     }
 }
-

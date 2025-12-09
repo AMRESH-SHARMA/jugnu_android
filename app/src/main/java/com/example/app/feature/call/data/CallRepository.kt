@@ -7,11 +7,11 @@ class CallRepository @Inject constructor(
     private val api: CallApi
 ) {
 
-    suspend fun startCall(callerId: String, calleeId: String, channel: String): CallModel {
-        val res = api.startCall(StartCallRequest(callerId, calleeId, channel))
+    suspend fun startCall(callerId: Long, calleeId: Long): CallModel {
+        val res = api.startCall(StartCallRequest(callerId, calleeId))
 
         if (res.success)
-            return CallModel(res.data.callId, res.data.status, channel)
+            return CallModel(res.data.callId, res.data.status)
 
         throw Exception(res.message)
     }

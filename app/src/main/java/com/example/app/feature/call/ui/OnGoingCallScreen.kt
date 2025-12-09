@@ -48,11 +48,10 @@ fun OnGoingCallScreen(
     val callState by vm.callState.collectAsState()
 
     // START TIMER only when accepted
-    LaunchedEffect(listener.id) {
+    LaunchedEffect(listener.accountId) {
         vm.startCall(
-            callerId = "1",          // replace TODO userId
-            calleeId = listener.id,
-            channel = "dummy channel"
+            callerId = 1,          // replace TODO userId
+            calleeId = listener.accountId,
         )
     }
 
