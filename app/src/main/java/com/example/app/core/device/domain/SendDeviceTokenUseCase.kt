@@ -6,7 +6,7 @@ import javax.inject.Inject
 class SendDeviceTokenUseCase @Inject constructor(
     private val repo: DeviceRepository
 ) {
-    suspend operator fun invoke(userId: String, token: String) {
-        repo.sendDeviceToken(userId, token)
+    suspend operator fun invoke(accountId: Long, token: String) {
+        repo.sendDeviceToken(accountId, token)
     }
 }

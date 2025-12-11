@@ -5,8 +5,7 @@ import javax.inject.Inject
 class DeviceRepository @Inject constructor(
     private val api: DeviceApi
 ) {
-
-    suspend fun sendDeviceToken(userId: String, token: String) {
-        api.sendDeviceToken(DeviceTokenRequest(userId, token))
+    suspend fun sendDeviceToken(accountId: Long, token: String) {
+        api.sendDeviceToken(DeviceTokenRequest(accountId, token))
     }
 }

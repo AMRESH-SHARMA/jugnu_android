@@ -12,7 +12,7 @@ class DeviceTokenViewModel @Inject constructor(
     private val repo: DeviceRepository
 ) : ViewModel() {
 
-    fun sendToken(userId: String, token: String) {
+    fun sendToken(userId: Long, token: String) {
         viewModelScope.launch {
             try {
                 repo.sendDeviceToken(userId, token)
