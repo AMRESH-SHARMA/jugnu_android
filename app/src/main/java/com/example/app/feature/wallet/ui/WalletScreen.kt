@@ -33,20 +33,28 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.app.core.user.domain.model.UserRole
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
     navController: NavController,
-    onBackClick: (() -> Boolean)?
+    onBackClick: (() -> Boolean)?,
+    viewModel: WalletViewModel = hiltViewModel()
 ) {
+    val prefs by viewModel.userPrefs.collectAsState()
+    val role = prefs.second
+
+    // ⭐ TopAppBar
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
 
     Scaffold(
@@ -79,7 +87,7 @@ fun WalletScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             // ⭐ Quick Actions Row
-            QuickActionButtons()
+            QuickActionButtons(role)
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -146,14 +154,24 @@ fun WalletBalanceCard(balance: Double, currency: String) {
 // ⭐ Quick Action Buttons (Send / Receive / Add Money)
 // -------------------------------------------
 @Composable
-fun QuickActionButtons() {
+fun QuickActionButtons(role: UserRole) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
-        QuickAction("Send", Icons.Default.ArrowUpward)
-        QuickAction("Receive", Icons.Default.ArrowDownward)
-        QuickAction("Add Money", Icons.Default.AddCircle)
+//        QuickAction("Send", Icons.Default.ArrowUpward)
+//        QuickAction("Receive", Icons.Default.ArrowDownward)
+//        QuickAction("Add Money", Icons.Default.AddCircle)
+        when (role) {
+
+            UserRole.LISTENER -> {
+                QuickAction("Withdraw Money", Icons.Default.ArrowDownward)
+            }
+
+            UserRole.CUSTOMER -> {
+                QuickAction("Add Money", Icons.Default.AddCircle)
+            }
+        }
     }
 }
 

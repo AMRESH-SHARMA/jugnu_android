@@ -15,7 +15,6 @@ fun AppNavGraph(
     callId: String?
 ) {
     val navController = rememberNavController()
-
     LaunchedEffect(route) {
         when (route) {
 
@@ -44,12 +43,12 @@ fun AppNavGraph(
 
         }
     }
-
-
     NavHost(
         navController = navController,
-        startDestination = Routes.HOME
+        startDestination = Routes.SELECT_USER_ROLE
     ) {
+//        authNavGraph(navController)
+        selectUserRoleNavGraph(navController)
         homeNavGraph(navController)
         walletNavGraph(navController)
         callNavGraph(navController)

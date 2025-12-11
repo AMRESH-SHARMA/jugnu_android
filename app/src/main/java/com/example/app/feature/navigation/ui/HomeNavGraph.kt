@@ -25,6 +25,7 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
                         navController.openChat(listener)
                     }
                 }
+
             )
         }
     }
@@ -32,5 +33,8 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
     chatNavGraph(
         navController = navController,
         onBack = { navController.popBackStack() }
+    )
+    walletNavGraph(
+        navController = navController,
     )
 }
