@@ -1,7 +1,9 @@
 package com.example.app.core.user.repository
 
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.*
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.app.core.user.domain.model.UserRole
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -15,19 +17,56 @@ class UserPreferencesRepository @Inject constructor(
     companion object {
         val KEY_ACCOUNT_ID = stringPreferencesKey("account_id")
         val KEY_ROLE = stringPreferencesKey("role")
+        val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
     }
 
     val userPrefsFlow = dataStore.data.map { prefs ->
         Pair(
-            prefs[KEY_ACCOUNT_ID] ?: "",
+            prefs[KEY_ACCOUNT_ID]?.toLongOrNull() ?: 0L,
             UserRole.fromString(prefs[KEY_ROLE])
         )
     }
 
-    suspend fun saveUserPrefs(accountId: String, role: UserRole) {
+    val tokenFlow = dataStore.data.map { prefs ->
+        prefs[KEY_FCM_TOKEN]
+    }
+
+    suspend fun saveUserPrefs(id: Long, role: UserRole) {
         dataStore.edit { prefs ->
-            prefs[KEY_ACCOUNT_ID] = accountId
+            prefs[KEY_ACCOUNT_ID] = id.toString()
             prefs[KEY_ROLE] = role.name
         }
     }
+
+    suspend fun saveToken(token: String) {
+        dataStore.edit { prefs ->
+            prefs[KEY_FCM_TOKEN] = token
+        }
+    }
 }
+
+
+//@Singleton
+//class UserPreferencesRepository @Inject constructor(
+//    private val dataStore: DataStore<Preferences>
+//) {
+//
+//    companion object {
+//        val KEY_ACCOUNT_ID = stringPreferencesKey("account_id")
+//        val KEY_ROLE = stringPreferencesKey("role")
+//    }
+//
+//    val userPrefsFlow = dataStore.data.map { prefs ->
+//        Pair(
+//            (prefs[KEY_ACCOUNT_ID]?.toLongOrNull() ?: 0L),
+//            UserRole.fromString(prefs[KEY_ROLE])
+//        )
+//    }
+//
+//    suspend fun saveUserPrefs(accountId: String, role: UserRole) {
+//        dataStore.edit { prefs ->
+//            prefs[KEY_ACCOUNT_ID] = accountId.toString()
+//            prefs[KEY_ROLE] = role.name
+//        }
+//    }
+//}

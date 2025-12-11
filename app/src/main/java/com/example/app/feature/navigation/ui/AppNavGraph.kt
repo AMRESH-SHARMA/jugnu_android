@@ -5,6 +5,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.feature.listeners.domain.ListenerModel
+import com.example.app.utils.AppConstants
 
 
 @Composable
@@ -17,8 +18,7 @@ fun AppNavGraph(
     val navController = rememberNavController()
     LaunchedEffect(route) {
         when (route) {
-
-            "incoming_call" -> {
+            AppConstants.EVENT_INCOMING_CALL -> {
                 val listener = ListenerModel(
                     accountId = callerId,
                     name = "Unknown",
@@ -33,8 +33,8 @@ fun AppNavGraph(
                 navController.openIncomingCall(listener)
             }
 
-            "call_ended",
-            "call_rejected" -> {
+            AppConstants.EVENT_CALL_ENDED,
+            AppConstants.EVENT_CALL_REJECTED -> {
                 // remove call stack and go home
                 navController.navigate(Routes.HOME) {
                     popUpTo(Routes.HOME) { inclusive = true }

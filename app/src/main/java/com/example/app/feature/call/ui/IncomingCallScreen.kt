@@ -20,6 +20,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,6 +31,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.app.feature.listeners.domain.ListenerModel
+import com.example.app.feature.navigation.ui.Routes
 import com.example.app.feature.navigation.ui.openOngoingCall
 import kotlinx.coroutines.launch
 
@@ -40,6 +42,18 @@ fun IncomingCallScreen(
 ) {
     val vm: CallViewModel = hiltViewModel()
     val scope = rememberCoroutineScope()
+
+    // 🔥 LISTEN FOR BACKEND EVENTS (call_rejected, call_cancelled, call_ended)
+    LaunchedEffect(Unit) {
+        CallEventBus.events.collect { event ->
+            if (event is CallEvent.CallRejected || event is CallEvent.CallEnded) {
+                navController.navigate(Routes.HOME) {
+                    popUpTo(Routes.CALL_ROOT) { inclusive = true }
+                }
+            }
+        }
+    }
+
 
     Box(
         Modifier
