@@ -20,8 +20,8 @@ import javax.inject.Inject
 class CallViewModel @Inject constructor(
     private val startCallUseCase: StartCall,
     private val acceptCall: AcceptCall,
-    private val rejectCall: RejectCall,
-    private val endCall: EndCall,
+    private val rejectCallUseCase: RejectCall,
+    private val endCallUseCase: EndCall,
     private val callManager: CallManager   // or CallActionCoordinator
 ) : ViewModel() {
 
@@ -51,16 +51,45 @@ class CallViewModel @Inject constructor(
     }
 
     fun rejectCall() {
-        val call = CallStore.current() ?: return
+        val call = callModel.value ?: return
+
         viewModelScope.launch {
-            rejectCall(call.callId, call.callerAccountId, call.calleeAccountId)
+            try {
+                rejectCallUseCase(
+                    callId = call.callId,
+                    callerAccountId = call.callerAccountId,
+                    calleeAccountId = call.calleeAccountId
+                )
+
+                // 🔥 LOCAL state update (DO NOT WAIT FOR RTM)
+                callManager.onRejected()
+
+            } catch (e: Exception) {
+                error.value = e.message
+            }
         }
     }
 
+
     fun endCall() {
-        val call = CallStore.current() ?: return
+        val call = callModel.value ?: return
+
         viewModelScope.launch {
-            endCall(call.callId, call.callerAccountId, call.calleeAccountId, call.status)
+            try {
+                endCallUseCase(
+                    callId = call.callId,
+                    callerAccountId = call.callerAccountId,
+                    calleeAccountId = call.calleeAccountId,
+                    callStatus = call.status
+                )
+
+                // 🔥 LOCAL first
+                callManager.onEnded()
+
+            } catch (e: Exception) {
+                error.value = e.message
+            }
         }
     }
+
 }

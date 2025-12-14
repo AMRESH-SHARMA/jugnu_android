@@ -1,6 +1,7 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
+import android.util.Log
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
@@ -8,6 +9,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.app.feature.call.ui.CallViewModel
+import com.example.app.feature.call.ui.IncomingCallScreen
 import com.example.app.feature.call.ui.OnGoingCallScreen
 
 fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
@@ -31,7 +33,9 @@ fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
 
             val callVm: CallViewModel = hiltViewModel(parentEntry)
 
-//            IncomingCallScreen(vm = callVm)
+            Log.d("RTM", "Before incoming call")
+            IncomingCallScreen(vm = callVm)
+
         }
 
         // ---------------- ONGOING CALL ----------------

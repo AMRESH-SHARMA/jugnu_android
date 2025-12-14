@@ -1,5 +1,6 @@
 package com.example.app.core.call
 
+import android.util.Log
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
 import javax.inject.Inject
@@ -8,6 +9,9 @@ import javax.inject.Singleton
 @Singleton
 class CallManager @Inject constructor() {
     fun onIncoming(event: CallEvent.Incoming) {
+
+        Log.d("RTM", "CallManager.onIncoming callId=${event.callId}")
+
         // Already in call → ignore or auto reject
         if (CallStore.current() != null) return
 
