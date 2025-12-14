@@ -34,7 +34,7 @@ class RtmEventListenerImpl(
 
             Log.d(
                 "RTM",
-                "Received ${signal.event} callId=${signal.callId}"
+                "Event Received ${signal.event} callId=${signal.callId}"
             )
 
             scope.launch {

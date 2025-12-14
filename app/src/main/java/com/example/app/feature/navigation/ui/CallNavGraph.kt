@@ -1,7 +1,6 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
-import android.util.Log
 import androidx.compose.runtime.remember
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
@@ -13,7 +12,7 @@ import com.example.app.feature.call.ui.OnGoingCallScreen
 
 fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
 
-    Log.d("RTM", "callNavGraph REGISTERED")
+//    Log.d("RTM", "callNavGraph REGISTERED")
 
     navigation(
         route = Routes.Graph.CALL,
@@ -24,7 +23,7 @@ fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
         composable(
             route = Routes.Screen.Call.INCOMING
         ) {
-            Log.d("RTM", "Inside IncomingCallScreen composable")
+//            Log.d("RTM", "Inside IncomingCallScreen composable")
 
             val parentEntry = remember {
                 navController.getBackStackEntry(Routes.Graph.CALL)
@@ -39,7 +38,7 @@ fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
         composable(
             route = Routes.Screen.Call.ONGOING
         ) {
-            Log.d("RTM", "Inside OnGoingCallScreen composable")
+//            Log.d("RTM", "Inside OnGoingCallScreen composable")
 
             val parentEntry = remember {
                 navController.getBackStackEntry(Routes.Graph.CALL)

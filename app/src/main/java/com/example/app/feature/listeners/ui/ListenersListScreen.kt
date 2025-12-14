@@ -1,6 +1,5 @@
 package com.example.app.feature.listeners.ui
 
-import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -75,7 +74,7 @@ fun ListenerListScreen(
     val error by vm.error.collectAsState()
 
     LaunchedEffect(Unit) {
-        Log.d("RTM", "ListenerListScreen navController=$navController")
+//        Log.d("RTM", "ListenerListScreen navController=$navController")
     }
 
     when {
@@ -112,9 +111,6 @@ fun ListenerListScreen(
                         callerAccountId = SessionManager.userId,
                         calleeAccountId = calleeAccountId
                     )
-
-                    Log.d("RTM", "CALL CLICKED navController=$navController")
-                    Log.d("RTM", "Attempting navigation call screen: $listener")
                 }
             )
         }

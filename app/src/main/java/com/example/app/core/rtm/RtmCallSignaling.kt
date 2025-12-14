@@ -23,8 +23,6 @@ class RtmCallSignaling @Inject constructor() {
     ) {
         val message = json.encodeToString(payload)
 
-//        Log.d("RTM", "Publishing '${payload.event}' to channel='$channel' payload=$message")
-
         RtmManager.publish(
             channelName = channel,
             message = message,
@@ -34,7 +32,7 @@ class RtmCallSignaling @Inject constructor() {
                     // fire-and-forget (expected behavior)
                     Log.d(
                         "RTM",
-                        "Sent ${payload.event} → channel=$channel callId=${payload.callId}"
+                        "Published Event ${payload.event} → channel=$channel callId=${payload.callId}"
                     )
                 }
 

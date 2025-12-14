@@ -9,6 +9,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.core.call.CallStore
 import com.example.app.feature.call.domain.CallStatus
+import kotlinx.coroutines.flow.drop
 
 
 @Composable
@@ -20,35 +21,59 @@ fun AppNavGraph() {
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
     val call by CallStore.call.collectAsState()
+    LaunchedEffect(Unit) {
+        CallStore.call
+            .drop(1) // skip initial null
+            .collect { call ->
+                when (call?.status) {
+                    CallStatus.INCOMING_RINGING -> {
+                        navController.navigate(Routes.Screen.Call.INCOMING)
+                    }
 
-    LaunchedEffect(call?.status) {
-        when (call?.status) {
+                    CallStatus.OUTGOING_RINGING,
+                    CallStatus.CONNECTING,
+                    CallStatus.CONNECTED -> {
+                        navController.navigate(Routes.Screen.Call.ONGOING)
+                    }
 
-            CallStatus.INCOMING_RINGING -> {
-                navController.navigate(
-                    "${Routes.Graph.CALL}/${Routes.Screen.Call.INCOMING}"
-                ) { launchSingleTop = true }
-            }
+                    CallStatus.ENDED, null -> {
+                        navController.navigate(Routes.Graph.HOME) {
+                            popUpTo(Routes.Graph.CALL) { inclusive = true }
+                        }
+                    }
 
-            CallStatus.OUTGOING_RINGING,
-            CallStatus.CONNECTING,
-            CallStatus.CONNECTED -> {
-                navController.navigate(
-//                    "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
-                    Routes.Screen.Call.ONGOING
-                ) { launchSingleTop = true }
-            }
-
-            CallStatus.ENDED, null -> {
-                navController.navigate(Routes.Graph.HOME) {
-                    popUpTo(Routes.Graph.CALL) { inclusive = true }
-                    launchSingleTop = true
+                    else -> {}
                 }
             }
-
-            else -> Unit
-        }
     }
+
+//    LaunchedEffect(call?.status) {
+//        when (call?.status) {
+//            CallStatus.INCOMING_RINGING -> {
+//                navController.navigate(
+//                    "${Routes.Graph.CALL}/${Routes.Screen.Call.INCOMING}"
+//                ) { launchSingleTop = true }
+//            }
+//
+//            CallStatus.OUTGOING_RINGING,
+//            CallStatus.CONNECTING,
+//            CallStatus.CONNECTED -> {
+//                navController.navigate(
+////                    "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
+//                    Routes.Screen.Call.ONGOING
+//                ) { launchSingleTop = true }
+//            }
+//
+//            CallStatus.ENDED, null -> {
+//                navController.navigate(Routes.Graph.HOME) {
+//                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+//                    launchSingleTop = true
+//                }
+//            }
+//
+//            else -> Unit
+//        }
+//    }
 
 
     // ---------------------------------------------------------
