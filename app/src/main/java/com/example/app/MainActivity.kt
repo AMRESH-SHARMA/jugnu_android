@@ -10,9 +10,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.example.app.ui.navigation.AppNavGraph
-import com.example.app.ui.theme.AppTheme
+import com.example.app.feature.navigation.ui.AppNavGraph
+import com.example.app.feature.theme.AppTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -23,23 +25,33 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge(
             navigationBarStyle = transparentSystemBarStyle
         )
+
         super.onCreate(savedInstanceState)
 
         WindowCompat.getInsetsController(window, window.decorView).apply {
-            // Make navigation bar icons white
             isAppearanceLightNavigationBars = false
         }
+
+        // 🔥 read FCM extras here
+        val route = intent.getStringExtra("route")
+        val callerId = intent.getLongExtra("callerId", 0L)
+        val calleeId = intent.getLongExtra("calleeId", 0L)
+        val callId = intent.getStringExtra("callId")
 
         setContent {
             AppTheme {
                 Scaffold(
-                    modifier = Modifier
-                        .fillMaxSize()
+                    modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    AppNavGraph()
+                    // 🔥 pass to AppNavGraph
+                    AppNavGraph(
+//                        route = route,
+//                        callerAccountId = callerId,
+//                        calleeAccountId = calleeId,
+//                        callId = callId,
+                    )
                 }
             }
         }
     }
 }
-

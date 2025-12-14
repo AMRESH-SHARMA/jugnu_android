@@ -1,13 +1,47 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+val agoraAppId: String =
+    (project.findProperty("AGORA_APP_ID") as String?)
+        ?: localProperties.getProperty("AGORA_APP_ID")
+        ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlinAndroidKsp)
+    alias(libs.plugins.hiltAndroid)
+    id("kotlin-parcelize")
+//    id("kotlinx-serialization")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
+    id("com.google.gms.google-services")
+
 }
 
 android {
     namespace = "com.example.app"
     compileSdk {
         version = release(36)
+    }
+
+    // Agora repeated libaosl in 2 sdk
+    packaging {
+        jniLibs {
+            pickFirsts += setOf(
+                "lib/x86/libaosl.so",
+                "lib/x86_64/libaosl.so",
+                "lib/armeabi-v7a/libaosl.so",
+                "lib/arm64-v8a/libaosl.so"
+            )
+        }
     }
 
     defaultConfig {
@@ -18,6 +52,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "AGORA_APP_ID",
+            "\"$agoraAppId\""
+        )
     }
 
     buildTypes {
@@ -36,8 +76,10 @@ android {
     kotlinOptions {
         jvmTarget = "11"
     }
+
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -58,6 +100,11 @@ dependencies {
     implementation(libs.volley)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.compose.ui.text)
+    implementation(libs.androidx.foundation.layout)
+    implementation(libs.androidx.navigation.runtime.ktx)
+    implementation(libs.androidx.runtime)
+    implementation(libs.androidx.datastore.core)
+//    implementation(libs.firebase.appdistribution.gradle)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -76,6 +123,33 @@ dependencies {
     implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.material:material-icons-extended")
 
-    //
-//    implementation("com.google.accompanist:accompanist-systemuicontroller:0.30.1")
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Hilt navigation compose
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+    // Retrofit
+    implementation("com.squareup.retrofit2:retrofit:3.0.0")
+    implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+
+    // Json
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+
+    // Import the Firebase BoM
+    implementation(platform("com.google.firebase:firebase-bom:34.6.0"))
+
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+
+    // Add the dependency for the Firebase SDK for Google Analytics
+    implementation("com.google.firebase:firebase-analytics")
+    implementation("com.google.firebase:firebase-messaging")
+
+    // Agora SDK
+    // RTM (signaling)
+    implementation("io.agora.rtm:rtm-sdk:2.2.6")
+    implementation("io.agora.rtc:full-sdk:4.6.1")
+
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
 }
