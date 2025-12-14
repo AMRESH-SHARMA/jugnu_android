@@ -1,16 +1,36 @@
-package com.example.app.feature.navigation.ui
-
 object Routes {
 
-    const val SELECT_USER_ROLE = "select_user_role"
-    const val HOME = "home_graph"
-    const val WALLET = "wallet_graph"
-    const val AUTH = "auth_graph"
+    object Graph {
+        const val SELECT_USER_ROLE = "select_user_role_graph"
+        const val HOME = "home_graph"
+        const val CHAT = "chat_graph"
+        const val WALLET = "wallet_graph"
+        const val CALL = "call_graph"
+        const val AUTH = "auth_graph"
+    }
 
-    //    const val CALL_ROOT = "call_root"
-    const val INCOMING_CALL = "incoming_call?listener={listener}"
-    const val ONGOING_CALL = "ongoing_call?listener={listener}"
+    object Screen {
 
-    const val CALL_ROOT = "call_root"
+        object SelectUserRole {
+            const val ROOT = "select_user_role"
+        }
 
+        object Home {
+            const val ROOT = "home"
+        }
+
+        object Chat {
+            const val ROOT = "chat"
+        }
+
+        object Wallet {
+            const val ROOT = "wallet"
+        }
+
+        object Call {
+            const val ROOT = "call"
+            const val INCOMING = "incoming_call"
+            const val ONGOING = "ongoing_call"
+        }
+    }
 }

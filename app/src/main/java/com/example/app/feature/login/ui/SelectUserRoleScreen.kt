@@ -1,5 +1,6 @@
 package com.example.app.feature.login.ui
 
+import Routes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -25,9 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.app.core.user.domain.model.UserRole
-import com.example.app.feature.navigation.ui.Routes
-import com.example.app.feature.navigation.ui.SelectUserRoleRoutes
+import com.example.app.core.preferences.user.domain.UserRole
 
 @Composable
 fun SelectUserRoleScreen(
@@ -39,8 +38,8 @@ fun SelectUserRoleScreen(
     val navigateToHome by viewModel.navigateToHome
     LaunchedEffect(navigateToHome) {
         if (navigateToHome) {
-            navController.navigate(Routes.HOME) {
-                popUpTo(SelectUserRoleRoutes.ROOT) { inclusive = true }
+            navController.navigate(Routes.Graph.HOME) {
+                popUpTo(Routes.Screen.SelectUserRole.ROOT) { inclusive = true }
             }
             viewModel.resetNavigationFlag()
         }

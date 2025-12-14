@@ -1,83 +1,89 @@
 package com.example.app.feature.navigation.ui
 
-import android.net.Uri
-import androidx.navigation.NavController
+import Routes
+import android.util.Log
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.navArgument
 import androidx.navigation.navigation
-import com.example.app.feature.call.ui.IncomingCallScreen
+import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.call.ui.OnGoingCallScreen
-import com.example.app.feature.listeners.domain.ListenerModel
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
-
-
-/* ------------ NAVIGATION HELPERS ---------------- */
-
-fun NavController.openIncomingCall(listener: ListenerModel) {
-    val json = Uri.encode(Json.encodeToString(listener))
-    navigate("incoming_call?listener=$json")
-}
-
-fun NavController.openOngoingCall(listener: ListenerModel) {
-    val json = Uri.encode(Json.encodeToString(listener))
-    navigate("ongoing_call?listener=$json")
-}
-
-/* ------------ NAV GRAPH ---------------- */
 
 fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
 
+    Log.d("RTM", "callNavGraph REGISTERED")
+
     navigation(
-        startDestination = "incoming_call",
-        route = Routes.CALL_ROOT
+        route = Routes.Graph.CALL,
+        startDestination = Routes.Screen.Call.ONGOING
     ) {
 
-        /** Incoming */
+        // ---------------- INCOMING CALL ----------------
         composable(
-            route = "incoming_call?listener={listener}",
-            arguments = listOf(
-                navArgument("listener") {
-                    type = NavType.StringType
-                    nullable = true
-                }
-            )
-        ) { backStackEntry ->
+            route = Routes.Screen.Call.INCOMING
+        ) {
+            Log.d("RTM", "Inside IncomingCallScreen composable")
 
-            val json = backStackEntry.arguments?.getString("listener")
+            val parentEntry = remember {
+                navController.getBackStackEntry(Routes.Graph.CALL)
+            }
 
-            val listener =
-                json?.let { Json.decodeFromString<ListenerModel>(Uri.decode(it)) }
+            val callVm: CallViewModel = hiltViewModel(parentEntry)
 
-            IncomingCallScreen(
-                listener = listener!!,
-                navController = navController
-            )
+//            IncomingCallScreen(vm = callVm)
         }
 
-        /** Ongoing */
+        // ---------------- ONGOING CALL ----------------
         composable(
-            route = Routes.ONGOING_CALL,
-            arguments = listOf(
-                navArgument("listener") {
-                    type = NavType.StringType
-                    nullable = true
-                }
-            )
-        ) { backStackEntry ->
+            route = Routes.Screen.Call.ONGOING
+        ) {
+            Log.d("RTM", "Inside OnGoingCallScreen composable")
 
-            val json = backStackEntry.arguments?.getString("listener")
+            val parentEntry = remember {
+                navController.getBackStackEntry(Routes.Graph.CALL)
+            }
 
-            val listener =
-                json?.let { Json.decodeFromString<ListenerModel>(Uri.decode(it)) }
+            val callVm: CallViewModel = hiltViewModel(parentEntry)
 
-            OnGoingCallScreen(
-                listener = listener!!,
-                navController = navController
-            )
+            OnGoingCallScreen(vm = callVm)
         }
     }
 }
+
+
+//fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
+//    Log.d("RTM", "callNavGraph REGISTERED")
+//    navigation(
+//        route = Routes.Graph.CALL,
+//        startDestination = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
+////        startDestination = Routes.Screen.Call.INCOMING
+//    ) {
+//
+//        composable(
+////            Routes.Screen.Call.INCOMING
+//            route = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
+//        ) {
+//            val callVm: CallViewModel =
+//                hiltViewModel(navController.getBackStackEntry(Routes.Graph.CALL))
+//
+////            IncomingCallScreen(vm = callVm)
+//        }
+//
+//        composable(
+////            Routes.Screen.Call.ONGOING
+//            route = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
+//        ) {
+//            Log.d("RTM", "Inside OnGoingCallScreen composable")
+//
+//            val parentEntry = remember {
+//                navController.getBackStackEntry(Routes.Graph.CALL)
+//            }
+//
+//            val callVm: CallViewModel = hiltViewModel(parentEntry)
+//
+//            OnGoingCallScreen(vm = callVm)
+//        }
+//    }
+//}

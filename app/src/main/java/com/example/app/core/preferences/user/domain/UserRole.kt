@@ -1,4 +1,4 @@
-package com.example.app.core.user.domain.model
+package com.example.app.core.preferences.user.domain
 
 enum class UserRole {
     CUSTOMER,

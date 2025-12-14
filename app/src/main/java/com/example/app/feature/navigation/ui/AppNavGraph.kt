@@ -1,53 +1,63 @@
 package com.example.app.feature.navigation.ui
 
+import Routes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.example.app.feature.listeners.domain.ListenerModel
-import com.example.app.utils.AppConstants
+import com.example.app.core.call.CallStore
+import com.example.app.feature.call.domain.CallStatus
 
 
 @Composable
-fun AppNavGraph(
-    route: String?,
-    callerId: Long,
-    calleeId: Long,
-    callId: String?
-) {
+fun AppNavGraph() {
+
     val navController = rememberNavController()
-    LaunchedEffect(route) {
-        when (route) {
-            AppConstants.EVENT_INCOMING_CALL -> {
-                val listener = ListenerModel(
-                    accountId = callerId,
-                    name = "Unknown",
-                    avatar = "",
-                    tagLine = "",
-                    about = "",
-                    age = 0,
-                    gender = "",
-                    experience = 0,
-                    rating = 0.0
-                )
-                navController.openIncomingCall(listener)
+
+    // ---------------------------------------------------------
+    // 🔥 Call lifecycle → Navigation (RTM-driven)
+    // ---------------------------------------------------------
+    val call by CallStore.call.collectAsState()
+
+    LaunchedEffect(call?.status) {
+        when (call?.status) {
+
+            CallStatus.INCOMING_RINGING -> {
+                navController.navigate(
+                    "${Routes.Graph.CALL}/${Routes.Screen.Call.INCOMING}"
+                ) { launchSingleTop = true }
             }
 
-            AppConstants.EVENT_CALL_ENDED,
-            AppConstants.EVENT_CALL_REJECTED -> {
-                // remove call stack and go home
-                navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.HOME) { inclusive = true }
+            CallStatus.OUTGOING_RINGING,
+            CallStatus.CONNECTING,
+            CallStatus.CONNECTED -> {
+                navController.navigate(
+//                    "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
+                    Routes.Screen.Call.ONGOING
+                ) { launchSingleTop = true }
+            }
+
+            CallStatus.ENDED, null -> {
+                navController.navigate(Routes.Graph.HOME) {
+                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+                    launchSingleTop = true
                 }
             }
 
+            else -> Unit
         }
     }
+
+
+    // ---------------------------------------------------------
+    // 🧭 Main NavHost
+    // ---------------------------------------------------------
     NavHost(
         navController = navController,
-        startDestination = Routes.SELECT_USER_ROLE
+        startDestination = Routes.Graph.SELECT_USER_ROLE
     ) {
-//        authNavGraph(navController)
         selectUserRoleNavGraph(navController)
         homeNavGraph(navController)
         walletNavGraph(navController)
