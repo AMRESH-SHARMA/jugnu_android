@@ -47,35 +47,6 @@ fun AppNavGraph() {
             }
     }
 
-//    LaunchedEffect(call?.status) {
-//        when (call?.status) {
-//            CallStatus.INCOMING_RINGING -> {
-//                navController.navigate(
-//                    "${Routes.Graph.CALL}/${Routes.Screen.Call.INCOMING}"
-//                ) { launchSingleTop = true }
-//            }
-//
-//            CallStatus.OUTGOING_RINGING,
-//            CallStatus.CONNECTING,
-//            CallStatus.CONNECTED -> {
-//                navController.navigate(
-////                    "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
-//                    Routes.Screen.Call.ONGOING
-//                ) { launchSingleTop = true }
-//            }
-//
-//            CallStatus.ENDED, null -> {
-//                navController.navigate(Routes.Graph.HOME) {
-//                    popUpTo(Routes.Graph.CALL) { inclusive = true }
-//                    launchSingleTop = true
-//                }
-//            }
-//
-//            else -> Unit
-//        }
-//    }
-
-
     // ---------------------------------------------------------
     // 🧭 Main NavHost
     // ---------------------------------------------------------

@@ -2,9 +2,9 @@ package com.example.app
 
 import android.app.Application
 import android.util.Log
-import com.example.app.core.call.CallEventObserver
 import com.example.app.core.device.TokenManager
 import com.example.app.core.network.data.ApiRepository
+import com.example.app.core.observer.EventObserver
 import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
@@ -30,7 +30,7 @@ class MyApp : Application() {
     private val rtmInitialized = AtomicBoolean(false)
 
     @Inject
-    lateinit var callEventObserver: CallEventObserver
+    lateinit var eventObserver: EventObserver
 
     override fun onCreate() {
         super.onCreate()

@@ -1,8 +1,12 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
-import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavHostController
@@ -14,79 +18,46 @@ import com.example.app.feature.call.ui.OnGoingCallScreen
 
 fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
 
-//    Log.d("RTM", "callNavGraph REGISTERED")
-
     navigation(
         route = Routes.Graph.CALL,
         startDestination = Routes.Screen.Call.ONGOING
     ) {
 
         // ---------------- INCOMING CALL ----------------
-        composable(
-            route = Routes.Screen.Call.INCOMING
-        ) {
-//            Log.d("RTM", "Inside IncomingCallScreen composable")
+        composable(route = Routes.Screen.Call.INCOMING) {
 
             val parentEntry = remember {
                 navController.getBackStackEntry(Routes.Graph.CALL)
             }
-
             val callVm: CallViewModel = hiltViewModel(parentEntry)
 
-            Log.d("RTM", "Before incoming call")
-            IncomingCallScreen(vm = callVm)
-
+            CallRoot {
+                IncomingCallScreen(vm = callVm)
+            }
         }
 
         // ---------------- ONGOING CALL ----------------
-        composable(
-            route = Routes.Screen.Call.ONGOING
-        ) {
-//            Log.d("RTM", "Inside OnGoingCallScreen composable")
+        composable(route = Routes.Screen.Call.ONGOING) {
 
             val parentEntry = remember {
                 navController.getBackStackEntry(Routes.Graph.CALL)
             }
-
             val callVm: CallViewModel = hiltViewModel(parentEntry)
 
-            OnGoingCallScreen(vm = callVm)
+            CallRoot {
+                OnGoingCallScreen(vm = callVm)
+            }
         }
     }
 }
 
-
-//fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
-//    Log.d("RTM", "callNavGraph REGISTERED")
-//    navigation(
-//        route = Routes.Graph.CALL,
-//        startDestination = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
-////        startDestination = Routes.Screen.Call.INCOMING
-//    ) {
-//
-//        composable(
-////            Routes.Screen.Call.INCOMING
-//            route = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
-//        ) {
-//            val callVm: CallViewModel =
-//                hiltViewModel(navController.getBackStackEntry(Routes.Graph.CALL))
-//
-////            IncomingCallScreen(vm = callVm)
-//        }
-//
-//        composable(
-////            Routes.Screen.Call.ONGOING
-//            route = "${Routes.Graph.CALL}/${Routes.Screen.Call.ONGOING}"
-//        ) {
-//            Log.d("RTM", "Inside OnGoingCallScreen composable")
-//
-//            val parentEntry = remember {
-//                navController.getBackStackEntry(Routes.Graph.CALL)
-//            }
-//
-//            val callVm: CallViewModel = hiltViewModel(parentEntry)
-//
-//            OnGoingCallScreen(vm = callVm)
-//        }
-//    }
-//}
+@Composable
+fun CallRoot(content: @Composable () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .systemBarsPadding()
+    ) {
+        content()
+    }
+}

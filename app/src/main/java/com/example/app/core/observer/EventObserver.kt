@@ -1,6 +1,9 @@
-package com.example.app.core.call
+package com.example.app.core.observer
 
 import android.util.Log
+import com.example.app.core.call.CallEvent
+import com.example.app.core.call.CallEventBus
+import com.example.app.core.call.CallManager
 import com.example.app.core.di.ApplicationScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -8,7 +11,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CallEventObserver @Inject constructor(
+class EventObserver @Inject constructor(
     private val callManager: CallManager,
     @ApplicationScope private val scope: CoroutineScope
 ) {

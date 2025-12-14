@@ -14,7 +14,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 
 object RtmManager {
-
     private var rtmClient: RtmClient? = null
     private lateinit var eventListener: RtmEventListener
 
