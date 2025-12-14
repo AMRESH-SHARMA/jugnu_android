@@ -6,21 +6,24 @@ import retrofit2.http.POST
 
 interface CallApi {
 
-    @POST("api/v1/call/start")
+    // ---------------- CALL LIFECYCLE ----------------
+    @POST("call/start")
     suspend fun startCall(
         @Body req: StartCallRequest
     ): BaseResponse<StartCallDto>
 
-    @POST("api/v1/call/accept")
+    @POST("call/accept")
     suspend fun acceptCall(
         @Body req: AcceptCallRequest
     ): BaseResponse<AcceptCallDto>
 
-    @POST("api/v1/call/reject")
+    @POST("call/reject")
     suspend fun rejectCall(
         @Body req: RejectCallRequest
     ): BaseResponse<RejectCallDto>
+
+    @POST("call/end")
+    suspend fun endCall(
+        @Body req: EndCallRequest
+    ): BaseResponse<Unit>
 }
-
-
-

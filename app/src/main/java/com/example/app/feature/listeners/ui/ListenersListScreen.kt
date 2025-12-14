@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,10 +52,11 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.app.core.session.SessionManager
+import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.components.ListenersSearchBar
-import com.example.app.feature.navigation.ui.openOngoingCall
 
 // ---------------- MAIN SCREEN ---------------------------------------
 
@@ -65,10 +67,15 @@ fun ListenerListScreen(
     onOpenListener: (ListenerModel) -> Unit = {},
 ) {
     val vm: ListenerViewModel = hiltViewModel()
+    val callVm: CallViewModel = hiltViewModel()
 
     val data by vm.listeners.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
+
+    LaunchedEffect(Unit) {
+//        Log.d("RTM", "ListenerListScreen navController=$navController")
+    }
 
     when {
         loading -> {
@@ -93,7 +100,18 @@ fun ListenerListScreen(
             ListenerListContent(
                 listeners = data,
                 navController = navController,
-                onOpenListener = onOpenListener
+                onOpenListener = onOpenListener,
+                onCallClick = { listener ->
+
+                    val calleeAccountId = listener.accountId
+                        ?: return@ListenerListContent
+
+                    // 1️⃣ Start call (backend + RTM)
+                    callVm.startCall(
+                        callerAccountId = SessionManager.userId,
+                        calleeAccountId = calleeAccountId
+                    )
+                }
             )
         }
     }
@@ -106,6 +124,7 @@ private fun ListenerListContent(
     listeners: List<ListenerModel>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
+    onCallClick: (ListenerModel) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
@@ -130,7 +149,10 @@ private fun ListenerListContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            items(filtered, key = { it.accountId }) { listener ->
+            items(
+                filtered,
+                //TODO: need to make model not null
+                key = { it.accountId!! }) { listener ->
 
                 Surface(
                     shape = RoundedCornerShape(20.dp),
@@ -184,13 +206,11 @@ private fun ListenerListContent(
                         }
 
                         IconButton({
-//                            navController.navigate("incoming_call/${listener.id}")
-                            navController.openOngoingCall(listener)
+                            onCallClick(listener)
                         }) { Icon(Icons.Default.Call, null) }
 
                         IconButton({
-//                            navController.navigate("incoming_call/${listener.id}")
-                            navController.openOngoingCall(listener)
+                            onCallClick(listener)
                         }) { Icon(Icons.Default.VideoCall, null) }
                     }
                 }

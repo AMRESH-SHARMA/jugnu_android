@@ -6,18 +6,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.app.feature.login.ui.SelectUserRoleScreen
 
-object SelectUserRoleRoutes{
-
-    const val ROOT = "select_user_role_root"
-
-}
-
 fun NavGraphBuilder.selectUserRoleNavGraph(navController: NavController) {
     navigation(
-        startDestination = SelectUserRoleRoutes.ROOT,
-        route = Routes.SELECT_USER_ROLE
+        startDestination = Routes.Screen.SelectUserRole.ROOT,
+        route = Routes.Graph.SELECT_USER_ROLE
     ) {
-        composable(SelectUserRoleRoutes.ROOT) {
+        composable(Routes.Screen.SelectUserRole.ROOT) {
             SelectUserRoleScreen(
                 navController = navController
             )

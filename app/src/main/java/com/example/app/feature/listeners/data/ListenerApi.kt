@@ -4,7 +4,7 @@ import com.example.app.core.network.BaseResponse
 import retrofit2.http.GET
 
 interface ListenerApi {
-    @GET("api/v1/listeners")
+    @GET("listeners")
     suspend fun getListeners(): BaseResponse<List<ListenerDto>>
 }
 

@@ -6,17 +6,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.app.feature.wallet.ui.WalletScreen
 
-object WalletRoutes {
-    const val ROOT = "wallet_root"
-}
-
 fun NavGraphBuilder.walletNavGraph(navController: NavController) {
 
     navigation(
-        startDestination = WalletRoutes.ROOT,
-        route = Routes.WALLET
+        startDestination = Routes.Screen.Wallet.ROOT,
+        route = Routes.Graph.WALLET
     ) {
-        composable(WalletRoutes.ROOT) {
+        composable(Routes.Screen.Wallet.ROOT) {
             WalletScreen(
                 navController,
                 onBackClick = { navController.popBackStack() }

@@ -1,3 +1,18 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
+}
+
+val agoraAppId: String =
+    (project.findProperty("AGORA_APP_ID") as String?)
+        ?: localProperties.getProperty("AGORA_APP_ID")
+        ?: ""
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,6 +32,18 @@ android {
         version = release(36)
     }
 
+    // Agora repeated libaosl in 2 sdk
+    packaging {
+        jniLibs {
+            pickFirsts += setOf(
+                "lib/x86/libaosl.so",
+                "lib/x86_64/libaosl.so",
+                "lib/armeabi-v7a/libaosl.so",
+                "lib/arm64-v8a/libaosl.so"
+            )
+        }
+    }
+
     defaultConfig {
         applicationId = "com.example.app"
         minSdk = 24
@@ -25,6 +52,12 @@ android {
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        buildConfigField(
+            "String",
+            "AGORA_APP_ID",
+            "\"$agoraAppId\""
+        )
     }
 
     buildTypes {
@@ -46,6 +79,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -70,6 +104,7 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.datastore.core)
+//    implementation(libs.firebase.appdistribution.gradle)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -111,6 +146,10 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
 
-    implementation("androidx.datastore:datastore-preferences:1.2.0")
+    // Agora SDK
+    // RTM (signaling)
+    implementation("io.agora.rtm:rtm-sdk:2.2.6")
+    implementation("io.agora.rtc:full-sdk:4.6.1")
 
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
 }

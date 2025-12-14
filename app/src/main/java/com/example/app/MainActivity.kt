@@ -45,10 +45,10 @@ class MainActivity : ComponentActivity() {
                 ) { innerPadding ->
                     // 🔥 pass to AppNavGraph
                     AppNavGraph(
-                        route = route,
-                        callerId = callerId,
-                        calleeId = calleeId,
-                        callId = callId,
+//                        route = route,
+//                        callerAccountId = callerId,
+//                        calleeAccountId = calleeId,
+//                        callId = callId,
                     )
                 }
             }

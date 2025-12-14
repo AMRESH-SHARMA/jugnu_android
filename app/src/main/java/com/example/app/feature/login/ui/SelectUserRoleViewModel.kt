@@ -4,8 +4,8 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.app.core.user.domain.model.UserRole
-import com.example.app.core.user.repository.UserPreferencesRepository
+import com.example.app.core.preferences.user.data.UserPreferencesRepository
+import com.example.app.core.preferences.user.domain.UserRole
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject

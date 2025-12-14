@@ -1,53 +1,59 @@
 package com.example.app.feature.navigation.ui
 
+import Routes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.example.app.feature.listeners.domain.ListenerModel
-import com.example.app.utils.AppConstants
+import com.example.app.core.call.CallStore
+import com.example.app.feature.call.domain.CallStatus
+import kotlinx.coroutines.flow.drop
 
 
 @Composable
-fun AppNavGraph(
-    route: String?,
-    callerId: Long,
-    calleeId: Long,
-    callId: String?
-) {
-    val navController = rememberNavController()
-    LaunchedEffect(route) {
-        when (route) {
-            AppConstants.EVENT_INCOMING_CALL -> {
-                val listener = ListenerModel(
-                    accountId = callerId,
-                    name = "Unknown",
-                    avatar = "",
-                    tagLine = "",
-                    about = "",
-                    age = 0,
-                    gender = "",
-                    experience = 0,
-                    rating = 0.0
-                )
-                navController.openIncomingCall(listener)
-            }
+fun AppNavGraph() {
 
-            AppConstants.EVENT_CALL_ENDED,
-            AppConstants.EVENT_CALL_REJECTED -> {
-                // remove call stack and go home
-                navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.HOME) { inclusive = true }
+    val navController = rememberNavController()
+
+    // ---------------------------------------------------------
+    // 🔥 Call lifecycle → Navigation (RTM-driven)
+    // ---------------------------------------------------------
+    val call by CallStore.call.collectAsState()
+    LaunchedEffect(Unit) {
+        CallStore.call
+            .drop(1) // skip initial null
+            .collect { call ->
+                when (call?.status) {
+                    CallStatus.INCOMING_RINGING -> {
+                        navController.navigate(Routes.Screen.Call.INCOMING)
+                    }
+
+                    CallStatus.OUTGOING_RINGING,
+                    CallStatus.CONNECTING,
+                    CallStatus.CONNECTED -> {
+                        navController.navigate(Routes.Screen.Call.ONGOING)
+                    }
+
+                    CallStatus.ENDED, null -> {
+                        navController.navigate(Routes.Graph.HOME) {
+                            popUpTo(Routes.Graph.CALL) { inclusive = true }
+                        }
+                    }
+
+                    else -> {}
                 }
             }
-
-        }
     }
+
+    // ---------------------------------------------------------
+    // 🧭 Main NavHost
+    // ---------------------------------------------------------
     NavHost(
         navController = navController,
-        startDestination = Routes.SELECT_USER_ROLE
+        startDestination = Routes.Graph.SELECT_USER_ROLE
     ) {
-//        authNavGraph(navController)
         selectUserRoleNavGraph(navController)
         homeNavGraph(navController)
         walletNavGraph(navController)
