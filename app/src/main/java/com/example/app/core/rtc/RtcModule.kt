@@ -1,18 +1,17 @@
 package com.example.app.core.rtc
 
-import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class RtcModule {
+object RTCModule {
 
-    @Binds
-    @Singleton
-    abstract fun bindRtcManager(
-        impl: AgoraRtcManager
-    ): RtcManager
+    @Provides
+    fun provideRtcManagerFactory(
+        factory: DefaultRtcManagerFactory
+    ): RtcManagerFactory = factory
 }
+

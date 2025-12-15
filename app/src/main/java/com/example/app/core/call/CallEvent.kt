@@ -6,6 +6,7 @@ sealed class CallEvent {
         val callId: String,
         val callerAccountId: Long,
         val calleeAccountId: Long,
+        val callType: CallType,
         val channel: String? = null
     ) : CallEvent()
 

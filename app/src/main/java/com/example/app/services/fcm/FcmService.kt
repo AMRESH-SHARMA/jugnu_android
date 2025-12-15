@@ -60,6 +60,7 @@ class FcmService : FirebaseMessagingService() {
                     CallEventBus.emit(
                         CallEvent.Incoming(
                             callId = payload.callId,
+                            callType = payload.callType,
                             callerAccountId = payload.callerAccountId,
                             calleeAccountId = payload.calleeAccountId,
                             channel = payload.channel

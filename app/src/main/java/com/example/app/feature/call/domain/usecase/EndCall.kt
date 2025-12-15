@@ -1,6 +1,7 @@
 package com.example.app.feature.call.domain.usecase
 
 import android.util.Log
+import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
@@ -17,7 +18,8 @@ class EndCall @Inject constructor(
         callId: String,
         callerAccountId: Long,
         calleeAccountId: Long,
-        callStatus: CallStatus
+        callStatus: CallStatus,
+        callType: CallType
     ) {
         Log.d(
             "RTM",
@@ -43,6 +45,7 @@ class EndCall @Inject constructor(
             payload = CallSignalPayload(
                 event = event,
                 callId = callId,
+                callType = callType,
                 callerAccountId = callerAccountId,
                 calleeAccountId = calleeAccountId
             )

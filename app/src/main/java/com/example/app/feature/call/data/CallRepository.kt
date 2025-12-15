@@ -1,19 +1,21 @@
 package com.example.app.feature.call.data
 
+import com.example.app.core.call.CallType
 import javax.inject.Inject
 
 class CallRepository @Inject constructor(
     private val api: CallApi
 ) {
-
     suspend fun startCall(
         callerAccountId: Long,
-        calleeAccountId: Long
+        calleeAccountId: Long,
+        callType: CallType
     ): StartCallDto {
         val res = api.startCall(
             StartCallRequest(
                 callerAccountId = callerAccountId,
-                calleeAccountId = calleeAccountId
+                calleeAccountId = calleeAccountId,
+                callType = callType
             )
         )
 

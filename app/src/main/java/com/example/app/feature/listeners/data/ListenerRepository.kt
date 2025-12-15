@@ -24,5 +24,4 @@ class ListenerRepository @Inject constructor(
             )
         }
     }
-
 }

@@ -45,7 +45,8 @@ class RtmEventListenerImpl(
                                 callId = signal.callId,
                                 callerAccountId = signal.callerAccountId,
                                 calleeAccountId = signal.calleeAccountId,
-                                channel = signal.channel
+                                channel = signal.channel,
+                                callType = signal.callType
                             )
                         )
                     }

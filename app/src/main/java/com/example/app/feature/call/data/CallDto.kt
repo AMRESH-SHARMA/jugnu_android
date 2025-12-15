@@ -1,10 +1,13 @@
 package com.example.app.feature.call.data
 
+import com.example.app.core.call.CallType
+
 // ---------------- REQUESTS ----------------
 
 data class StartCallRequest(
     val callerAccountId: Long,
-    val calleeAccountId: Long
+    val calleeAccountId: Long,
+    val callType: CallType,
 )
 
 data class AcceptCallRequest(

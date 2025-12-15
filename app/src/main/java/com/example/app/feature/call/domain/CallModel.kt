@@ -1,5 +1,7 @@
 package com.example.app.feature.call.domain
 
+import com.example.app.core.call.CallType
+
 data class CallUiState(
     val isMuted: Boolean = false,
     val isSpeakerOn: Boolean = false,
@@ -9,11 +11,13 @@ data class CallUiState(
 data class CallModel(
     val callId: String,
     val status: CallStatus,
+    val callType: CallType,
     val channel: String? = null,          // nullable until accepted
     val callerAccountId: Long,
     val calleeAccountId: Long,
-//    val calleeName: String?,
-//    val calleeAvatar: String?
+
+    val calleeName: String? = null,
+    val calleeAvatar: String? = null
 )
 
 enum class CallStatus {
