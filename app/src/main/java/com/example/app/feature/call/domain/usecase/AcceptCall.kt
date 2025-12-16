@@ -5,7 +5,9 @@ import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
+import com.example.app.feature.call.data.AcceptCallDto
 import com.example.app.feature.call.data.CallRepository
+import com.example.app.feature.call.domain.CallStatus
 import com.example.app.utils.AppConstants
 import javax.inject.Inject
 
@@ -19,15 +21,14 @@ class AcceptCall @Inject constructor(
         callType: CallType,
         callerAccountId: Long,
         calleeAccountId: Long
-    ) {
+    ): AcceptCallDto {
         // 1️⃣ SLOW PATH — Backend source of truth
         // 1️⃣  First (get RTC channel) from Backend and persists call state
         val result = repo.acceptCall(callId)
         val rtcChannel = result.channel
         val rtcToken = result.rtcToken
 
-        Log.d("RTM", "acceptCall API hit → channel=$rtcChannel")
-        Log.d("RTM", "sendCallEvent hit")
+        Log.d("RTM", "acceptCall API hit → channel=$rtcChannel : rtcToken $rtcToken")
 
         // 2️⃣ FAST PATH — Notify caller via RTM
         // RTM event drives UI + RTC join on BOTH devices
@@ -52,5 +53,13 @@ class AcceptCall @Inject constructor(
 //            channel = RtmChannels.user(calleeAccountId),
 //            payload = payload
 //        )
+
+        // ✅ RETURN DATA TO VIEWMODEL
+        return AcceptCallDto(
+            callId = callId,
+            status = CallStatus.CONNECTED,
+            channel = rtcChannel,
+            rtcToken = rtcToken,
+        )
     }
 }

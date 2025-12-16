@@ -1,6 +1,7 @@
 package com.example.app.feature.call.data
 
 import com.example.app.core.call.CallType
+import com.example.app.feature.call.domain.CallStatus
 
 // ---------------- REQUESTS ----------------
 
@@ -34,7 +35,7 @@ data class StartCallDto(
 data class AcceptCallDto(
     val callId: String,
     val channel: String,           // guaranteed after accept
-    val status: String,
+    val status: CallStatus,
     val rtcToken: String
 )
 

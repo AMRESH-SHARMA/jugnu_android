@@ -21,12 +21,20 @@ class CallManager @Inject constructor() {
     // OUTGOING
     // ------------------------------------------------------------
 
-    fun onOutgoing(call: CallModel) {
-        log("onOutgoing()")
+    fun onOutgoing(event: CallEvent.Outgoing) {
         CallStore.set(
-            call.copy(status = CallStatus.OUTGOING_RINGING)
+            CallModel(
+                callId = event.callId,
+                status = CallStatus.OUTGOING_RINGING,
+                callType = event.callType,
+                callerAccountId = event.callerAccountId,
+                calleeAccountId = event.calleeAccountId,
+                calleeName = event.calleeName,
+                calleeAvatar = event.calleeAvatar
+            )
         )
     }
+
 
     // ------------------------------------------------------------
     // INCOMING (RTM)

@@ -7,7 +7,6 @@ import com.example.app.core.audio.AudioPlayer
 import com.example.app.core.audio.AudioType
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
-import com.example.app.core.call.CallManager
 import com.example.app.core.call.CallStore
 import com.example.app.core.call.CallType
 import com.example.app.core.network.ApiResult
@@ -45,7 +44,7 @@ class CallViewModel @Inject constructor(
     private val acceptCallUseCase: AcceptCall,
     private val rejectCallUseCase: RejectCall,
     private val endCallUseCase: EndCall,
-    private val callManager: CallManager,
+//    private val callManager: CallManager,
     private val rtcManagerFactory: RtcManagerFactory,
     private val audioPlayer: AudioPlayer,
     private val userRepository: UserRepository
@@ -98,15 +97,18 @@ class CallViewModel @Inject constructor(
         // 1️⃣ Call lifecycle side-effects (audio / rtc / timer)
         // --------------------------------------------------
         viewModelScope.launch {
-            callStatus.collect { status ->
-                when (status) {
+            CallStore.call.collect { call ->
+                if (call == null) return@collect
+                when (call.status) {
 
                     CallStatus.INCOMING_RINGING -> {
+                        Log.w("RTM", "STATUS $call.status")
                         audioPlayer.play(AudioType.IncomingCall)
                     }
 
                     // 🔔 Caller waiting for callee
                     CallStatus.OUTGOING_RINGING -> {
+                        Log.w("RTM", "STATUS $call.status")
                         if (!audioPlayer.isPlaying()) {
                             audioPlayer.play(AudioType.OutgoingCall)
                         }
@@ -115,27 +117,23 @@ class CallViewModel @Inject constructor(
 
                     // 🔄 Joining RTC
                     CallStatus.CONNECTING -> {
-
-                        if (rtcJoinStarted) {
-                            Log.d("RTM", "RTC join already started, skipping CONNECTING")
-                            return@collect
-                        }
-
-                        rtcJoinStarted = true   // 🔒 lock immediately
-
+                        Log.w("RTM", "STATUS $call.status")
                         val call = CallStore.current() ?: return@collect
                         val channel = call.channel
                         val token = call.rtcToken
 
-                        // 🔐 HARD GUARD — RTC cannot work without these
+                        // ✅ 1. WAIT for RTC data
                         if (channel.isNullOrBlank() || token.isNullOrBlank()) {
-                            Log.e("RTM", "Missing RTC data channel=$channel token=$token")
-                            error.value = "RTM data missing"
-                            cleanupSideEffects()
-                            callManager.onEnded()
-                            CallEventBus.emit(CallEvent.Ended(call.callId))
+                            Log.d("RTM", "RTC data not ready yet, waiting...")
                             return@collect
                         }
+
+                        // ✅ 2. NOW lock
+                        if (rtcJoinStarted) {
+                            Log.w("RTM", "RTC join already started, skipping CONNECTING")
+                            return@collect
+                        }
+                        rtcJoinStarted = true
 
                         // ✅ side-effects ONLY ONCE
                         audioPlayer.stop()
@@ -278,6 +276,8 @@ class CallViewModel @Inject constructor(
             delay(AppConstants.START_RINGING_TIMEOUT)
 
             if (callStatus.value == CallStatus.OUTGOING_RINGING) {
+                val call = CallStore.current() ?: return@launch
+                CallEventBus.emit(CallEvent.Cancelled(call.callId))
                 cleanupSideEffects()
                 endCall() // triggers RTM + backend
             }
@@ -297,7 +297,8 @@ class CallViewModel @Inject constructor(
             if (callStatus.value == CallStatus.CONNECTING) {
                 error.value = "Call connection timeout"
                 cleanupSideEffects()
-                callManager.onEnded()
+                CallEventBus.emit(CallEvent.Ended(CallStore.current()?.callId ?: return@launch))
+//                callManager.onEnded()
             }
         }
     }
@@ -354,7 +355,18 @@ class CallViewModel @Inject constructor(
                     calleeName = calleeName,
                     calleeAvatar = calleeAvatar
                 )
-                callManager.onOutgoing(call)
+//                callManager.onOutgoing(call)
+                CallEventBus.emit(
+                    CallEvent.Outgoing(
+                        callId = call.callId,
+                        callerAccountId = call.callerAccountId,
+                        calleeAccountId = call.calleeAccountId,
+                        callType = call.callType,
+                        calleeName = call.calleeName,
+                        calleeAvatar = call.calleeAvatar
+                    )
+                )
+
             } catch (e: Exception) {
                 error.value = e.message
             }
@@ -363,34 +375,59 @@ class CallViewModel @Inject constructor(
 
     fun acceptCall() {
         val call = CallStore.current() ?: return
+
+        // ✅ Optimistic local state
+        CallEventBus.emit(
+            CallEvent.Accepted(
+                callId = call.callId,
+                channel = null,      // not yet known
+                rtcToken = ""
+            )
+        )
+
         viewModelScope.launch {
             try {
                 // 1️⃣ Signal backend + trigger RTM `call_accepted`
-                // This is the ONLY thing the UI should do on accept
-                acceptCallUseCase(
+                val result = acceptCallUseCase(
                     call.callId,
                     call.callType,
                     call.callerAccountId,
                     call.calleeAccountId
                 )
-
-                // ❌ DO NOT update call state here
-                // CONNECTING will be set when RTM `call_accepted` is received
-                // via EventObserver → CallManager.onAccepted()
-
-                // ❌ DO NOT join RTC here
-                // RTC join should happen AFTER RTM accept,
-                // using the channel received from backend
-
+                // 3️⃣ 🔥 THIS IS THE LINE YOU ASKED ABOUT
+                // Update CallStore with REAL RTC data (callee side)
+                CallEventBus.emit(
+                    CallEvent.Accepted(
+                        callId = call.callId,
+                        channel = result.channel,
+                        rtcToken = result.rtcToken
+                    )
+                )
             } catch (e: Exception) {
                 error.value = e.message
+                // handle failure (If acceptCallUseCase fails rollback to home screen)
+                onAcceptFailed(call, e)
             }
         }
     }
 
+    private fun onAcceptFailed(call: CallModel, error: Throwable) {
+        Log.e("RTM", "Accept failed", error)
+        // 1️⃣ Roll back state
+        CallEventBus.emit(CallEvent.Ended(call.callId))
+
+        // 2️⃣ Cleanup side-effects
+        cleanupSideEffects()
+    }
+
+
     fun rejectCall() {
         val call = CallStore.current() ?: return
 
+        // ✅ 1. STATE FIRST
+        CallEventBus.emit(CallEvent.Rejected(call.callId))
+
+        // ✅ 2. SIDE-EFFECTS AFTER
         cleanupSideEffects()
 
         viewModelScope.launch {
@@ -401,7 +438,7 @@ class CallViewModel @Inject constructor(
                     call.callerAccountId,
                     call.calleeAccountId
                 )
-                callManager.onRejected()
+//                callManager.onRejected()
             } catch (e: Exception) {
                 error.value = e.message
             }
@@ -412,9 +449,11 @@ class CallViewModel @Inject constructor(
         Log.d("RTM", "End Call callViewModel")
         val call = CallStore.current() ?: return
 
-        // 1️⃣ STOP LOCALLY FIRST
+        // ✅ 1. LOCAL STATE UPDATE
+        CallEventBus.emit(CallEvent.Cancelled(call.callId))
+
+        // ✅ 2. SIDE-EFFECTS
         cleanupSideEffects()
-        callManager.onEnded()
 
         // 2️⃣ THEN backend + RTM
         viewModelScope.launch {
@@ -442,7 +481,13 @@ class CallViewModel @Inject constructor(
         rtcEventsJob = viewModelScope.launch {
             manager.events.collect { event ->
                 when (event) {
-                    RtcEvent.Connected -> callManager.onConnected()
+//                    RtcEvent.Connected -> callManager.onConnected()
+                    RtcEvent.Connected -> {
+                        val callId = CallStore.current()?.callId ?: return@collect
+                        CallEventBus.emit(CallEvent.Connected(callId))
+                    }
+
+
                     RtcEvent.Disconnected -> {
                         cleanupSideEffects()
                         endCall() // triggers RTM + backend
