@@ -87,6 +87,10 @@ class CallViewModel @Inject constructor(
     val headerUiState: StateFlow<CallHeaderUiState> =
         _headerUiState.asStateFlow()
 
+    private val _remoteUid = MutableStateFlow<Int?>(null)
+    val remoteUid: StateFlow<Int?> = _remoteUid
+
+
     // ----------------------------------------------------------------
     // STATE REACTIONS (reactive safety net)
     // ----------------------------------------------------------------
@@ -143,6 +147,10 @@ class CallViewModel @Inject constructor(
 
                         rtcManager = rtcManagerFactory.create(call.callType)
                         collectRtcEvents(rtcManager!!)
+                        Log.w(
+                            "RTM",
+                            "RTC MANAGER CREATED → type=${call.callType} class=${rtcManager!!::class.java.simpleName}"
+                        )
 
                         Log.d("RTM", "Joining channel=$channel token=$token")
 
@@ -254,6 +262,7 @@ class CallViewModel @Inject constructor(
     // ----------------------------------------------------------------
 
     private fun cleanupSideEffects() {
+        _remoteUid.value = null
         rtcJoinStarted = false
         rtcEventsJob?.cancel()
         rtcEventsJob = null
@@ -482,12 +491,19 @@ class CallViewModel @Inject constructor(
         rtcEventsJob = viewModelScope.launch {
             manager.events.collect { event ->
                 when (event) {
-//                    RtcEvent.Connected -> callManager.onConnected()
                     RtcEvent.Connected -> {
                         val callId = CallStore.current()?.callId ?: return@collect
                         CallEventBus.emit(CallEvent.Connected(callId))
                     }
 
+                    is RtcEvent.RemoteJoined -> {
+                        // 🔥 THIS WAS MISSING
+                        _remoteUid.value = event.uid
+                    }
+
+                    is RtcEvent.RemoteLeft -> {
+                        _remoteUid.value = null
+                    }
 
                     RtcEvent.Disconnected -> {
                         cleanupSideEffects()
@@ -506,6 +522,9 @@ class CallViewModel @Inject constructor(
             }
         }
     }
+
+    fun currentRtcManager(): RtcManager? = rtcManager
+
 
     // ----------------------------------------------------------------
     // AUDIO CONTROLS

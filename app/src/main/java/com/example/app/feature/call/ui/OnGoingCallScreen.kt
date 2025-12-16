@@ -1,6 +1,7 @@
 package com.example.app.feature.call.ui
 
-
+import android.util.Log
+import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
+import com.example.app.core.call.CallType
+import com.example.app.core.rtc.AgoraVideoRtcManager
 import com.example.app.feature.call.domain.CallStatus
 
 @Composable
@@ -45,77 +49,193 @@ fun OnGoingCallScreen(
     val uiState by vm.uiState.collectAsState()
     val status by vm.callStatus.collectAsState()
 
+
     if (call == null || status == null) return
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
+    // 🔑 Ask VM for the current RTC manager (do NOT create one here)
+    val rtcManager = vm.currentRtcManager()
 
-        // ----------------------------------------------------------------
-        // TOP — USER INFO + STATUS
-        // ----------------------------------------------------------------
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.fillMaxWidth()
+    Log.w(
+        "RTM",
+        "UI RENDER → status=$status callType=${call!!.callType} rtc=${rtcManager?.javaClass?.simpleName}"
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // ------------------------------------------------------------
+        // 🎥 VIDEO LAYER (only when VIDEO call + connected)
+        // ------------------------------------------------------------
+        if (
+            call!!.callType == CallType.VIDEO &&
+            status == CallStatus.CONNECTED &&
+            rtcManager is AgoraVideoRtcManager
         ) {
-
-            // Avatar
-            if (header.avatarUrl != null) {
-                AsyncImage(
-                    model = header.avatarUrl,
-                    contentDescription = "User avatar",
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(96.dp)
-                        .clip(CircleShape)
-                        .background(Color.Gray.copy(alpha = 0.3f))
-                )
-            }
-
-            Spacer(Modifier.height(12.dp))
-
-            // Name
-            Text(
-                text = header.name,
-                style = MaterialTheme.typography.titleLarge
-            )
-
-            Spacer(Modifier.height(6.dp))
-
-            // Status text
-            Text(
-                text = when (status) {
-                    CallStatus.OUTGOING_RINGING -> "Calling…"
-                    CallStatus.CONNECTING -> "Connecting…"
-                    CallStatus.CONNECTED -> uiState.durationLabel
-                    else -> ""
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = Color.Gray
+            VideoArea(
+                videoRtcManager = rtcManager,
+                remoteUid = vm.remoteUid.collectAsState().value
             )
         }
 
-        // ----------------------------------------------------------------
-        // BOTTOM — CONTROLS
-        // ----------------------------------------------------------------
-        CallControls(
-            status = status!!,
-            isMuted = uiState.isMuted,
-            isSpeakerOn = uiState.isSpeakerOn,
-            onToggleMute = vm::toggleMute,
-            onToggleSpeaker = vm::toggleSpeaker,
-            onEndCall = vm::endCall
-        )
+
+        // ------------------------------------------------------------
+        // 🔊 VOICE / OVERLAY UI (always on top)
+        // ------------------------------------------------------------
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.SpaceBetween
+        ) {
+
+            // --------------------------------------------------------
+            // TOP — USER INFO + STATUS (for VOICE or as overlay on VIDEO)
+            // --------------------------------------------------------
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+
+                // Avatar (hide for video if you want later)
+                if (call!!.callType == CallType.VOICE) {
+                    if (header.avatarUrl != null) {
+                        AsyncImage(
+                            model = header.avatarUrl,
+                            contentDescription = "User avatar",
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .size(96.dp)
+                                .clip(CircleShape)
+                                .background(Color.Gray.copy(alpha = 0.3f))
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        text = header.name,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+
+                    Spacer(Modifier.height(6.dp))
+                }
+
+                Text(
+                    text = when (status) {
+                        CallStatus.OUTGOING_RINGING -> "Calling…"
+                        CallStatus.CONNECTING -> "Connecting…"
+                        CallStatus.CONNECTED -> uiState.durationLabel
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+            }
+
+            // --------------------------------------------------------
+            // BOTTOM — CONTROLS
+            // --------------------------------------------------------
+            CallControls(
+                status = status!!,
+                isMuted = uiState.isMuted,
+                isSpeakerOn = uiState.isSpeakerOn,
+                onToggleMute = vm::toggleMute,
+                onToggleSpeaker = vm::toggleSpeaker,
+                onEndCall = vm::endCall
+            )
+        }
     }
 }
+
+//@Composable
+//fun OnGoingCallScreen(
+//    vm: CallViewModel
+//) {
+//    // 🔥 Observe only what is needed
+//    val call by vm.callModel.collectAsState()
+//    val header by vm.headerUiState.collectAsState()
+//    val uiState by vm.uiState.collectAsState()
+//    val status by vm.callStatus.collectAsState()
+//
+//    if (call.callType == CallType.VIDEO && status == CallStatus.CONNECTED) {
+//        VideoArea(
+//            videoRtcManager = vm.getVideoRtcManager()
+//        )
+//    }
+//
+//    Column(
+//        modifier = Modifier
+//            .fillMaxSize()
+//            .padding(24.dp),
+//        verticalArrangement = Arrangement.SpaceBetween
+//    ) {
+//
+//        // ----------------------------------------------------------------
+//        // TOP — USER INFO + STATUS
+//        // ----------------------------------------------------------------
+//        Column(
+//            horizontalAlignment = Alignment.CenterHorizontally,
+//            modifier = Modifier.fillMaxWidth()
+//        ) {
+//
+//            // Avatar
+//            if (header.avatarUrl != null) {
+//                AsyncImage(
+//                    model = header.avatarUrl,
+//                    contentDescription = "User avatar",
+//                    modifier = Modifier
+//                        .size(96.dp)
+//                        .clip(CircleShape)
+//                )
+//            } else {
+//                Box(
+//                    modifier = Modifier
+//                        .size(96.dp)
+//                        .clip(CircleShape)
+//                        .background(Color.Gray.copy(alpha = 0.3f))
+//                )
+//            }
+//
+//            Spacer(Modifier.height(12.dp))
+//
+//            // Name
+//            Text(
+//                text = header.name,
+//                style = MaterialTheme.typography.titleLarge
+//            )
+//
+//            Spacer(Modifier.height(6.dp))
+//
+//            // Status text
+//            Text(
+//                text = when (status) {
+//                    CallStatus.OUTGOING_RINGING -> "Calling…"
+//                    CallStatus.CONNECTING -> "Connecting…"
+//                    CallStatus.CONNECTED -> uiState.durationLabel
+//                    else -> ""
+//                },
+//                style = MaterialTheme.typography.bodyMedium,
+//                color = Color.Gray
+//            )
+//        }
+//
+//        // ----------------------------------------------------------------
+//        // BOTTOM — CONTROLS
+//        // ----------------------------------------------------------------
+//        CallControls(
+//            status = status!!,
+//            isMuted = uiState.isMuted,
+//            isSpeakerOn = uiState.isSpeakerOn,
+//            onToggleMute = vm::toggleMute,
+//            onToggleSpeaker = vm::toggleSpeaker,
+//            onEndCall = vm::endCall
+//        )
+//    }
+//}
 
 
 @Composable
@@ -209,3 +329,39 @@ private fun CallControls(
         }
     }
 }
+
+@Composable
+fun VideoArea(
+    videoRtcManager: AgoraVideoRtcManager,
+    remoteUid: Int?
+) {
+    Box(modifier = Modifier.fillMaxSize()) {
+
+        // 🔵 Remote video
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                SurfaceView(context)
+            },
+            update = { view ->
+                if (remoteUid != null) {
+                    videoRtcManager.setupRemoteVideo(remoteUid, view)
+                }
+            }
+        )
+
+        // 🟢 Local preview (small overlay)
+        AndroidView(
+            modifier = Modifier
+                .size(120.dp)
+                .align(Alignment.BottomEnd)
+                .padding(16.dp),
+            factory = { context ->
+                SurfaceView(context).apply {
+                    videoRtcManager.setupLocalVideo(this)
+                }
+            }
+        )
+    }
+}
+
