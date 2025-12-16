@@ -1,5 +1,6 @@
 package com.example.app.feature.call.domain.usecase
 
+import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
@@ -13,6 +14,7 @@ class RejectCall @Inject constructor(
 ) {
     suspend operator fun invoke(
         callId: String,
+        callType: CallType,
         callerAccountId: Long,
         calleeAccountId: Long
     ) {
@@ -22,6 +24,7 @@ class RejectCall @Inject constructor(
             payload = CallSignalPayload(
                 event = AppConstants.EVENT_CALL_REJECTED,
                 callId = callId,
+                callType = callType,
                 callerAccountId = callerAccountId,
                 calleeAccountId = calleeAccountId
             )

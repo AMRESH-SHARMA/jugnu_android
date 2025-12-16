@@ -1,12 +1,18 @@
 package com.example.app.feature.call.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.app.core.call.CallManager
+import com.example.app.core.audio.AudioPlayer
+import com.example.app.core.audio.AudioType
+import com.example.app.core.call.CallEvent
+import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallStore
-import com.example.app.core.rtc.AgoraEventListener
+import com.example.app.core.call.CallType
+import com.example.app.core.network.ApiResult
 import com.example.app.core.rtc.RtcEvent
 import com.example.app.core.rtc.RtcManager
+import com.example.app.core.rtc.RtcManagerFactory
 import com.example.app.core.session.SessionManager
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
@@ -15,6 +21,8 @@ import com.example.app.feature.call.domain.usecase.AcceptCall
 import com.example.app.feature.call.domain.usecase.EndCall
 import com.example.app.feature.call.domain.usecase.RejectCall
 import com.example.app.feature.call.domain.usecase.StartCall
+import com.example.app.feature.user.data.UserRepository
+import com.example.app.utils.AppConstants
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -36,9 +44,11 @@ class CallViewModel @Inject constructor(
     private val acceptCallUseCase: AcceptCall,
     private val rejectCallUseCase: RejectCall,
     private val endCallUseCase: EndCall,
-    private val callManager: CallManager,
-    private val rtcManager: RtcManager
-) : ViewModel(), AgoraEventListener {
+//    private val callManager: CallManager,
+    private val rtcManagerFactory: RtcManagerFactory,
+    private val audioPlayer: AudioPlayer,
+    private val userRepository: UserRepository
+) : ViewModel() {
 
     // ----------------------------------------------------------------
     // STATE
@@ -52,6 +62,8 @@ class CallViewModel @Inject constructor(
 
     val error = MutableStateFlow<String?>(null)
 
+    private var rtcManager: RtcManager? = null
+
     val callStatus: StateFlow<CallStatus?> =
         callModel
             .map { it?.status }
@@ -63,216 +75,244 @@ class CallViewModel @Inject constructor(
             )
 
     // ----------------------------------------------------------------
-    // TIMER
+    // TIMERS
     // ----------------------------------------------------------------
 
     private var timerJob: Job? = null
     private var connectTimeoutJob: Job? = null
+    private var ringingTimeoutJob: Job? = null
+    private var rtcEventsJob: Job? = null
+    private var rtcJoinStarted = false
+    private val _headerUiState = MutableStateFlow(CallHeaderUiState())
+    val headerUiState: StateFlow<CallHeaderUiState> =
+        _headerUiState.asStateFlow()
+
+    // ----------------------------------------------------------------
+    // STATE REACTIONS (reactive safety net)
+    // ----------------------------------------------------------------
 
     init {
+
+        // --------------------------------------------------
+        // 1️⃣ Call lifecycle side-effects (audio / rtc / timer)
+        // Observers the store, Reacts to store updates and trigger side-effects.
+        // --------------------------------------------------
         viewModelScope.launch {
-            rtcManager.events.collect { event ->
-                when (event) {
+            CallStore.call.collect { call ->
+                if (call == null) return@collect
+                when (call.status) {
 
-                    RtcEvent.Connected -> {
-                        callManager.onConnected()
+                    CallStatus.INCOMING_RINGING -> {
+                        Log.w("RTM", "STATUS $call.status")
+                        audioPlayer.play(AudioType.IncomingCall)
                     }
 
-                    RtcEvent.Disconnected -> {
-                        rtcManager.leave()          // 🔥 SAFETY
-                        callManager.onEnded()
+                    // 🔔 Caller waiting for callee
+                    CallStatus.OUTGOING_RINGING -> {
+                        Log.w("RTM", "STATUS $call.status")
+                        if (!audioPlayer.isPlaying()) {
+                            audioPlayer.play(AudioType.OutgoingCall)
+                        }
+                        startRingingTimeout()
                     }
 
-                    is RtcEvent.Error -> {
-                        error.value = "RTC error ${event.code}"
-                        rtcManager.leave()          // 🔥 SAFETY
-                        callManager.onEnded()
+                    // 🔄 Joining RTC
+                    CallStatus.CONNECTING -> {
+                        Log.w("RTM", "STATUS $call.status")
+                        val call = CallStore.current() ?: return@collect
+                        val channel = call.channel
+                        val token = call.rtcToken
+
+                        // ✅ 1. WAIT for RTC data
+                        if (channel.isNullOrBlank() || token.isNullOrBlank()) {
+                            Log.d("RTM", "RTC data not ready yet, waiting...")
+                            return@collect
+                        }
+
+                        // ✅ 2. NOW lock
+                        if (rtcJoinStarted) {
+                            Log.w("RTM", "RTC join already started, skipping CONNECTING")
+                            return@collect
+                        }
+                        rtcJoinStarted = true
+
+                        // ✅ side-effects ONLY ONCE
+                        audioPlayer.stop()
+                        cancelRingingTimeout()
+                        startConnectTimeout()
+
+                        rtcManager = rtcManagerFactory.create(call.callType)
+                        collectRtcEvents(rtcManager!!)
+
+                        Log.d("RTM", "Joining channel=$channel token=$token")
+
+                        rtcManager!!.join(
+                            callId = call.callId,
+                            channel = channel,
+                            token = token
+                        )
                     }
+
+
+                    // ✅ Media connected
+                    CallStatus.CONNECTED -> {
+                        Log.d("RTM", "Connected")
+                        audioPlayer.stop()
+                        cancelRingingTimeout()
+                        cancelConnectTimeout()
+                        startTimer()
+                    }
+
+                    // ❌ Call finished
+                    CallStatus.ENDED -> {
+                        cleanupSideEffects()
+                    }
+
+                    else -> Unit
                 }
             }
         }
-    }
 
+        // --------------------------------------------------
+        // 2️⃣ Resolve header user (OUTGOING = local, INCOMING = API)
+        // --------------------------------------------------
+        viewModelScope.launch {
+            callModel
+                .collect { call ->
+                    if (call == null) {
+                        _headerUiState.value = CallHeaderUiState()
+                        return@collect
+                    }
 
-    private fun startTimer() {
-        if (timerJob != null) return
+                    // ✅ OUTGOING CALL → use local data
+                    if (SessionManager.userId == call.callerAccountId &&
+                        call.calleeName != null
+                    ) {
+                        _headerUiState.value = CallHeaderUiState(
+                            name = call.calleeName,
+                            avatarUrl = call.calleeAvatar,
+//                            subtitle = callStatusToSubtitle(call.status),
+                            isLoading = false
+                        )
+                        return@collect
+                    }
 
-        timerJob = viewModelScope.launch {
-            var seconds = 0
-            while (isActive) {
-                delay(1_000)
-                seconds++
-                _uiState.update {
-                    it.copy(durationLabel = formatDuration(seconds))
+                    // ✅ INCOMING CALL → fetch from API
+                    val remoteUserId = call.callerAccountId
+
+                    _headerUiState.value = CallHeaderUiState(
+                        isLoading = true,
+//                        subtitle = callStatusToSubtitle(call.status)
+                    )
+
+                    when (val result = userRepository.getCallerInfo(remoteUserId)) {
+
+                        is ApiResult.Success -> {
+                            _headerUiState.value = CallHeaderUiState(
+                                name = result.data.name,
+                                avatarUrl = result.data.avatar,
+//                                subtitle = callStatusToSubtitle(call.status),
+                                isLoading = false
+                            )
+                        }
+
+                        is ApiResult.Error -> {
+                            _headerUiState.value = CallHeaderUiState(
+                                name = "Unknown",
+                                avatarUrl = null,
+//                                subtitle = callStatusToSubtitle(call.status),
+                                isLoading = false
+                            )
+                        }
+                    }
                 }
+        }
+        // --------------------------------------------------
+        // 3️⃣ Subtitle reacts ONLY to call status
+        // --------------------------------------------------
+//        viewModelScope.launch {
+//            callStatus.collect { status ->
+//                _headerUiState.update {
+//                    it.copy(subtitle = callStatusToSubtitle(status))
+//                }
+//            }
+//        }
+    }
+
+
+//    private fun callStatusToSubtitle(status: CallStatus?): String =
+//        when (status) {
+//            CallStatus.INCOMING_RINGING -> "Incoming call"
+//            CallStatus.OUTGOING_RINGING -> "Calling…"
+//            CallStatus.CONNECTED -> "Connected"
+//            CallStatus.CONNECTING -> "Connecting…"
+//            else -> ""
+//        }
+
+    // ----------------------------------------------------------------
+    // CLEANUP (single source)
+    // ----------------------------------------------------------------
+
+    private fun cleanupSideEffects() {
+        rtcJoinStarted = false
+        rtcEventsJob?.cancel()
+        rtcEventsJob = null
+
+        audioPlayer.stop()
+        rtcManager?.leave()
+        rtcManager = null
+        cancelRingingTimeout()
+        cancelConnectTimeout()
+        stopTimer()
+    }
+
+    // ----------------------------------------------------------------
+    // TIMEOUTS
+    // ----------------------------------------------------------------
+
+    private fun startRingingTimeout() {
+        if (ringingTimeoutJob != null) return
+
+        ringingTimeoutJob = viewModelScope.launch {
+            delay(AppConstants.START_RINGING_TIMEOUT)
+
+            if (callStatus.value == CallStatus.OUTGOING_RINGING) {
+                val call = CallStore.current() ?: return@launch
+                CallEventBus.emit(CallEvent.Cancelled(call.callId))
+                cleanupSideEffects()
+                endCall() // triggers RTM + backend
             }
         }
     }
 
-    private fun stopTimer() {
-        timerJob?.cancel()
-        timerJob = null
+    private fun cancelRingingTimeout() {
+        ringingTimeoutJob?.cancel()
+        ringingTimeoutJob = null
     }
 
-    private fun formatDuration(sec: Int): String =
-        "%02d:%02d".format(sec / 60, sec % 60)
+    private fun startConnectTimeout() {
+        if (connectTimeoutJob != null) return
 
-    // ----------------------------------------------------------------
-    // USER ACTIONS
-    // ----------------------------------------------------------------
-
-    fun startCall(callerAccountId: Long, calleeAccountId: Long) {
-        viewModelScope.launch {
-            try {
-                val call = startCallUseCase(callerAccountId, calleeAccountId)
-                callManager.onOutgoing(call)
-            } catch (e: Exception) {
-                error.value = e.message
+        connectTimeoutJob = viewModelScope.launch {
+            delay(AppConstants.START_CONNECT_TIMEOUT)
+            if (callStatus.value == CallStatus.CONNECTING) {
+                error.value = "Call connection timeout"
+                cleanupSideEffects()
+                CallEventBus.emit(CallEvent.Ended(CallStore.current()?.callId ?: return@launch))
+//                callManager.onEnded()
             }
         }
     }
 
-    fun acceptCall() {
-        val call = CallStore.current() ?: return
-
-        viewModelScope.launch {
-            try {
-                acceptCallUseCase(
-                    call.callId,
-                    call.callerAccountId,
-                    call.calleeAccountId
-                )
-
-                callManager.onConnecting()
-
-                rtcManager.join(
-                    channel = call.channel!!,
-                    uid = SessionManager.userId.toInt()
-                )
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
+    private fun cancelConnectTimeout() {
+        connectTimeoutJob?.cancel()
+        connectTimeoutJob = null
     }
-
-    fun rejectCall() {
-        val call = CallStore.current() ?: return
-
-        viewModelScope.launch {
-            try {
-                rejectCallUseCase(
-                    call.callId,
-                    call.callerAccountId,
-                    call.calleeAccountId
-                )
-                callManager.onRejected()
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    fun endCall() {
-        val call = CallStore.current() ?: return
-
-        viewModelScope.launch {
-            try {
-                endCallUseCase(
-                    call.callId,
-                    call.callerAccountId,
-                    call.calleeAccountId,
-                    call.status
-                )
-                callManager.onEnded()
-                rtcManager.leave()
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    // ----------------------------------------------------------------
-    // AUDIO CONTROLS (UI ONLY)
-    // ----------------------------------------------------------------
-
-    fun toggleMute() {
-        _uiState.update { it.copy(isMuted = !it.isMuted) }
-    }
-
-    fun toggleSpeaker() {
-        _uiState.update { it.copy(isSpeakerOn = !it.isSpeakerOn) }
-    }
-
-    // ----------------------------------------------------------------
-    // AGORA CALLBACKS
-    // ----------------------------------------------------------------
-
-    override fun onConnected() {
-        callManager.onConnected()
-    }
-
-    override fun onDisconnected() {
-        callManager.onEnded()
-    }
-
-    override fun onError(errorCode: Int) {
-        error.value = "RTC error: $errorCode"
-        callManager.onEnded()
-    }
-}
-
-
-/*
-@HiltViewModel
-class CallViewModel @Inject constructor(
-    private val startCallUseCase: StartCall,
-    private val acceptCallUseCase: AcceptCall,
-    private val rejectCallUseCase: RejectCall,
-    private val endCallUseCase: EndCall,
-    private val callManager: CallManager,
-    private val rtcManager: RtcManager
-) : ViewModel(), AgoraEventListener {
-
-    // ----------------------------------------------------------------
-    // STATE
-    // ----------------------------------------------------------------
-
-    /** 🔥 SINGLE SOURCE OF TRUTH */
-    val callModel: StateFlow<CallModel?> = CallStore.call
-
-    private val _uiState = MutableStateFlow(CallUiState())
-    val uiState: StateFlow<CallUiState> = _uiState.asStateFlow()
-
-    val error = MutableStateFlow<String?>(null)
-
-    val callStatus: StateFlow<CallStatus?> =
-        callModel
-            .map { it?.status }
-            .distinctUntilChanged()
-            .stateIn(
-                viewModelScope,
-                SharingStarted.WhileSubscribed(5_000),
-                null
-            )
 
     // ----------------------------------------------------------------
     // TIMER
     // ----------------------------------------------------------------
 
-    private var timerJob: Job? = null
-
-    init {
-        viewModelScope.launch {
-            callStatus.collect { status ->
-                when (status) {
-                    CallStatus.CONNECTED -> startTimer()
-                    CallStatus.ENDED -> stopTimer()
-                    else -> Unit
-                }
-            }
-        }
-    }
-
     private fun startTimer() {
         if (timerJob != null) return
 
@@ -300,11 +340,34 @@ class CallViewModel @Inject constructor(
     // USER ACTIONS
     // ----------------------------------------------------------------
 
-    fun startCall(callerAccountId: Long, calleeAccountId: Long) {
+    fun startCall(
+        callType: CallType,
+        callerAccountId: Long,
+        calleeAccountId: Long,
+        calleeName: String,
+        calleeAvatar: String?
+    ) {
         viewModelScope.launch {
             try {
-                val call = startCallUseCase(callerAccountId, calleeAccountId)
-                callManager.onOutgoing(call)
+                val call = startCallUseCase(
+                    callType,
+                    callerAccountId,
+                    calleeAccountId,
+                    calleeName = calleeName,
+                    calleeAvatar = calleeAvatar
+                )
+//                callManager.onOutgoing(call)
+                CallEventBus.emit(
+                    CallEvent.Outgoing(
+                        callId = call.callId,
+                        callerAccountId = call.callerAccountId,
+                        calleeAccountId = call.calleeAccountId,
+                        callType = call.callType,
+                        calleeName = call.calleeName,
+                        calleeAvatar = call.calleeAvatar
+                    )
+                )
+
             } catch (e: Exception) {
                 error.value = e.message
             }
@@ -314,37 +377,69 @@ class CallViewModel @Inject constructor(
     fun acceptCall() {
         val call = CallStore.current() ?: return
 
+        // ✅ Optimistic local state
+        CallEventBus.emit(
+            CallEvent.Accepted(
+                callId = call.callId,
+                channel = null,      // not yet known
+                rtcToken = ""
+            )
+        )
+
         viewModelScope.launch {
             try {
-                acceptCallUseCase(
+                // 1️⃣ Signal backend + trigger RTM `call_accepted`
+                val result = acceptCallUseCase(
                     call.callId,
+                    call.callType,
                     call.callerAccountId,
                     call.calleeAccountId
                 )
-
-                callManager.onConnecting()
-
-                rtcManager.join(
-                    channel = call.channel!!,
-                    uid = SessionManager.userId.toInt()
+                // 3️⃣ 🔥 THIS IS THE LINE YOU ASKED ABOUT
+                // Update CallStore with REAL RTC data (callee side)
+                CallEventBus.emit(
+                    CallEvent.Accepted(
+                        callId = call.callId,
+                        channel = result.channel,
+                        rtcToken = result.rtcToken
+                    )
                 )
             } catch (e: Exception) {
                 error.value = e.message
+                // handle failure (If acceptCallUseCase fails rollback to home screen)
+                onAcceptFailed(call, e)
             }
         }
     }
 
+    private fun onAcceptFailed(call: CallModel, error: Throwable) {
+        Log.e("RTM", "Accept failed", error)
+        // 1️⃣ Roll back state
+        CallEventBus.emit(CallEvent.Ended(call.callId))
+
+        // 2️⃣ Cleanup side-effects
+        cleanupSideEffects()
+    }
+
+
     fun rejectCall() {
         val call = CallStore.current() ?: return
+
+        // ✅ 1. STATE FIRST
+        CallEventBus.emit(CallEvent.Rejected(call.callId))
+
+        // ✅ 2. SIDE-EFFECTS AFTER
+        cleanupSideEffects()
 
         viewModelScope.launch {
             try {
                 rejectCallUseCase(
                     call.callId,
+                    call.callType,
                     call.callerAccountId,
                     call.calleeAccountId
                 )
-                callManager.onRejected()
+//                callManager.onRejected()
             } catch (e: Exception) {
                 error.value = e.message
             }
@@ -352,18 +447,25 @@ class CallViewModel @Inject constructor(
     }
 
     fun endCall() {
+        Log.d("RTM", "End Call callViewModel")
         val call = CallStore.current() ?: return
 
+        // ✅ 1. LOCAL STATE UPDATE
+        CallEventBus.emit(CallEvent.Cancelled(call.callId))
+
+        // ✅ 2. SIDE-EFFECTS
+        cleanupSideEffects()
+
+        // 2️⃣ THEN backend + RTM
         viewModelScope.launch {
             try {
                 endCallUseCase(
                     call.callId,
                     call.callerAccountId,
                     call.calleeAccountId,
-                    call.status
+                    call.status,
+                    call.callType,
                 )
-                callManager.onEnded()
-                rtcManager.leave()
             } catch (e: Exception) {
                 error.value = e.message
             }
@@ -371,7 +473,42 @@ class CallViewModel @Inject constructor(
     }
 
     // ----------------------------------------------------------------
-    // AUDIO CONTROLS (UI ONLY)
+    // RTC EVENTS
+    // ----------------------------------------------------------------
+
+    private fun collectRtcEvents(manager: RtcManager) {
+        if (rtcEventsJob != null) return   // ✅ prevent duplicate collectors
+
+        rtcEventsJob = viewModelScope.launch {
+            manager.events.collect { event ->
+                when (event) {
+//                    RtcEvent.Connected -> callManager.onConnected()
+                    RtcEvent.Connected -> {
+                        val callId = CallStore.current()?.callId ?: return@collect
+                        CallEventBus.emit(CallEvent.Connected(callId))
+                    }
+
+
+                    RtcEvent.Disconnected -> {
+                        cleanupSideEffects()
+                        endCall() // triggers RTM + backend
+                    }
+
+                    is RtcEvent.Error -> {
+                        Log.d("RTM", "RTC error ${event.code}")
+                        error.value = "RTC error ${event.code}"
+                        cleanupSideEffects()
+                        endCall() // triggers RTM + backend
+                    }
+
+                    else -> {}
+                }
+            }
+        }
+    }
+
+    // ----------------------------------------------------------------
+    // AUDIO CONTROLS
     // ----------------------------------------------------------------
 
     fun toggleMute() {
@@ -382,161 +519,8 @@ class CallViewModel @Inject constructor(
         _uiState.update { it.copy(isSpeakerOn = !it.isSpeakerOn) }
     }
 
-    // ----------------------------------------------------------------
-    // AGORA CALLBACKS
-    // ----------------------------------------------------------------
-
-    override fun onConnected() {
-        callManager.onConnected()
-    }
-
-    override fun onDisconnected() {
-        callManager.onEnded()
-    }
-
-    override fun onError(errorCode: Int) {
-        error.value = "RTC error: $errorCode"
-        callManager.onEnded()
+    override fun onCleared() {
+        cleanupSideEffects()
+        super.onCleared()
     }
 }
-
-
-/*
-@HiltViewModel
-class CallViewModel @Inject constructor(
-    private val startCallUseCase: StartCall,
-    private val acceptCall: AcceptCall,
-    private val rejectCallUseCase: RejectCall,
-    private val endCallUseCase: EndCall,
-    private val callManager: CallManager   // or CallActionCoordinator
-    private val rtcManager: RtcManager
-) : ViewModel(), AgoraEventListener {
-
-    // 🔥 SINGLE SOURCE
-    val callModel: StateFlow<CallModel?> = CallStore.call
-
-    val uiState = MutableStateFlow(CallUiState())
-    val error = MutableStateFlow<String?>(null)
-
-    fun startCall(callerAccountId: Long, calleeAccountId: Long) {
-        viewModelScope.launch {
-            try {
-                val call = startCallUseCase(callerAccountId, calleeAccountId)
-                callManager.onOutgoing(call)
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    fun acceptCall() {
-        val call = CallStore.current() ?: return
-        viewModelScope.launch {
-            acceptCall(call.callId, call.callerAccountId, call.calleeAccountId)
-            // RTM response will update CallStore
-            // 🔥 move to CONNECTING immediately
-            callManager.onConnecting(call.callId)
-
-            rtcManager.join(
-                channel = call.channel!!,
-                uid = SessionManager.userId.toInt()
-            )
-        }
-    }
-
-    fun rejectCall() {
-        val call = callModel.value ?: return
-
-        viewModelScope.launch {
-            try {
-                rejectCallUseCase(
-                    callId = call.callId,
-                    callerAccountId = call.callerAccountId,
-                    calleeAccountId = call.calleeAccountId
-                )
-
-                // 🔥 LOCAL state update (DO NOT WAIT FOR RTM)
-                callManager.onRejected()
-
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    fun endCall() {
-        val call = callModel.value ?: return
-
-        viewModelScope.launch {
-            try {
-                endCallUseCase(
-                    callId = call.callId,
-                    callerAccountId = call.callerAccountId,
-                    calleeAccountId = call.calleeAccountId,
-                    callStatus = call.status
-                )
-
-                // 🔥 LOCAL first
-                callManager.onEnded()
-
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    val callStatus = callModel
-        .map { it?.status }
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = null
-        )
-
-    val durationLabel = uiState
-        .map { it.durationLabel }
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = "00:00"
-        )
-
-    val audioUiState = uiState
-        .map { it.isMuted to it.isSpeakerOn }
-        .distinctUntilChanged()
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
-            initialValue = false to false
-        )
-
-    fun toggleMute() {
-        uiState.update {
-            it.copy(isMuted = !it.isMuted)
-        }
-    }
-
-    fun toggleSpeaker() {
-        uiState.update {
-            it.copy(isSpeakerOn = !it.isSpeakerOn)
-        }
-    }
-
-    // Agora RTC
-    fun onConnected() {
-        callManager.onConnected()
-    }
-
-    fun onDisconnected() {
-        callManager.onEnded()
-    }
-
-    fun onError(errorCode: Int) {
-        kotlin.error.value = "RTC error: $errorCode"
-        callManager.onEnded()
-    }
-
-}
-*/

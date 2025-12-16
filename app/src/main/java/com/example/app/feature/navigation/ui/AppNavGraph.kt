@@ -1,16 +1,14 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.core.call.CallStore
 import com.example.app.feature.call.domain.CallStatus
 import kotlinx.coroutines.flow.drop
-
 
 @Composable
 fun AppNavGraph() {
@@ -20,7 +18,7 @@ fun AppNavGraph() {
     // ---------------------------------------------------------
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
-    val call by CallStore.call.collectAsState()
+//    val call by CallStore.call.collectAsState()
     LaunchedEffect(Unit) {
         CallStore.call
             .drop(1) // skip initial null
@@ -37,6 +35,7 @@ fun AppNavGraph() {
                     }
 
                     CallStatus.ENDED, null -> {
+                        Log.d("RTM", "NAVIAGTE TO END")
                         navController.navigate(Routes.Graph.HOME) {
                             popUpTo(Routes.Graph.CALL) { inclusive = true }
                         }
