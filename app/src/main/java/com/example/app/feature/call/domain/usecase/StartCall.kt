@@ -1,5 +1,6 @@
 package com.example.app.feature.call.domain.usecase
 
+import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
@@ -15,14 +16,18 @@ class StartCall @Inject constructor(
 ) {
 
     suspend operator fun invoke(
+        callType: CallType,
         callerAccountId: Long,
-        calleeAccountId: Long
+        calleeAccountId: Long,
+        calleeName: String,
+        calleeAvatar: String?
     ): CallModel {
 
         // 1️⃣ SLOW PATH FIRST — backend creates call (SOURCE OF TRUTH)
         val dto = repo.startCall(
             callerAccountId = callerAccountId,
-            calleeAccountId = calleeAccountId
+            calleeAccountId = calleeAccountId,
+            callType = callType
         )
 
         // 2️⃣ FAST PATH — notify callee via RTM
@@ -31,6 +36,7 @@ class StartCall @Inject constructor(
             payload = CallSignalPayload(
                 event = AppConstants.EVENT_INCOMING_CALL,
                 callId = dto.callId,
+                callType = callType,
                 callerAccountId = callerAccountId,
                 calleeAccountId = calleeAccountId,
                 channel = dto.channel
@@ -41,9 +47,13 @@ class StartCall @Inject constructor(
         return CallModel(
             callId = dto.callId,
             status = CallStatus.INCOMING_RINGING,
+            callType = callType,
             channel = dto.channel,
             callerAccountId = callerAccountId,
-            calleeAccountId = calleeAccountId
+            calleeAccountId = calleeAccountId,
+            calleeName = calleeName,
+            calleeAvatar = calleeAvatar,
+            rtcToken = null
         )
     }
 }

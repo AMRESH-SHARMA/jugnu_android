@@ -10,19 +10,26 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/*
+* Observes store and decides how state should change
+* */
+
+
 @Singleton
 class EventObserver @Inject constructor(
     private val callManager: CallManager,
     @ApplicationScope private val scope: CoroutineScope
 ) {
+
     init {
         scope.launch {
             CallEventBus.events.collect { event ->
-                Log.d("CALL", "Observer received event=$event")
-
+                Log.d("RTM", "Observer received event=$event")
                 when (event) {
+                    is CallEvent.Outgoing -> callManager.onOutgoing(event)
                     is CallEvent.Incoming -> callManager.onIncoming(event)
                     is CallEvent.Accepted -> callManager.onAccepted(event)
+                    is CallEvent.Connected -> callManager.onConnected()
                     is CallEvent.Rejected -> callManager.onRejected()
                     is CallEvent.Ended,
                     is CallEvent.Cancelled,

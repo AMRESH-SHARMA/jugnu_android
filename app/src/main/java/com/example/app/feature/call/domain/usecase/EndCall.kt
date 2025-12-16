@@ -1,9 +1,11 @@
 package com.example.app.feature.call.domain.usecase
 
 import android.util.Log
+import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
+import com.example.app.core.session.SessionManager
 import com.example.app.feature.call.data.CallRepository
 import com.example.app.feature.call.domain.CallStatus
 import com.example.app.utils.AppConstants
@@ -17,11 +19,12 @@ class EndCall @Inject constructor(
         callId: String,
         callerAccountId: Long,
         calleeAccountId: Long,
-        callStatus: CallStatus
+        callStatus: CallStatus,
+        callType: CallType
     ) {
         Log.d(
             "RTM",
-            "CALL EndCall invoked callId=$callId status=$callStatus " +
+            "EndCall UseCase invoked callId=$callId status=$callStatus " +
                     "caller=$callerAccountId callee=$calleeAccountId"
         )
 
@@ -36,13 +39,18 @@ class EndCall @Inject constructor(
             else -> AppConstants.EVENT_CALL_ENDED
         }
 
-        Log.d("RTM", "CALL Sending RTM event=$event")
+        Log.d("RTM", "END USECASE CALL Sending RTM event=$event")
         // 1️⃣ FAST PATH — notify callee immediately
+        val remoteUserAccId =
+            if (callerAccountId == SessionManager.userId) calleeAccountId
+            else callerAccountId
+
         rtmCallSignaling.sendCallEvent(
-            channel = RtmChannels.user(calleeAccountId),
+            channel = RtmChannels.user(remoteUserAccId),
             payload = CallSignalPayload(
                 event = event,
                 callId = callId,
+                callType = callType,
                 callerAccountId = callerAccountId,
                 calleeAccountId = calleeAccountId
             )

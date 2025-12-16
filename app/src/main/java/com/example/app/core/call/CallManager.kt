@@ -1,5 +1,6 @@
 package com.example.app.core.call
 
+import android.util.Log
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
 import javax.inject.Inject
@@ -8,30 +9,49 @@ import javax.inject.Singleton
 @Singleton
 class CallManager @Inject constructor() {
 
+    private fun log(action: String) {
+        val current = CallStore.current()
+        Log.w(
+            "CALL_MANAGER",
+            "$action | currentStatus=${current?.status} callId=${current?.callId} thread=${Thread.currentThread().name}"
+        )
+    }
+
     // ------------------------------------------------------------
     // OUTGOING
     // ------------------------------------------------------------
 
-    fun onOutgoing(call: CallModel) {
+    fun onOutgoing(event: CallEvent.Outgoing) {
         CallStore.set(
-            call.copy(status = CallStatus.OUTGOING_RINGING)
+            CallModel(
+                callId = event.callId,
+                status = CallStatus.OUTGOING_RINGING,
+                callType = event.callType,
+                callerAccountId = event.callerAccountId,
+                calleeAccountId = event.calleeAccountId,
+                calleeName = event.calleeName,
+                calleeAvatar = event.calleeAvatar
+            )
         )
     }
+
 
     // ------------------------------------------------------------
     // INCOMING (RTM)
     // ------------------------------------------------------------
 
     fun onIncoming(event: CallEvent.Incoming) {
+        log("onIncoming()")
         if (CallStore.current() != null) return
 
         CallStore.set(
             CallModel(
                 callId = event.callId,
                 status = CallStatus.INCOMING_RINGING,
+                callType = event.callType,
+                channel = event.channel,
                 callerAccountId = event.callerAccountId,
                 calleeAccountId = event.calleeAccountId,
-                channel = event.channel
             )
         )
     }
@@ -39,12 +59,26 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
     // ACCEPTED (RTM)
     // ------------------------------------------------------------
-
     fun onAccepted(event: CallEvent.Accepted) {
+        val current = CallStore.current() ?: return
+
+        val newChannel = event.channel ?: current.channel
+        val newToken = event.rtcToken.ifBlank { current.rtcToken }
+
+        // 🔒 IDENTITY CHECK — nothing new to apply
+        if (
+            current.status == CallStatus.CONNECTING &&
+            current.channel == newChannel &&
+            current.rtcToken == newToken
+        ) {
+            return
+        }
+
         CallStore.update {
             it.copy(
                 status = CallStatus.CONNECTING,
-                channel = event.channel
+                channel = newChannel,
+                rtcToken = newToken
             )
         }
     }
@@ -52,14 +86,8 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
     // RTC STATES
     // ------------------------------------------------------------
-
-    fun onConnecting() {
-        CallStore.update {
-            it.copy(status = CallStatus.CONNECTING)
-        }
-    }
-
     fun onConnected() {
+        log("onConnected()")
         CallStore.update {
             it.copy(status = CallStatus.CONNECTED)
         }
@@ -70,69 +98,12 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
 
     fun onRejected() {
+        log("onRejected()")
         CallStore.clear()
     }
 
     fun onEnded() {
+        log("onEnded()")
         CallStore.clear()
     }
 }
-
-
-/*
-@Singleton
-class CallManager @Inject constructor() {
-    fun onIncoming(event: CallEvent.Incoming) {
-
-        Log.d("RTM", "CallManager.onIncoming callId=${event.callId}")
-
-        // Already in call → ignore or auto reject
-        if (CallStore.current() != null) return
-
-        CallStore.set(
-            CallModel(
-                callId = event.callId,
-                status = CallStatus.INCOMING_RINGING,
-                callerAccountId = event.callerAccountId,
-                calleeAccountId = event.calleeAccountId,
-                channel = event.channel
-            )
-        )
-    }
-
-    fun onOutgoing(call: CallModel) {
-        CallStore.set(
-            call.copy(status = CallStatus.OUTGOING_RINGING)
-        )
-    }
-
-    fun onAccepted(event: CallEvent.Accepted) {
-        CallStore.update {
-            it.copy(
-                status = CallStatus.CONNECTING,
-                channel = event.channel
-            )
-        }
-    }
-
-    fun onConnected() {
-        CallStore.update {
-            it.copy(status = CallStatus.CONNECTED)
-        }
-    }
-
-    fun onRejected() {
-        CallStore.update {
-            it.copy(status = CallStatus.ENDED)
-        }
-        CallStore.clear()
-    }
-
-    fun onEnded() {
-        CallStore.update {
-            it.copy(status = CallStatus.ENDED)
-        }
-        CallStore.clear()
-    }
-}
-*/

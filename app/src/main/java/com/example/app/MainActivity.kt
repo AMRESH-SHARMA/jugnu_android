@@ -43,12 +43,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    // 🔥 pass to AppNavGraph
                     AppNavGraph(
-//                        route = route,
-//                        callerAccountId = callerId,
-//                        calleeAccountId = calleeId,
-//                        callId = callId,
                     )
                 }
             }

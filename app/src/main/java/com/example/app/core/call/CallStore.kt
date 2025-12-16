@@ -1,11 +1,13 @@
-//Only CallManager writes here
-//Everyone else only observes
-
 package com.example.app.core.call
 
 import com.example.app.feature.call.domain.CallModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+
+
+/*
+* Only CallManager writes in callStore, Everyone must treat CallStore as read-only.
+* */
 
 object CallStore {
 

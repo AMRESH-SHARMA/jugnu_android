@@ -1,4 +1,4 @@
-package com.example.app.core.rtc
+package com.example.app.core.audio
 
 import dagger.Binds
 import dagger.Module
@@ -6,13 +6,13 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
+// Hilt bindings
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class RtcModule {
-
+abstract class AudioModule {
     @Binds
     @Singleton
-    abstract fun bindRtcManager(
-        impl: AgoraRtcManager
-    ): RtcManager
+    abstract fun bindAudioPlayer(
+        impl: AndroidAudioPlayer
+    ): AudioPlayer
 }

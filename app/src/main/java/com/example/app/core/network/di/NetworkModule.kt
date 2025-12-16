@@ -5,6 +5,7 @@ import com.example.app.core.network.data.CallNotificationApi
 import com.example.app.core.network.data.RtmAuthApi
 import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listeners.data.ListenerApi
+import com.example.app.feature.user.data.UserApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -62,4 +63,12 @@ object NetworkModule {
         callNotificationApi: CallNotificationApi
     ): ApiRepository =
         ApiRepository(authApi, callNotificationApi)
+
+    @Provides
+    @Singleton
+    fun provideUserApi(
+        retrofit: Retrofit
+    ): UserApi {
+        return retrofit.create(UserApi::class.java)
+    }
 }

@@ -52,6 +52,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
+import com.example.app.core.call.CallType
 import com.example.app.core.session.SessionManager
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
@@ -101,15 +102,18 @@ fun ListenerListScreen(
                 listeners = data,
                 navController = navController,
                 onOpenListener = onOpenListener,
-                onCallClick = { listener ->
+                onCallClick = { listener, callType ->
 
                     val calleeAccountId = listener.accountId
                         ?: return@ListenerListContent
 
                     // 1️⃣ Start call (backend + RTM)
                     callVm.startCall(
+                        callType = callType,
                         callerAccountId = SessionManager.userId,
-                        calleeAccountId = calleeAccountId
+                        calleeAccountId = calleeAccountId,
+                        calleeName = listener.name,
+                        calleeAvatar = listener.avatar
                     )
                 }
             )
@@ -124,7 +128,7 @@ private fun ListenerListContent(
     listeners: List<ListenerModel>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
-    onCallClick: (ListenerModel) -> Unit
+    onCallClick: (ListenerModel, CallType) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
@@ -206,11 +210,11 @@ private fun ListenerListContent(
                         }
 
                         IconButton({
-                            onCallClick(listener)
+                            onCallClick(listener, CallType.VOICE)
                         }) { Icon(Icons.Default.Call, null) }
 
                         IconButton({
-                            onCallClick(listener)
+                            onCallClick(listener, CallType.VIDEO)
                         }) { Icon(Icons.Default.VideoCall, null) }
                     }
                 }
