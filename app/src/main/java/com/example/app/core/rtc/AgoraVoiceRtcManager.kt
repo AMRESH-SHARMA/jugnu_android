@@ -82,6 +82,8 @@ class AgoraVoiceRtcManager @Inject constructor(
             setChannelProfile(Constants.CHANNEL_PROFILE_COMMUNICATION)
             enableAudio()
             disableVideo() // voice-only billing safety
+            enableLocalAudio(true)
+            muteLocalAudioStream(false)
         }
         return true
     }
