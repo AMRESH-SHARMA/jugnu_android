@@ -1,5 +1,7 @@
-package com.example.app.core.rtc
+package com.example.app.core.rtc.di
 
+import com.example.app.core.rtc.DefaultRtcManagerFactory
+import com.example.app.core.rtc.RtcManagerFactory
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

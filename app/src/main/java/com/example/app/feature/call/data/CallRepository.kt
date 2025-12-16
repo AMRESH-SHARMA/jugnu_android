@@ -1,6 +1,8 @@
 package com.example.app.feature.call.data
 
 import com.example.app.core.call.CallType
+import com.example.app.feature.call.domain.CallModel
+import com.example.app.feature.call.domain.CallStatus
 import javax.inject.Inject
 
 class CallRepository @Inject constructor(
@@ -10,7 +12,8 @@ class CallRepository @Inject constructor(
         callerAccountId: Long,
         calleeAccountId: Long,
         callType: CallType
-    ): StartCallDto {
+    ): CallModel {
+
         val res = api.startCall(
             StartCallRequest(
                 callerAccountId = callerAccountId,
@@ -19,11 +22,20 @@ class CallRepository @Inject constructor(
             )
         )
 
-        if (res.success) {
-            return res.data
+        if (!res.success) {
+            throw Exception(res.message)
         }
 
-        throw Exception(res.message)
+        val data = res.data
+
+        return CallModel(
+            callId = data.callId,
+            status = CallStatus.OUTGOING_RINGING,
+            callType = callType,
+            channel = data.channel,
+            callerAccountId = callerAccountId,
+            calleeAccountId = calleeAccountId,
+        )
     }
 
     suspend fun acceptCall(callId: String): AcceptCallDto {
@@ -31,11 +43,11 @@ class CallRepository @Inject constructor(
             AcceptCallRequest(callId)
         )
 
-        if (res.success) {
-            return res.data
+        if (!res.success) {
+            throw Exception(res.message)
         }
 
-        throw Exception(res.message)
+        return res.data
     }
 
     suspend fun rejectCall(callId: String): RejectCallDto {

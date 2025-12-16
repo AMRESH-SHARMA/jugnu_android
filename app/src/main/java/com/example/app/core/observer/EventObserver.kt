@@ -18,8 +18,7 @@ class EventObserver @Inject constructor(
     init {
         scope.launch {
             CallEventBus.events.collect { event ->
-                Log.d("CALL", "Observer received event=$event")
-
+                Log.d("RTM", "Observer received event=$event")
                 when (event) {
                     is CallEvent.Incoming -> callManager.onIncoming(event)
                     is CallEvent.Accepted -> callManager.onAccepted(event)

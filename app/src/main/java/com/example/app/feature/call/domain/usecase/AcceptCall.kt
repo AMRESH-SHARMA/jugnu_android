@@ -1,5 +1,6 @@
 package com.example.app.feature.call.domain.usecase
 
+import android.util.Log
 import com.example.app.core.call.CallType
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
@@ -12,27 +13,44 @@ class AcceptCall @Inject constructor(
     private val repo: CallRepository,
     private val rtmCallSignaling: RtmCallSignaling
 ) {
+
     suspend operator fun invoke(
         callId: String,
         callType: CallType,
         callerAccountId: Long,
         calleeAccountId: Long
     ) {
-        // 1️⃣ FAST PATH — notify caller via RTM
-        rtmCallSignaling.sendCallEvent(
-            channel = RtmChannels.user(callerAccountId),
-            payload = CallSignalPayload(
-                event = AppConstants.EVENT_CALL_ACCEPTED,
-                callId = callId,
-                callType = callType,
-                callerAccountId = callerAccountId,
-                calleeAccountId = calleeAccountId
-            )
+        // 1️⃣ SLOW PATH — Backend source of truth
+        // 1️⃣  First (get RTC channel) from Backend and persists call state
+        val result = repo.acceptCall(callId)
+        val rtcChannel = result.channel
+        val rtcToken = result.rtcToken
+
+        Log.d("RTM", "acceptCall API hit → channel=$rtcChannel")
+        Log.d("RTM", "sendCallEvent hit")
+
+        // 2️⃣ FAST PATH — Notify caller via RTM
+        // RTM event drives UI + RTC join on BOTH devices
+        val payload = CallSignalPayload(
+            event = AppConstants.EVENT_CALL_ACCEPTED,
+            callId = callId,
+            callType = callType,
+            callerAccountId = callerAccountId,
+            calleeAccountId = calleeAccountId,
+            channel = rtcChannel,
+            rtcToken = rtcToken
         )
 
-        // 2️⃣ SLOW PATH — persist state in backend
-        repo.acceptCall(callId)
+        // Send to caller
+        rtmCallSignaling.sendCallEvent(
+            channel = RtmChannels.user(callerAccountId),
+            payload = payload
+        )
+
+        // Send to callee (THIS WAS MISSING)
+//        rtmCallSignaling.sendCallEvent(
+//            channel = RtmChannels.user(calleeAccountId),
+//            payload = payload
+//        )
     }
 }
-
-

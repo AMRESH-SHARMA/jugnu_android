@@ -23,7 +23,7 @@ class EndCall @Inject constructor(
     ) {
         Log.d(
             "RTM",
-            "CALL EndCall invoked callId=$callId status=$callStatus " +
+            "EndCall UseCase invoked callId=$callId status=$callStatus " +
                     "caller=$callerAccountId callee=$calleeAccountId"
         )
 
@@ -38,7 +38,7 @@ class EndCall @Inject constructor(
             else -> AppConstants.EVENT_CALL_ENDED
         }
 
-        Log.d("RTM", "CALL Sending RTM event=$event")
+        Log.d("RTM", "END USECASE CALL Sending RTM event=$event")
         // 1️⃣ FAST PATH — notify callee immediately
         rtmCallSignaling.sendCallEvent(
             channel = RtmChannels.user(calleeAccountId),

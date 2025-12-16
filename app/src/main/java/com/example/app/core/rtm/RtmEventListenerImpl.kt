@@ -9,6 +9,7 @@ import io.agora.rtm.RtmEventListener
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import java.util.concurrent.ConcurrentHashMap
 
 class RtmEventListenerImpl(
     private val scope: CoroutineScope
@@ -18,23 +19,28 @@ class RtmEventListenerImpl(
         ignoreUnknownKeys = true
     }
 
+    private val acceptedCalls = ConcurrentHashMap.newKeySet<String>()
+
+
     override fun onMessageEvent(event: MessageEvent) {
         val rtmMessage = event.message
         val raw = rtmMessage.toString()
+        Log.d(
+            "RTM",
+            "onMessageEvent Event Received $raw"
+        )
 
         // 🔥 Extract JSON between "message: " and ", data:"
         val jsonPayload = raw
             .substringAfter("message: ")
             .substringBefore(", data:")
 
-        Log.d("RTM", "RTM payload = $jsonPayload")
-
         try {
             val signal = json.decodeFromString<CallSignalPayload>(jsonPayload)
 
             Log.d(
                 "RTM",
-                "Event Received ${signal.event} callId=${signal.callId}"
+                "Signal $signal"
             )
 
             scope.launch {
@@ -43,19 +49,28 @@ class RtmEventListenerImpl(
                         CallEventBus.emit(
                             CallEvent.Incoming(
                                 callId = signal.callId,
-                                callerAccountId = signal.callerAccountId,
-                                calleeAccountId = signal.calleeAccountId,
-                                channel = signal.channel,
-                                callType = signal.callType
+                                callType = signal.callType!!,
+                                callerAccountId = signal.callerAccountId!!,
+                                calleeAccountId = signal.calleeAccountId!!,
+                                channel = signal.channel
                             )
                         )
                     }
 
                     AppConstants.EVENT_CALL_ACCEPTED -> {
+                        if (!acceptedCalls.add(signal.callId)) {
+                            Log.w(
+                                "RTM",
+                                "Duplicate call_accepted ignored for callId=${signal.callId}"
+                            )
+                            return@launch
+                        }
+
                         CallEventBus.emit(
                             CallEvent.Accepted(
                                 callId = signal.callId,
-                                channel = signal.channel
+                                channel = signal.channel!!,
+                                rtcToken = signal.rtcToken!!
                             )
                         )
                     }

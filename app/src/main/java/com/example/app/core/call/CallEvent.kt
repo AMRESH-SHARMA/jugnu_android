@@ -12,7 +12,8 @@ sealed class CallEvent {
 
     data class Accepted(
         val callId: String,
-        val channel: String?
+        val channel: String?,
+        val rtcToken: String
     ) : CallEvent()
 
     data class Rejected(

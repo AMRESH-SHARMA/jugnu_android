@@ -12,13 +12,14 @@ data class CallModel(
     val callId: String,
     val status: CallStatus,
     val callType: CallType,
-    val channel: String? = null,          // nullable until accepted
+    val channel: String? = null,
     val callerAccountId: Long,
     val calleeAccountId: Long,
-
     val calleeName: String? = null,
-    val calleeAvatar: String? = null
+    val calleeAvatar: String? = null,
+    val rtcToken: String? = null
 )
+
 
 enum class CallStatus {
     IDLE,

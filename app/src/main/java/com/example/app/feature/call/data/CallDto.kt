@@ -33,8 +33,9 @@ data class StartCallDto(
 
 data class AcceptCallDto(
     val callId: String,
+    val channel: String,           // guaranteed after accept
     val status: String,
-    val channel: String           // guaranteed after accept
+    val rtcToken: String
 )
 
 data class RejectCallDto(

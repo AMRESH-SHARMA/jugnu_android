@@ -7,8 +7,9 @@ import kotlinx.serialization.Serializable
 data class CallSignalPayload(
     val event: String,
     val callId: String,
-    val callType: CallType,
-    val callerAccountId: Long,
-    val calleeAccountId: Long,
-    val channel: String? = null
+    val callType: CallType? = null,
+    val callerAccountId: Long? = null,
+    val calleeAccountId: Long? = null,
+    val channel: String? = null,
+    val rtcToken: String? = null
 )

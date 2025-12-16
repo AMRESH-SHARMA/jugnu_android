@@ -56,16 +56,16 @@ class FcmService : FirebaseMessagingService() {
                 // 1. INCOMING CALL (fallback when RTM unreachable)
                 // --------------------------------------------------------------
                 AppConstants.EVENT_INCOMING_CALL -> {
-
-                    CallEventBus.emit(
-                        CallEvent.Incoming(
-                            callId = payload.callId,
-                            callType = payload.callType,
-                            callerAccountId = payload.callerAccountId,
-                            calleeAccountId = payload.calleeAccountId,
-                            channel = payload.channel
-                        )
-                    )
+// TODO
+//                    CallEventBus.emit(
+//                        CallEvent.Incoming(
+//                            callId = payload.callId,
+//                            callType = payload.callType,
+//                            callerAccountId = payload.callerAccountId,
+//                            calleeAccountId = payload.calleeAccountId,
+//                            channel = payload.channel
+//                        )
+//                    )
                 }
 
                 // --------------------------------------------------------------

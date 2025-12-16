@@ -1,6 +1,5 @@
 package com.example.app.feature.call.ui
 
-import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -35,8 +34,6 @@ import com.example.app.feature.call.domain.CallStatus
 fun IncomingCallScreen(
     vm: CallViewModel
 ) {
-    Log.d("RTM", "Inside incoming call")
-
     // 🔥 Observe call state only
     val call by vm.callModel.collectAsState()
     val header by vm.headerUiState.collectAsState()

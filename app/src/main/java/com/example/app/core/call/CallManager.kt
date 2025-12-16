@@ -1,5 +1,6 @@
 package com.example.app.core.call
 
+import android.util.Log
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
 import javax.inject.Inject
@@ -8,11 +9,20 @@ import javax.inject.Singleton
 @Singleton
 class CallManager @Inject constructor() {
 
+    private fun log(action: String) {
+        val current = CallStore.current()
+        Log.w(
+            "CALL_MANAGER",
+            "$action | currentStatus=${current?.status} callId=${current?.callId} thread=${Thread.currentThread().name}"
+        )
+    }
+
     // ------------------------------------------------------------
     // OUTGOING
     // ------------------------------------------------------------
 
     fun onOutgoing(call: CallModel) {
+        log("onOutgoing()")
         CallStore.set(
             call.copy(status = CallStatus.OUTGOING_RINGING)
         )
@@ -23,16 +33,17 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
 
     fun onIncoming(event: CallEvent.Incoming) {
+        log("onIncoming()")
         if (CallStore.current() != null) return
 
         CallStore.set(
             CallModel(
                 callId = event.callId,
                 status = CallStatus.INCOMING_RINGING,
+                callType = event.callType,
+                channel = event.channel,
                 callerAccountId = event.callerAccountId,
                 calleeAccountId = event.calleeAccountId,
-                callType = event.callType,
-                channel = event.channel
             )
         )
     }
@@ -42,10 +53,12 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
 
     fun onAccepted(event: CallEvent.Accepted) {
+        log("onAccepted()")
         CallStore.update {
             it.copy(
                 status = CallStatus.CONNECTING,
-                channel = event.channel
+                channel = event.channel,
+                rtcToken = event.rtcToken
             )
         }
     }
@@ -55,12 +68,14 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
 
     fun onConnecting() {
+        log("onConnecting()")
         CallStore.update {
             it.copy(status = CallStatus.CONNECTING)
         }
     }
 
     fun onConnected() {
+        log("onConnected()")
         CallStore.update {
             it.copy(status = CallStatus.CONNECTED)
         }
@@ -71,31 +86,12 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
 
     fun onRejected() {
+        log("onRejected()")
         CallStore.clear()
     }
 
     fun onEnded() {
+        log("onEnded()")
         CallStore.clear()
     }
-
-    // ------------------------------------------------------------
-    // ENDED (RTM)
-    // ------------------------------------------------------------
-//    fun onEnded(event: CallEvent) {
-//        val current = CallStore.current() ?: return
-//
-//        val eventCallId = when (event) {
-//            is CallEvent.Ended -> event.callId
-//            is CallEvent.Cancelled -> event.callId
-//            is CallEvent.Missed -> event.callId
-//            is CallEvent.Rejected -> event.callId
-//            else -> return
-//        }
-//
-//        if (current.callId != eventCallId) return
-//
-//        CallStore.clear()
-//    }
-
-
 }

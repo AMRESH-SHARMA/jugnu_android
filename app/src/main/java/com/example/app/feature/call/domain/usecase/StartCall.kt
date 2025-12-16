@@ -39,21 +39,21 @@ class StartCall @Inject constructor(
                 callType = callType,
                 callerAccountId = callerAccountId,
                 calleeAccountId = calleeAccountId,
-                channel = dto.channel,
-
-                )
+                channel = dto.channel
+            )
         )
 
         // 3️⃣ Return domain model
         return CallModel(
             callId = dto.callId,
-            callType = callType,
             status = CallStatus.INCOMING_RINGING,
+            callType = callType,
             channel = dto.channel,
             callerAccountId = callerAccountId,
             calleeAccountId = calleeAccountId,
             calleeName = calleeName,
-            calleeAvatar = calleeAvatar
+            calleeAvatar = calleeAvatar,
+            rtcToken = null
         )
     }
 }
