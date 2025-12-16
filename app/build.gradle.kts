@@ -32,19 +32,6 @@ android {
         version = release(36)
     }
 
-
-    // Agora repeated libaosl in 2 sdk
-//    packaging {
-//        jniLibs {
-//            pickFirsts += setOf(
-//                "lib/x86/libaosl.so",
-//                "lib/x86_64/libaosl.so",
-//                "lib/armeabi-v7a/libaosl.so",
-//                "lib/arm64-v8a/libaosl.so"
-//            )
-//        }
-//    }
-
     defaultConfig {
         applicationId = "com.example.app"
         minSdk = 24
@@ -105,7 +92,6 @@ dependencies {
     implementation(libs.androidx.navigation.runtime.ktx)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.datastore.core)
-//    implementation(libs.firebase.appdistribution.gradle)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

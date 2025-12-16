@@ -95,6 +95,7 @@ class CallViewModel @Inject constructor(
 
         // --------------------------------------------------
         // 1️⃣ Call lifecycle side-effects (audio / rtc / timer)
+        // Observers the store, Reacts to store updates and trigger side-effects.
         // --------------------------------------------------
         viewModelScope.launch {
             CallStore.call.collect { call ->

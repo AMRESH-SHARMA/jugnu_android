@@ -20,7 +20,6 @@ data class CallModel(
     val rtcToken: String? = null
 )
 
-
 enum class CallStatus {
     IDLE,
     INCOMING_RINGING,

@@ -10,11 +10,17 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/*
+* Observes store and decides how state should change
+* */
+
+
 @Singleton
 class EventObserver @Inject constructor(
     private val callManager: CallManager,
     @ApplicationScope private val scope: CoroutineScope
 ) {
+
     init {
         scope.launch {
             CallEventBus.events.collect { event ->

@@ -59,14 +59,26 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
     // ACCEPTED (RTM)
     // ------------------------------------------------------------
-
     fun onAccepted(event: CallEvent.Accepted) {
-        log("onAccepted()")
+        val current = CallStore.current() ?: return
+
+        val newChannel = event.channel ?: current.channel
+        val newToken = event.rtcToken.ifBlank { current.rtcToken }
+
+        // 🔒 IDENTITY CHECK — nothing new to apply
+        if (
+            current.status == CallStatus.CONNECTING &&
+            current.channel == newChannel &&
+            current.rtcToken == newToken
+        ) {
+            return
+        }
+
         CallStore.update {
             it.copy(
                 status = CallStatus.CONNECTING,
-                channel = event.channel,
-                rtcToken = event.rtcToken
+                channel = newChannel,
+                rtcToken = newToken
             )
         }
     }
@@ -74,14 +86,6 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
     // RTC STATES
     // ------------------------------------------------------------
-
-    fun onConnecting() {
-        log("onConnecting()")
-        CallStore.update {
-            it.copy(status = CallStatus.CONNECTING)
-        }
-    }
-
     fun onConnected() {
         log("onConnected()")
         CallStore.update {

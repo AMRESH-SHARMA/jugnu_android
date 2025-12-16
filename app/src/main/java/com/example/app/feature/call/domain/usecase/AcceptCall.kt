@@ -48,12 +48,6 @@ class AcceptCall @Inject constructor(
             payload = payload
         )
 
-        // Send to callee (THIS WAS MISSING)
-//        rtmCallSignaling.sendCallEvent(
-//            channel = RtmChannels.user(calleeAccountId),
-//            payload = payload
-//        )
-
         // ✅ RETURN DATA TO VIEWMODEL
         return AcceptCallDto(
             callId = callId,
