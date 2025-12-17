@@ -8,6 +8,7 @@ import com.example.app.core.observer.EventObserver
 import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
+import com.example.app.core.websocket.PresenceWebSocketManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -27,10 +28,14 @@ class MyApp : Application() {
     @Inject
     lateinit var apiRepository: ApiRepository
 
-    private val rtmInitialized = AtomicBoolean(false)
 
     @Inject
     lateinit var eventObserver: EventObserver
+
+    @Inject
+    lateinit var presenceWebSocketManager: PresenceWebSocketManager
+
+    private val rtmInitialized = AtomicBoolean(false)
 
     override fun onCreate() {
         super.onCreate()
@@ -41,8 +46,15 @@ class MyApp : Application() {
     private fun observeUserSession() {
         CoroutineScope(Dispatchers.IO).launch {
             userSession.sessionFlow.collect { (accountId, _) ->
-                if (accountId > 0 && rtmInitialized.compareAndSet(false, true)) {
-                    initAndLoginRtm(accountId)
+                if (accountId > 0) {
+                    // 🔥 THIS is what you were missing
+                    presenceWebSocketManager.connect()
+
+                    if (rtmInitialized.compareAndSet(false, true)) {
+                        initAndLoginRtm(accountId)
+                    }
+                } else {
+                    presenceWebSocketManager.disconnect()
                 }
 
             }

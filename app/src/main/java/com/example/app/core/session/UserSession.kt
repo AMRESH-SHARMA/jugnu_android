@@ -17,20 +17,40 @@ class UserSession @Inject constructor(
 ) {
     private val sessionScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
+    // -------------------------
+    // Persisted user session
+    // -------------------------
     val sessionFlow = prefs.userPrefsFlow
         .onEach { (id, role) ->
-            SessionManager.userId = id      // update memory session
+            // Update in-memory cache
+            SessionManager.userId = id
             SessionManager.userRole = role
         }
         .stateIn(sessionScope, SharingStarted.Companion.Eagerly, Pair(0L, UserRole.CUSTOMER))
 
+    // -------------------------
+    // Persisted FCM token
+    // -------------------------
     val tokenFlow = prefs.tokenFlow
         .onEach { token ->
-            SessionManager.fcmToken = token // update memory session
+            SessionManager.fcmToken = token // Update in-memory cache
         }
         .stateIn(sessionScope, SharingStarted.Companion.Eagerly, null)
 
-    val accountId get() = sessionFlow.value.first
-    val role get() = sessionFlow.value.second
-    val fcmToken get() = tokenFlow.value
+    // -------------------------
+    // Simple getters (sync)
+    // -------------------------
+    val accountId: Long
+        get() = sessionFlow.value.first
+
+    val role: UserRole
+        get() = sessionFlow.value.second
+
+    val fcmToken: String?
+        get() = tokenFlow.value
+
+    // -------------------------
+    // Derived session state
+    // -------------------------
+    fun isLoggedIn(): Boolean = accountId > 0
 }

@@ -3,6 +3,15 @@ package com.example.app.utils
 object AppConstants {
 
     // =========================
+    //        API URL
+    // =========================
+    const val BASE_URL = "http://10.252.29.61:3001/"
+
+    // WebSocket
+    const val WS_PRESENCE_PATH = "ws/presence"
+
+
+    // =========================
     //        CALL EVENTS
     // =========================
 
