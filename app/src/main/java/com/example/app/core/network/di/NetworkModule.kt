@@ -6,6 +6,7 @@ import com.example.app.core.network.data.RtmAuthApi
 import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listeners.data.ListenerApi
 import com.example.app.feature.user.data.UserApi
+import com.example.app.utils.AppConstants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -17,13 +18,14 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
-    const val BASE_URL_V1 = "http://10.252.29.61:3001"
 
     @Provides
     @Singleton
     fun provideRetrofit(): Retrofit =
         Retrofit.Builder()
-            .baseUrl("$BASE_URL_V1/api/v1/")
+//            .baseUrl("$AppConstants.BASE_URL/api/v1/")
+            .baseUrl("${AppConstants.BASE_URL}api/v1/")
+
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
