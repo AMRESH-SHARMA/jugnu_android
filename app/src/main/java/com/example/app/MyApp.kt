@@ -3,6 +3,8 @@ package com.example.app
 import android.app.Application
 import android.util.Log
 import com.example.app.core.device.TokenManager
+import com.example.app.core.di.ApplicationScope
+import com.example.app.core.network.ApiResult
 import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.observer.EventObserver
 import com.example.app.core.rtm.RtmEventListenerImpl
@@ -18,6 +20,10 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class MyApp : Application() {
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
 
     @Inject
     lateinit var tokenManager: TokenManager
@@ -41,10 +47,11 @@ class MyApp : Application() {
         super.onCreate()
         tokenManager.start()
         observeUserSession()
+        eventObserver.toString()
     }
 
     private fun observeUserSession() {
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch(Dispatchers.IO) {
             userSession.sessionFlow.collect { (accountId, _) ->
                 if (accountId > 0) {
                     // 🔥 THIS is what you were missing
@@ -62,28 +69,34 @@ class MyApp : Application() {
     }
 
     private suspend fun initAndLoginRtm(accountId: Long) {
-        try {
-            val token = apiRepository.getRtmToken(accountId)
 
-            Log.d("RTM", token)
-            Log.d(
-                "RTM",
-                "App ID = '${BuildConfig.AGORA_APP_ID}' length=${BuildConfig.AGORA_APP_ID.length}"
-            )
+        when (val result = apiRepository.getRtmToken(accountId)) {
 
-            // 1️⃣ INIT RTM (ONLY ONCE)
-            RtmManager.init(
-                context = applicationContext,
-                appId = BuildConfig.AGORA_APP_ID,
-                userId = accountId.toString(),
-                listener = RtmEventListenerImpl(RtmManager.scope)
-            )
+            is ApiResult.Success -> {
+                val token = result.data
 
-            // 2️⃣ LOGIN RTM
-            RtmManager.login(token)
+                Log.d("RTM", token)
+                Log.d(
+                    "RTM",
+                    "App ID='${BuildConfig.AGORA_APP_ID}' length=${BuildConfig.AGORA_APP_ID.length}"
+                )
 
-        } catch (e: Exception) {
-            // log / retry / backoff
+                // INIT RTM once
+                RtmManager.init(
+                    context = applicationContext,
+                    appId = BuildConfig.AGORA_APP_ID,
+                    userId = accountId.toString(),
+                    listener = RtmEventListenerImpl(RtmManager.scope)
+                )
+
+                // LOGIN RTM
+                RtmManager.login(token)
+            }
+
+            is ApiResult.Error -> {
+                Log.e("RTM", "Failed to get RTM token: ${result.message}")
+                // optional: retry/backoff or PresenceEventBus
+            }
         }
     }
 }

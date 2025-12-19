@@ -35,7 +35,7 @@ class PresenceWebSocketManager @Inject constructor(
     private val maxRetryDelayMs = 30_000L
 
     companion object {
-        private const val HEARTBEAT_INTERVAL_MS = 1_000L
+        private const val HEARTBEAT_INTERVAL_MS = 30_000L
     }
 
     // -------------------------

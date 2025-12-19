@@ -49,7 +49,6 @@ fun OnGoingCallScreen(
     val uiState by vm.uiState.collectAsState()
     val status by vm.callStatus.collectAsState()
 
-
     if (call == null || status == null) return
 
     // 🔑 Ask VM for the current RTC manager (do NOT create one here)

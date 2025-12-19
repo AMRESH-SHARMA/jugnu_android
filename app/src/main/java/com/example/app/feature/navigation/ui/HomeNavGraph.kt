@@ -8,9 +8,7 @@ import androidx.navigation.navigation
 import com.example.app.feature.home.ui.HomeScreen
 import com.example.app.feature.home.ui.HomeTab
 
-
 fun NavGraphBuilder.homeNavGraph(navController: NavController) {
-
     navigation(
         route = Routes.Graph.HOME,
         startDestination = Routes.Screen.Home.ROOT

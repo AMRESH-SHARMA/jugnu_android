@@ -23,9 +23,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(): Retrofit =
         Retrofit.Builder()
-//            .baseUrl("$AppConstants.BASE_URL/api/v1/")
             .baseUrl("${AppConstants.BASE_URL}api/v1/")
-
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
