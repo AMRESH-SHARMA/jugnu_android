@@ -18,7 +18,7 @@ fun AppNavGraph() {
     // ---------------------------------------------------------
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
-//    val call by CallStore.call.collectAsState()
+
     LaunchedEffect(Unit) {
         CallStore.call
             .drop(1) // skip initial null
