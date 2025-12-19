@@ -10,14 +10,14 @@ object SessionManager {
     var fcmToken: String? = null
 
     // Runtime-only values (not persisted)
-    var rtmToken: String = ""
-    var rtcToken: String = ""
-    var currentCallId: String = ""
-    var isInCall: Boolean = false
+    //    var rtmToken: String = ""
+    //    var rtcToken: String = ""
+    //    var currentCallId: String = ""
+    //    var isInCall: Boolean = false
 
-    fun clearCallSession() {
-        rtcToken = ""
-        currentCallId = ""
-        isInCall = false
-    }
+    //    fun clearCallSession() {
+    //        rtcToken = ""
+    //        currentCallId = ""
+    //        isInCall = false
+    //    }
 }

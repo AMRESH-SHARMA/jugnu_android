@@ -56,5 +56,24 @@ class PresenceManager @Inject constructor(
             store.setState(state)
         }
     }
+
+    /** TODO
+     * WebSocket may stay connected while app is backgrounded.
+    Presence must still change. */
+//    fun onAppForeground()
+//    fun onAppBackground()
+
+    /** TODO
+     * WebSocket disconnect is often late.
+     * Network loss must immediately clear BUSY */
+//    fun onNetworkLost()
+//    fun onNetworkAvailable()
+
+    /** TODO
+     * This is a business decision, not a transport event. */
+//    fun onAppearOfflineEnabled()
+//    fun onAppearOfflineDisabled()
+
+
 }
 

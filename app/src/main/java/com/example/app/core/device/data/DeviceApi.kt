@@ -9,6 +9,6 @@ data class DeviceTokenRequest(
 )
 
 interface DeviceApi {
-    @POST("user/device-token")
+    @POST("users/device-token")
     suspend fun sendDeviceToken(@Body body: DeviceTokenRequest)
 }
