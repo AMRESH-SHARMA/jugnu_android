@@ -32,15 +32,3 @@ object CoroutineModule {
     ): CoroutineScope =
         CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + handler)
 }
-
-
-//@Module
-//@InstallIn(SingletonComponent::class)
-//object CoroutineModule {
-//
-//    @Provides
-//    @Singleton
-//    @ApplicationScope
-//    fun provideApplicationScope(): CoroutineScope =
-//        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
-//}

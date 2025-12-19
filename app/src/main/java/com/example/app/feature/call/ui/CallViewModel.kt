@@ -357,6 +357,127 @@ class CallViewModel @Inject constructor(
         calleeAvatar: String?
     ) {
         viewModelScope.launch {
+            when (val result = startCallUseCase(
+                callType,
+                callerAccountId,
+                calleeAccountId,
+                calleeName,
+                calleeAvatar
+            )) {
+
+                is ApiResult.Success -> {
+                    val call = result.data
+                    CallEventBus.emit(
+                        CallEvent.Outgoing(
+                            callId = call.callId,
+                            callerAccountId = call.callerAccountId,
+                            calleeAccountId = call.calleeAccountId,
+                            callType = call.callType,
+                            calleeName = call.calleeName,
+                            calleeAvatar = call.calleeAvatar
+                        )
+                    )
+                }
+
+                is ApiResult.Error -> {
+                    error.value = result.message ?: "Unable to start call"
+                }
+            }
+        }
+    }
+
+    fun acceptCall() {
+        val call = CallStore.current() ?: return
+
+        CallEventBus.emit(
+            CallEvent.Accepted(
+                callId = call.callId,
+                channel = null,
+                rtcToken = ""
+            )
+        )
+
+        viewModelScope.launch {
+            when (val result = acceptCallUseCase(
+                call.callId,
+                call.callType,
+                call.callerAccountId,
+                call.calleeAccountId
+            )) {
+
+                is ApiResult.Success -> {
+                    val dto = result.data
+                    CallEventBus.emit(
+                        CallEvent.Accepted(
+                            callId = call.callId,
+                            channel = dto.channel,
+                            rtcToken = dto.rtcToken
+                        )
+                    )
+                }
+
+                is ApiResult.Error -> {
+                    error.value = result.message ?: "Accept failed"
+                    onAcceptFailed(call, Throwable(result.message))
+                }
+            }
+        }
+    }
+
+    fun rejectCall() {
+        val call = CallStore.current() ?: return
+
+        CallEventBus.emit(CallEvent.Rejected(call.callId))
+        cleanupSideEffects()
+
+        viewModelScope.launch {
+            when (val result = rejectCallUseCase(
+                call.callId,
+                call.callType,
+                call.callerAccountId,
+                call.calleeAccountId
+            )) {
+                is ApiResult.Error -> {
+                    error.value = result.message ?: "Reject failed"
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
+    fun endCall() {
+        val call = CallStore.current() ?: return
+
+        CallEventBus.emit(CallEvent.Cancelled(call.callId))
+        cleanupSideEffects()
+
+        viewModelScope.launch {
+            when (val result = endCallUseCase(
+                call.callId,
+                call.callerAccountId,
+                call.calleeAccountId,
+                call.status,
+                call.callType
+            )) {
+                is ApiResult.Error -> {
+                    error.value = result.message ?: "End call failed"
+                }
+
+                else -> Unit
+            }
+        }
+    }
+
+    /*
+    fun startCall(
+        callType: CallType,
+        callerAccountId: Long,
+        calleeAccountId: Long,
+        calleeName: String,
+        calleeAvatar: String?
+    ) {
+        viewModelScope.launch {
             try {
                 val call = startCallUseCase(
                     callType,
@@ -421,16 +542,6 @@ class CallViewModel @Inject constructor(
         }
     }
 
-    private fun onAcceptFailed(call: CallModel, error: Throwable) {
-        Log.e("RTM", "Accept failed", error)
-        // 1️⃣ Roll back state
-        CallEventBus.emit(CallEvent.Ended(call.callId))
-
-        // 2️⃣ Cleanup side-effects
-        cleanupSideEffects()
-    }
-
-
     fun rejectCall() {
         val call = CallStore.current() ?: return
 
@@ -479,6 +590,15 @@ class CallViewModel @Inject constructor(
                 error.value = e.message
             }
         }
+    }
+*/
+    private fun onAcceptFailed(call: CallModel, error: Throwable) {
+        Log.e("RTM", "Accept failed", error)
+        // 1️⃣ Roll back state
+        CallEventBus.emit(CallEvent.Ended(call.callId))
+
+        // 2️⃣ Cleanup side-effects
+        cleanupSideEffects()
     }
 
     // ----------------------------------------------------------------

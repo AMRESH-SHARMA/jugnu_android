@@ -42,14 +42,12 @@ object RtmManager {
         }
     }
 
-
     fun login(token: String) {
         rtmClient?.login(token, object : ResultCallback<Void?> {
             override fun onSuccess(responseInfo: Void?) {
                 Log.d("RTM", "RTM login success")
                 // 🔑 SUBSCRIBE TO OWN CHANNEL
                 val channelName = "account_$currentUserId"
-
                 subscribe(
                     channelName = channelName,
                     callback = object : ResultCallback<Void?> {
