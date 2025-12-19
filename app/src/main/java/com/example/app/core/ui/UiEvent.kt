@@ -1,4 +1,5 @@
 package com.example.app.core.ui
 
-class UiEvent {
+sealed class UiEvent {
+    data class ShowSnackbar(val message: String) : UiEvent()
 }

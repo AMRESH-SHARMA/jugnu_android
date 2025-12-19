@@ -3,6 +3,8 @@ package com.example.app.feature.listeners.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.network.ApiResult
+import com.example.app.core.ui.UiEvent
+import com.example.app.core.ui.UiEventBus
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.domain.usecase.GetListenersUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -16,31 +18,24 @@ class ListenerViewModel @Inject constructor(
 ) : ViewModel() {
 
     val listeners = MutableStateFlow<List<ListenerModel>>(emptyList())
-    val error = MutableStateFlow<String?>(null)
-    val loading = MutableStateFlow(false)
 
     init {
         load()
     }
 
-    private fun load() = viewModelScope.launch {
-
-        loading.value = true
-
+    fun load() = viewModelScope.launch {
         when (val result = getListeners()) {
 
             is ApiResult.Success -> {
                 listeners.value = result.data
-                error.value = null
             }
 
             is ApiResult.Error -> {
                 listeners.value = emptyList()
-                error.value = result.message ?: "Unknown error"
+                UiEventBus.emit(
+                    UiEvent.ShowSnackbar(result.message ?: "Unable to load listeners")
+                )
             }
         }
-
-        loading.value = false
     }
 }
-
