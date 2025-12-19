@@ -3,6 +3,7 @@ package com.example.app
 import android.app.Application
 import android.util.Log
 import com.example.app.core.device.TokenManager
+import com.example.app.core.di.ApplicationScope
 import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.observer.EventObserver
 import com.example.app.core.rtm.RtmEventListenerImpl
@@ -18,6 +19,10 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class MyApp : Application() {
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
 
     @Inject
     lateinit var tokenManager: TokenManager
@@ -44,7 +49,7 @@ class MyApp : Application() {
     }
 
     private fun observeUserSession() {
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch(Dispatchers.IO) {
             userSession.sessionFlow.collect { (accountId, _) ->
                 if (accountId > 0) {
                     // 🔥 THIS is what you were missing
