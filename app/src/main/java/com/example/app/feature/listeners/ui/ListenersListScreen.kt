@@ -24,14 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -71,54 +69,26 @@ fun ListenerListScreen(
     val callVm: CallViewModel = hiltViewModel()
 
     val data by vm.listeners.collectAsState()
-    val loading by vm.loading.collectAsState()
-    val error by vm.error.collectAsState()
 
-    LaunchedEffect(Unit) {
-//        Log.d("RTM", "ListenerListScreen navController=$navController")
-    }
+    ListenerListContent(
+        listeners = data,
+        navController = navController,
+        onOpenListener = onOpenListener,
+        onCallClick = { listener, callType ->
 
-    when {
-        loading -> {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
+            val calleeAccountId = listener.accountId
+                ?: return@ListenerListContent
 
-        error != null -> {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Error: $error")
-            }
-        }
-
-        else -> {
-            ListenerListContent(
-                listeners = data,
-                navController = navController,
-                onOpenListener = onOpenListener,
-                onCallClick = { listener, callType ->
-
-                    val calleeAccountId = listener.accountId
-                        ?: return@ListenerListContent
-
-                    // 1️⃣ Start call (backend + RTM)
-                    callVm.startCall(
-                        callType = callType,
-                        callerAccountId = SessionManager.userId,
-                        calleeAccountId = calleeAccountId,
-                        calleeName = listener.name,
-                        calleeAvatar = listener.avatar
-                    )
-                }
+            // 1️⃣ Start call (backend + RTM)
+            callVm.startCall(
+                callType = callType,
+                callerAccountId = SessionManager.userId,
+                calleeAccountId = calleeAccountId,
+                calleeName = listener.name,
+                calleeAvatar = listener.avatar
             )
         }
-    }
+    )
 }
 
 // ---------------- REAL CONTENT ---------------------
