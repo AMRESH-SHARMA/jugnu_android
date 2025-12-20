@@ -1,10 +1,8 @@
 package com.example.app.feature.wallet.ui
-
-import Routes
+/*
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,7 +14,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -26,7 +23,6 @@ import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -36,10 +32,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -48,39 +42,19 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.app.core.preferences.user.domain.UserRole
-import com.example.app.feature.wallet.domain.AmountFlowType
-import java.time.Instant
-
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WalletScreen(
     navController: NavController,
-    onBackClick: (() -> Boolean)?
+    onBackClick: (() -> Boolean)?,
+    viewModel: WalletViewModel = hiltViewModel()
 ) {
-    val walletVM: WalletViewModel = hiltViewModel()
-    val historyVM: WalletHistoryViewModel = hiltViewModel()
+    val prefs by viewModel.userPrefs.collectAsState()
+    val role = prefs.second
 
-    val role = walletVM.role
-    val balance by walletVM.balance.collectAsState()
-    val items by historyVM.items.collectAsState()
-    val loading by historyVM.loading.collectAsState()
-    val listState = rememberLazyListState()
     // ⭐ TopAppBar
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
-    LaunchedEffect(Unit) {
-        walletVM.refreshBalance()
-        historyVM.loadNextPage()
-    }
-    // 🔥 Pagination trigger
-    LaunchedEffect(listState) {
-        snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-            .collect { lastIndex ->
-                if (lastIndex != null && lastIndex >= items.size - 3) {
-                    historyVM.loadNextPage()
-                }
-            }
-    }
 
     Scaffold(
         topBar = {
@@ -105,20 +79,16 @@ fun WalletScreen(
 
             // ⭐ Animated Balance Card
             WalletBalanceCard(
-                balance = balance.toDouble(),
-                currency = "₹"
+                balance = 12450.75,
+                currency = "USD"
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // ⭐ Quick Actions Row
-            QuickActionButtons(
-                role = role,
-                navController = navController
-            )
+            QuickActionButtons(role)
 
             Spacer(modifier = Modifier.height(24.dp))
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
 
             // ⭐ Transaction History
             Text(
@@ -127,38 +97,15 @@ fun WalletScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
-            if (items.isEmpty()) {
-                Text(
-                    "No transactions yet",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
-            } else {
-                items.forEach { txn ->
-                    TransactionItem(
-                        title = txn.reason,
-                        amount = formatAmount(txn.amount),
-                        time = formatTime(txn.time)
-                    )
-                }
-            }
 
+            TransactionItem("Coffee Shop", "-$5.40", "Today • 09:45 AM")
+            TransactionItem("Salary", "+$2,500.00", "Yesterday • 06:00 AM")
+            TransactionItem("Gym Membership", "-$40.00", "Jun 2 • 09:00 PM")
+            TransactionItem("Electricity Bill", "-$120.00", "Jun 1 • 02:12 PM")
         }
     }
 }
 
-private fun formatAmount(amount: Long): String {
-    return if (amount < 0) {
-        "-₹${kotlin.math.abs(amount)}"
-    } else {
-        "+₹$amount"
-    }
-}
-
-private fun formatTime(timestamp: Instant): String {
-    // TEMP: replace later with proper formatter
-    return "Just now"
-}
 
 // -------------------------------------------
 // ⭐ Balance Card With Animation
@@ -175,7 +122,7 @@ fun WalletBalanceCard(balance: Double, currency: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(180.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.tertiary
@@ -206,82 +153,57 @@ fun WalletBalanceCard(balance: Double, currency: String) {
 // ⭐ Quick Action Buttons (Send / Receive / Add Money)
 // -------------------------------------------
 @Composable
-fun QuickActionButtons(
-    role: UserRole,
-    navController: NavController
-) {
-    when (role) {
+fun QuickActionButtons(role: UserRole) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+//        QuickAction("Send", Icons.Default.ArrowUpward)
+//        QuickAction("Receive", Icons.Default.ArrowDownward)
+//        QuickAction("Add Money", Icons.Default.AddCircle)
+        when (role) {
 
-        UserRole.CUSTOMER -> {
-            HorizontalActionButton(
-                title = "Add Money",
-                icon = Icons.Filled.AddCircle,
-                onClick = {
-                    navController.navigate(
-                        enterAmount(
-                            AmountFlowType.ADD.name
-                        )
-                    )
-                }
-            )
-        }
+            UserRole.LISTENER -> {
+                QuickAction("Withdraw Money", Icons.Default.ArrowDownward)
+            }
 
-        UserRole.LISTENER -> {
-            HorizontalActionButton(
-                title = "Withdraw Money",
-                icon = Icons.Filled.ArrowDownward,
-                onClick = {
-                    navController.navigate(
-                        enterAmount(
-                            AmountFlowType.WITHDRAW.name
-                        )
-                    )
-                }
-            )
+            UserRole.CUSTOMER -> {
+                QuickAction("Add Money", Icons.Default.AddCircle)
+            }
         }
     }
 }
 
 @Composable
-fun HorizontalActionButton(
-    title: String,
-    icon: ImageVector,
-    onClick: () -> Unit
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.secondaryContainer
+fun QuickAction(title: String, icon: ImageVector) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Surface(
+            modifier = Modifier.size(60.dp),
+            shape = CircleShape,
+            tonalElevation = 4.dp,
+            color = MaterialTheme.colorScheme.secondaryContainer
         ) {
-
-            // ⬅️ Left text
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // ➡️ Right icon
             Icon(
-                imageVector = icon,
+                icon,
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxSize(),
+                tint = MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
+
+        Spacer(modifier = Modifier.height(6.dp))
+
+        Text(
+            title,
+            style = MaterialTheme.typography.bodySmall
+        )
     }
 }
+
 
 // -------------------------------------------
 // ⭐ Transaction Item
@@ -322,6 +244,4 @@ fun TransactionItem(title: String, amount: String, time: String) {
     }
 }
 
-fun enterAmount(type: String): String {
-    return "${Routes.Screen.Wallet.ENTER_AMOUNT}/$type"
-}
+ */

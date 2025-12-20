@@ -1,6 +1,5 @@
 package com.example.app.core.network
 
-
 import retrofit2.HttpException
 import java.io.IOException
 
