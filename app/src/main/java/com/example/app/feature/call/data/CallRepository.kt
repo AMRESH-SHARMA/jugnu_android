@@ -10,7 +10,6 @@ import javax.inject.Inject
 class CallRepository @Inject constructor(
     private val api: CallApi
 ) {
-
     suspend fun startCall(
         callerAccountId: Long,
         calleeAccountId: Long,

@@ -86,7 +86,8 @@ class MyApp : Application() {
                     context = applicationContext,
                     appId = BuildConfig.AGORA_APP_ID,
                     userId = accountId.toString(),
-                    listener = RtmEventListenerImpl(RtmManager.scope)
+                    listener = RtmEventListenerImpl(appScope),
+                    appScope = appScope
                 )
 
                 // LOGIN RTM
