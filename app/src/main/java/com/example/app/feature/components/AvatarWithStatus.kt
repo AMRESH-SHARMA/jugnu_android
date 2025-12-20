@@ -1,5 +1,6 @@
 package com.example.app.feature.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -16,14 +17,25 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
-import com.example.app.feature.theme.STATUS_ACTIVE
+import com.example.app.core.websocket.PresenceState
+import com.example.app.feature.theme.USER_STATUS_BUSY
+import com.example.app.feature.theme.USER_STATUS_OFFLINE
+import com.example.app.feature.theme.USER_STATUS_ONLINE
 
 @Composable
 fun AvatarWithStatus(
     modifier: Modifier,
     imageUrl: String?,
+    userStatus: PresenceState,
     onAvatarClick: () -> Unit = {}
 ) {
+
+    val statusColor = when (userStatus) {
+        PresenceState.ONLINE -> USER_STATUS_ONLINE
+        PresenceState.BUSY -> USER_STATUS_BUSY
+        PresenceState.OFFLINE -> USER_STATUS_OFFLINE
+    }
+
     Box(
         modifier = modifier
     ) {
@@ -36,6 +48,7 @@ fun AvatarWithStatus(
                 .clip(RoundedCornerShape(12.dp))
                 .clickable { onAvatarClick() }
         )
+        Log.d("RTM", "statusColor $statusColor")
 
         // Status dot
         Box(
@@ -43,7 +56,7 @@ fun AvatarWithStatus(
                 .size(14.dp)
                 .align(Alignment.BottomEnd)
                 .clip(CircleShape)
-                .background(STATUS_ACTIVE)
+                .background(statusColor)
                 .border(2.dp, Color.White, CircleShape)
         )
     }

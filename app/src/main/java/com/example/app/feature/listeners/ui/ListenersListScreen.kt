@@ -1,5 +1,6 @@
 package com.example.app.feature.listeners.ui
 
+import android.util.Log
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -52,6 +53,9 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.app.core.call.CallType
 import com.example.app.core.session.SessionManager
+import com.example.app.core.websocket.PresenceState
+import com.example.app.core.websocket.PresenceViewModel
+import com.example.app.core.websocket.RemotePresenceStore
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
@@ -67,11 +71,15 @@ fun ListenerListScreen(
 ) {
     val vm: ListenerViewModel = hiltViewModel()
     val callVm: CallViewModel = hiltViewModel()
+    val presenceVm: PresenceViewModel = hiltViewModel()
+    val remotePresenceStore = presenceVm.remotePresenceStore
+
 
     val data by vm.listeners.collectAsState()
 
     ListenerListContent(
         listeners = data,
+        remotePresenceStore = remotePresenceStore,
         navController = navController,
         onOpenListener = onOpenListener,
         onCallClick = { listener, callType ->
@@ -96,6 +104,7 @@ fun ListenerListScreen(
 @Composable
 private fun ListenerListContent(
     listeners: List<ListenerModel>,
+    remotePresenceStore: RemotePresenceStore,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit
@@ -103,6 +112,10 @@ private fun ListenerListContent(
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedListenerModel by remember { mutableStateOf<ListenerModel?>(null) }
+
+    // Observe remote presence map
+    val presenceMap: Map<String, PresenceState> by
+    remotePresenceStore.states.collectAsState(initial = emptyMap())
 
     val filtered = listeners.filter {
         it.name.contains(searchQuery, true)
@@ -126,8 +139,11 @@ private fun ListenerListContent(
             items(
                 filtered,
                 //TODO: need to make model not null
-                key = { it.accountId!! }) { listener ->
+                key = { it.accountId }
+            ) { listener ->
 
+                val status = presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
+                Log.d("RTM", "status $status")
                 Surface(
                     shape = RoundedCornerShape(20.dp),
                     tonalElevation = 0.dp,
@@ -144,6 +160,7 @@ private fun ListenerListContent(
                         AvatarWithStatus(
                             modifier = Modifier.size(80.dp),
                             imageUrl = listener.avatar,
+                            userStatus = status,
                             onAvatarClick = {
                                 selectedListenerModel = listener
                                 showImageDialog = true
