@@ -7,6 +7,7 @@ import androidx.annotation.RequiresPermission
 import com.example.app.MainActivity
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
+import com.example.app.core.di.ApplicationScope
 import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.utils.AppConstants
@@ -25,9 +26,13 @@ class FcmService : FirebaseMessagingService() {
     @Inject
     lateinit var prefs: UserPreferencesRepository
 
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
     override fun onNewToken(token: String) {
         Log.d("RTM", "FCM NEW TOKEN = $token")
-        CoroutineScope(Dispatchers.IO).launch {
+        appScope.launch(Dispatchers.IO) {
             prefs.saveToken(token)  // TokenManager will sync to backend
         }
     }

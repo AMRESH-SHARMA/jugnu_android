@@ -2,24 +2,46 @@ package com.example.app.feature.wallet.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.app.core.preferences.user.data.UserPreferencesRepository
+import com.example.app.core.network.ApiResult
 import com.example.app.core.preferences.user.domain.UserRole
-import com.example.app.utils.AppConstants
+import com.example.app.core.session.UserSession
+import com.example.app.feature.wallet.domain.usecase.GetWalletBalanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.SharingStarted
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class WalletViewModel @Inject constructor(
-    repo: UserPreferencesRepository
+    private val userSession: UserSession,
+    private val getBalance: GetWalletBalanceUseCase,
 ) : ViewModel() {
 
-    val userPrefs: StateFlow<Pair<Long, UserRole>> =
-        repo.userPrefsFlow.stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(AppConstants.STATE_FLOW_STOP_TIMEOUT),
-            initialValue = 0L to UserRole.CUSTOMER
-        )
+    private val _balance = MutableStateFlow<Long>(0)
+    val balance = _balance.asStateFlow()
+
+    val role: UserRole
+        get() = userSession.role
+
+    init {
+        refreshBalance()
+    }
+
+    fun refreshBalance() {
+        val accountId = userSession.accountId
+        if (accountId == 0L) return
+
+        viewModelScope.launch {
+            when (val res = getBalance(accountId)) {
+                is ApiResult.Success -> _balance.value = res.data.balance
+                is ApiResult.Error -> { /* handle later */
+                }
+            }
+        }
+    }
+
+
 }
+
+

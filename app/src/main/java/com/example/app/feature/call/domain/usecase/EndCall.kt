@@ -2,6 +2,7 @@ package com.example.app.feature.call.domain.usecase
 
 import android.util.Log
 import com.example.app.core.call.CallType
+import com.example.app.core.network.ApiResult
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.rtm.RtmCallSignaling
 import com.example.app.core.rtm.RtmChannels
@@ -21,11 +22,11 @@ class EndCall @Inject constructor(
         calleeAccountId: Long,
         callStatus: CallStatus,
         callType: CallType
-    ) {
+    ): ApiResult<Unit> {
+
         Log.d(
             "RTM",
-            "EndCall UseCase invoked callId=$callId status=$callStatus " +
-                    "caller=$callerAccountId callee=$calleeAccountId"
+            "EndCall → callId=$callId status=$callStatus caller=$callerAccountId callee=$calleeAccountId"
         )
 
         val event = when (callStatus) {
@@ -39,8 +40,7 @@ class EndCall @Inject constructor(
             else -> AppConstants.EVENT_CALL_ENDED
         }
 
-        Log.d("RTM", "END USECASE CALL Sending RTM event=$event")
-        // 1️⃣ FAST PATH — notify callee immediately
+        // FAST PATH → notify remote user via RTM
         val remoteUserAccId =
             if (callerAccountId == SessionManager.userId) calleeAccountId
             else callerAccountId
@@ -56,11 +56,74 @@ class EndCall @Inject constructor(
             )
         )
 
-        // 2️⃣ SLOW PATH — persist only if accepted
-        if (event == AppConstants.EVENT_CALL_ENDED) {
-            repo.endCall(callId)
+        // SLOW PATH → persist only on END
+        return if (event == AppConstants.EVENT_CALL_ENDED) {
+            when (val result = repo.endCall(callId)) {
+                is ApiResult.Success -> ApiResult.Success(Unit)
+                is ApiResult.Error -> ApiResult.Error(
+                    message = result.message,
+                    code = result.code,
+                    exception = result.exception
+                )
+            }
+        } else {
+            // cancel call → nothing to persist
+            ApiResult.Success(Unit)
         }
     }
 }
+
+//
+//class EndCall @Inject constructor(
+//    private val repo: CallRepository,
+//    private val rtmCallSignaling: RtmCallSignaling
+//) {
+//    suspend operator fun invoke(
+//        callId: String,
+//        callerAccountId: Long,
+//        calleeAccountId: Long,
+//        callStatus: CallStatus,
+//        callType: CallType
+//    ) {
+//        Log.d(
+//            "RTM",
+//            "EndCall UseCase invoked callId=$callId status=$callStatus " +
+//                    "caller=$callerAccountId callee=$calleeAccountId"
+//        )
+//
+//        val event = when (callStatus) {
+//            CallStatus.OUTGOING_RINGING,
+//            CallStatus.INCOMING_RINGING -> AppConstants.EVENT_CALL_CANCELLED
+//
+//            CallStatus.CONNECTING,
+//            CallStatus.CONNECTED,
+//            CallStatus.ENDED -> AppConstants.EVENT_CALL_ENDED
+//
+//            else -> AppConstants.EVENT_CALL_ENDED
+//        }
+//
+//        Log.d("RTM", "END USECASE CALL Sending RTM event=$event")
+//        // 1️⃣ FAST PATH — notify callee immediately
+//        val remoteUserAccId =
+//            if (callerAccountId == SessionManager.userId) calleeAccountId
+//            else callerAccountId
+//
+//        rtmCallSignaling.sendCallEvent(
+//            channel = RtmChannels.user(remoteUserAccId),
+//            payload = CallSignalPayload(
+//                event = event,
+//                callId = callId,
+//                callType = callType,
+//                callerAccountId = callerAccountId,
+//                calleeAccountId = calleeAccountId
+//            )
+//        )
+//
+//        // 2️⃣ SLOW PATH — persist only if accepted
+//        if (event == AppConstants.EVENT_CALL_ENDED) {
+//            repo.endCall(callId)
+//        }
+//    }
+//}
 
 

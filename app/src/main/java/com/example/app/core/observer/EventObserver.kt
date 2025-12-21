@@ -24,6 +24,7 @@ class EventObserver @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope
 ) {
     init {
+        Log.d("RTM", "Observer INIT")
         // -------------------------
         // Call events
         // -------------------------
@@ -63,7 +64,7 @@ class EventObserver @Inject constructor(
         // -------------------------
         scope.launch {
             PresenceEventBus.events.collect { event ->
-                Log.d("WS", "PresenceEvent received event=$event")
+                Log.d("RTM", "PresenceEvent received event=$event")
                 when (event) {
 
                     // ---- Socket connected → ONLINE (unless already BUSY)

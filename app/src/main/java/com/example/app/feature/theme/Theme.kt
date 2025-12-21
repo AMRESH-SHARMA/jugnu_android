@@ -14,7 +14,8 @@ private val DarkColorScheme = darkColorScheme(
     surface = DARK_GREEN300,
     tertiary = DARK_GREEN200,
     onTertiary = WHITE200,
-)
+
+    )
 
 private val DarkAndroidBackgroundTheme = BackgroundTheme(color = DARK_GREEN300)
 
@@ -35,5 +36,4 @@ fun AppTheme(
             content = content
         )
     }
-
 }

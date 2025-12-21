@@ -60,6 +60,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -121,6 +122,10 @@ dependencies {
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
 
+    // OkHttp latest
+//    implementation("com.squareup.okhttp3:okhttp:5.3.0")
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
@@ -141,4 +146,6 @@ dependencies {
     //    implementation("io.agora.rtc:full-sdk:4.2.6")
 //    implementation("io.agora.rtm:rtm-sdk:2.2.6")
     implementation("androidx.datastore:datastore-preferences:1.2.0")
+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
 }

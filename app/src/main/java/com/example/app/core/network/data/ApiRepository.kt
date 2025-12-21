@@ -1,6 +1,8 @@
 package com.example.app.core.network.data
 
-
+import android.util.Log
+import com.example.app.core.network.ApiResult
+import com.example.app.core.network.safeApiCall
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -9,18 +11,21 @@ class ApiRepository @Inject constructor(
     private val authApi: RtmAuthApi,
     private val callNotificationApi: CallNotificationApi
 ) {
-
-    suspend fun getRtmToken(accountId: Long): String {
+    suspend fun getRtmToken(accountId: Long): ApiResult<String> = safeApiCall {
         val response = authApi.getRtmToken(mapOf("accountId" to accountId))
-        return response.data.token
+        Log.w("RTM", "TOKEN $response")
+        response.data.token
     }
 
-    suspend fun notifyCallViaFcm(callId: String, callerId: Long, calleeId: Long) {
+
+    // TODO
+    suspend fun notifyCallViaFcm(
+        callId: String,
+        callerId: Long,
+        calleeId: Long
+    ): ApiResult<Unit> = safeApiCall {
         callNotificationApi.notifyCallViaFcm(
             NotifyFcmCallRequest(callId, callerId, calleeId)
         )
     }
 }
-
-
-

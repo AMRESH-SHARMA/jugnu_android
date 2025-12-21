@@ -10,51 +10,58 @@ class PresenceManager @Inject constructor(
     private val wsManager: PresenceWebSocketManager
 ) {
 
-    /** WebSocket connected */
+    /** Fired when WebSocket connects. */
     fun onConnected() {
-        // If already BUSY, do NOT override it
         if (store.state.value == PresenceState.BUSY) return
-
         if (store.state.value != PresenceState.ONLINE) {
             store.setState(PresenceState.ONLINE)
         }
     }
 
-    /** WebSocket disconnected */
+    /** Fired when WebSocket disconnects. */
     fun onDisconnected() {
-        // OFFLINE always wins
         if (store.state.value != PresenceState.OFFLINE) {
             store.setState(PresenceState.OFFLINE)
         }
     }
 
-    /** Call started (Incoming or Outgoing) */
+    /** Local call start → mark BUSY & notify server. */
     fun onCallStarted() {
         if (store.state.value != PresenceState.BUSY) {
             store.setState(PresenceState.BUSY)
-            wsManager.sendCallStarted()
+            wsManager.sendCallStart()
         }
     }
 
-    /** Call ended */
+    /** Local call end → notify server then update presence. */
     fun onCallEnded() {
-        // If socket is alive → ONLINE
-        // If socket is dead → OFFLINE
-        when (store.state.value) {
-            PresenceState.BUSY -> {
-                wsManager.sendCallEnded()
-                store.setState(PresenceState.ONLINE)
-            }
-
-            else -> Unit
+        if (store.state.value == PresenceState.BUSY) {
+            wsManager.sendCallEnd()
+            store.setState(PresenceState.ONLINE)
         }
     }
 
-    /** Future: server-driven state */
+    /** Presence driven from server broadcasts (remote changes). */
     fun onRemoteStateChanged(state: PresenceState) {
         if (store.state.value != state) {
             store.setState(state)
         }
     }
-}
 
+    //    /** TODO
+//     * WebSocket may stay connected while app is backgrounded.
+//    Presence must still change. */
+////    fun onAppForeground()
+////    fun onAppBackground()
+//
+//    /** TODO
+//     * WebSocket disconnect is often late.
+//     * Network loss must immediately clear BUSY */
+////    fun onNetworkLost()
+////    fun onNetworkAvailable()
+//
+//    /** TODO
+//     * This is a business decision, not a transport event. */
+////    fun onAppearOfflineEnabled()
+////    fun onAppearOfflineDisabled()
+}

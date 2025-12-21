@@ -8,6 +8,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -21,12 +22,13 @@ import javax.inject.Singleton
 class PresenceWebSocketManager @Inject constructor(
     private val okHttpClient: OkHttpClient,
     private val userSession: UserSession,
+    private val remotePresenceStore: RemotePresenceStore,
     @ApplicationScope private val scope: CoroutineScope
 ) {
+    private val json = Json { ignoreUnknownKeys = true }
 
     private var webSocket: WebSocket? = null
     private var reconnectJob: Job? = null
-    private var heartbeatJob: Job? = null
 
     private val isConnecting = AtomicBoolean(false)
     private val isConnected = AtomicBoolean(false)
@@ -35,16 +37,15 @@ class PresenceWebSocketManager @Inject constructor(
     private val maxRetryDelayMs = 30_000L
 
     companion object {
-        private const val HEARTBEAT_INTERVAL_MS = 1_000L
+        private const val MSG_CALL_START = "CALL_START"
+        private const val MSG_CALL_END = "CALL_END"
+        private const val MSG_NET_OFFLINE = "NET_OFFLINE"
+        private const val MSG_NET_ONLINE = "NET_ONLINE"
     }
 
-    // -------------------------
-    // Public API
-    // -------------------------
+    /** PUBLIC API **/
 
     fun connect() {
-        Log.d("WS", "connect() loggedIn=${userSession.isLoggedIn()}")
-
         if (!userSession.isLoggedIn()) return
         if (isConnected.get() || isConnecting.get()) return
 
@@ -60,14 +61,11 @@ class PresenceWebSocketManager @Inject constructor(
 
     fun disconnect() {
         reconnectJob?.cancel()
-        reconnectJob = null
-
-        stopHeartbeat()
 
         isConnecting.set(false)
         isConnected.set(false)
 
-        webSocket?.close(1000, "Client disconnect")
+        webSocket?.close(1000, "disconnect")
         webSocket = null
 
         scope.launch {
@@ -75,9 +73,23 @@ class PresenceWebSocketManager @Inject constructor(
         }
     }
 
-    // -------------------------
-    // Internal helpers
-    // -------------------------
+    fun sendCallStart() {
+        webSocket?.send(MSG_CALL_START)
+    }
+
+    fun sendCallEnd() {
+        webSocket?.send(MSG_CALL_END)
+    }
+
+    fun sendNetOffline() {
+        webSocket?.send(MSG_NET_OFFLINE)
+    }
+
+    fun sendNetOnline() {
+        webSocket?.send(MSG_NET_ONLINE)
+    }
+
+    /** INTERNAL **/
 
     private fun scheduleReconnect() {
         if (!userSession.isLoggedIn()) return
@@ -94,22 +106,6 @@ class PresenceWebSocketManager @Inject constructor(
         retryDelayMs = 1_000L
     }
 
-    private fun startHeartbeat(socket: WebSocket) {
-        heartbeatJob?.cancel()
-
-        heartbeatJob = scope.launch {
-            while (isConnected.get()) {
-                delay(HEARTBEAT_INTERVAL_MS)
-                if (!socket.send("ping")) break
-            }
-        }
-    }
-
-    private fun stopHeartbeat() {
-        heartbeatJob?.cancel()
-        heartbeatJob = null
-    }
-
     private fun buildWsUrl(): String =
         AppConstants.BASE_URL
             .trimEnd('/')
@@ -117,33 +113,58 @@ class PresenceWebSocketManager @Inject constructor(
             .replace("http://", "ws://") +
                 "/" + AppConstants.WS_PRESENCE_PATH.trimStart('/')
 
-    // -------------------------
-    // WebSocket listener
-    // -------------------------
+    /** SOCKET LISTENER **/
 
     private val socketListener = object : WebSocketListener() {
 
+        //TODO for debugging
+//        fun onPong(webSocket: WebSocket, bytes: ByteString) {
+//            Log.d("RTM", "PONG received from server")
+//        }
+
         override fun onOpen(webSocket: WebSocket, response: Response) {
+            Log.d("RTM", "WS OPEN: $response")
+
             isConnecting.set(false)
             isConnected.set(true)
 
             resetBackoff()
-            startHeartbeat(webSocket)
 
             scope.launch {
                 PresenceEventBus.events.emit(PresenceEvent.Connected)
             }
         }
 
-        override fun onFailure(
-            webSocket: WebSocket,
-            t: Throwable,
-            response: Response?
-        ) {
+        /**
+         * onMessage: is triggered ONLY for text / binary messages not for ping pong control frames
+         */
+        override fun onMessage(webSocket: WebSocket, text: String) {
+            Log.w("RTM", "WS onMesssage = $text")
+            try {
+                val broadcast = json.decodeFromString<PresenceBroadcastMessage>(text)
+                val state = broadcast.status.toPresenceState()
+
+                remotePresenceStore.update(broadcast.account_id, state)
+
+                scope.launch {
+                    PresenceEventBus.events.emit(
+                        PresenceEvent.StatusChanged(
+                            accountId = broadcast.account_id,
+                            state = state
+                        )
+                    )
+                }
+
+            } catch (ignored: Exception) {
+                // non-presence message → ignore
+            }
+        }
+
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            Log.e("RTM", "WS FAILURE = ${t.message}")
+
             isConnecting.set(false)
             isConnected.set(false)
-
-            stopHeartbeat()
 
             scope.launch {
                 PresenceEventBus.events.emit(PresenceEvent.Disconnected)
@@ -152,15 +173,11 @@ class PresenceWebSocketManager @Inject constructor(
             scheduleReconnect()
         }
 
-        override fun onClosed(
-            webSocket: WebSocket,
-            code: Int,
-            reason: String
-        ) {
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            Log.d("RTM", "WS CLOSED $reason")
+
             isConnecting.set(false)
             isConnected.set(false)
-
-            stopHeartbeat()
 
             scope.launch {
                 PresenceEventBus.events.emit(PresenceEvent.Disconnected)
@@ -169,13 +186,4 @@ class PresenceWebSocketManager @Inject constructor(
             scheduleReconnect()
         }
     }
-
-    fun sendCallStarted() {
-        webSocket?.send("""{"type":"CALL_START"}""")
-    }
-
-    fun sendCallEnded() {
-        webSocket?.send("""{"type":"CALL_END"}""")
-    }
-
 }

@@ -6,7 +6,6 @@ import retrofit2.http.POST
 
 // Call FCM fallback
 interface RtmAuthApi {
-
     @POST("rtm/token")
     suspend fun getRtmToken(@Body body: Map<String, Long>): RtmTokenResponse
 }

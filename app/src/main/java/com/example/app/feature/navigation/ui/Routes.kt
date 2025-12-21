@@ -25,6 +25,7 @@ object Routes {
 
         object Wallet {
             const val ROOT = "wallet"
+            const val ENTER_AMOUNT = "wallet_enter_amount"
         }
 
         object Call {

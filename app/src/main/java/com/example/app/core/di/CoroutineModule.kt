@@ -1,9 +1,11 @@
 package com.example.app.core.di
 
+import android.util.Log
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -15,7 +17,18 @@ object CoroutineModule {
 
     @Provides
     @Singleton
+    fun provideGlobalExceptionHandler(): CoroutineExceptionHandler =
+        CoroutineExceptionHandler { _, throwable ->
+            // 🔥 central logging place
+            Log.e("GlobalError", "Unhandled: ${throwable.message}", throwable)
+            // Later: Crashlytics, Sentry, snackbar dispatcher, etc.
+        }
+
+    @Provides
+    @Singleton
     @ApplicationScope
-    fun provideApplicationScope(): CoroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    fun provideApplicationScope(
+        handler: CoroutineExceptionHandler
+    ): CoroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate + handler)
 }

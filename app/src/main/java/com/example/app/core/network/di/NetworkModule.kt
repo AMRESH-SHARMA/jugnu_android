@@ -6,6 +6,7 @@ import com.example.app.core.network.data.RtmAuthApi
 import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listeners.data.ListenerApi
 import com.example.app.feature.user.data.UserApi
+import com.example.app.feature.wallet.data.PaymentApi
 import com.example.app.utils.AppConstants
 import dagger.Module
 import dagger.Provides
@@ -23,9 +24,7 @@ object NetworkModule {
     @Singleton
     fun provideRetrofit(): Retrofit =
         Retrofit.Builder()
-//            .baseUrl("$AppConstants.BASE_URL/api/v1/")
             .baseUrl("${AppConstants.BASE_URL}api/v1/")
-
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
@@ -73,4 +72,12 @@ object NetworkModule {
     ): UserApi {
         return retrofit.create(UserApi::class.java)
     }
+
+    // -----------------------------
+    // Payment API
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun providePaymentApi(retrofit: Retrofit): PaymentApi =
+        retrofit.create(PaymentApi::class.java)
 }

@@ -10,23 +10,21 @@ import io.agora.rtm.RtmConfig
 import io.agora.rtm.RtmEventListener
 import io.agora.rtm.SubscribeOptions
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 
 object RtmManager {
     private var rtmClient: RtmClient? = null
     private lateinit var eventListener: RtmEventListener
+    private lateinit var scope: CoroutineScope
 
-    val scope = CoroutineScope(
-        SupervisorJob() + Dispatchers.Default
-    )
     private var currentUserId: String? = null
     fun init(
         context: Context,
         appId: String,
         userId: String,
-        listener: RtmEventListener
+        listener: RtmEventListener,
+        appScope: CoroutineScope
     ) {
+        scope = appScope
         eventListener = listener
         currentUserId = userId
 
@@ -42,14 +40,12 @@ object RtmManager {
         }
     }
 
-
     fun login(token: String) {
         rtmClient?.login(token, object : ResultCallback<Void?> {
             override fun onSuccess(responseInfo: Void?) {
                 Log.d("RTM", "RTM login success")
                 // 🔑 SUBSCRIBE TO OWN CHANNEL
                 val channelName = "account_$currentUserId"
-
                 subscribe(
                     channelName = channelName,
                     callback = object : ResultCallback<Void?> {

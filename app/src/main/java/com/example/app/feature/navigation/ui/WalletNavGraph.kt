@@ -1,9 +1,12 @@
 package com.example.app.feature.navigation.ui
 
+import Routes
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.example.app.feature.wallet.domain.AmountFlowType
+import com.example.app.feature.wallet.ui.EnterAmountScreen
 import com.example.app.feature.wallet.ui.WalletScreen
 
 fun NavGraphBuilder.walletNavGraph(navController: NavController) {
@@ -16,6 +19,22 @@ fun NavGraphBuilder.walletNavGraph(navController: NavController) {
             WalletScreen(
                 navController,
                 onBackClick = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = "${Routes.Screen.Wallet.ENTER_AMOUNT}/{type}"
+        ) { backStackEntry ->
+
+            val type = backStackEntry.arguments
+                ?.getString("type")
+                ?.uppercase()
+
+            val flowType = AmountFlowType.valueOf(type!!)
+
+            EnterAmountScreen(
+                navController = navController,
+                flowType = flowType
             )
         }
     }

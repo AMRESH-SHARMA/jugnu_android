@@ -24,14 +24,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.VideoCall
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -45,7 +43,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -54,6 +51,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.app.core.call.CallType
 import com.example.app.core.session.SessionManager
+import com.example.app.core.websocket.PresenceState
+import com.example.app.core.websocket.PresenceViewModel
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
@@ -65,187 +64,161 @@ import com.example.app.feature.listeners.ui.components.ListenersSearchBar
 fun ListenerListScreen(
     modifier: Modifier = Modifier,
     navController: NavController,
-    onOpenListener: (ListenerModel) -> Unit = {},
+    onOpenListener: (ListenerModel) -> Unit = {}
 ) {
-    val vm: ListenerViewModel = hiltViewModel()
+    // ViewModels
+    val listenerVm: ListenerViewModel = hiltViewModel()
     val callVm: CallViewModel = hiltViewModel()
+    val presenceVm: PresenceViewModel = hiltViewModel() // <-- reuse existing
 
-    val data by vm.listeners.collectAsState()
-    val loading by vm.loading.collectAsState()
-    val error by vm.error.collectAsState()
+    // State
+    val listeners by listenerVm.listeners.collectAsState()
+    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
 
-    LaunchedEffect(Unit) {
-//        Log.d("RTM", "ListenerListScreen navController=$navController")
-    }
+    ListenerListContent(
+        listeners = listeners,
+        presenceMap = presenceMap,
+        navController = navController,
+        onOpenListener = onOpenListener,
+        onCallClick = { listener, callType ->
 
-    when {
-        loading -> {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator()
-            }
-        }
+            val calleeAccountId = listener.accountId ?: return@ListenerListContent
 
-        error != null -> {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Error: $error")
-            }
-        }
-
-        else -> {
-            ListenerListContent(
-                listeners = data,
-                navController = navController,
-                onOpenListener = onOpenListener,
-                onCallClick = { listener, callType ->
-
-                    val calleeAccountId = listener.accountId
-                        ?: return@ListenerListContent
-
-                    // 1️⃣ Start call (backend + RTM)
-                    callVm.startCall(
-                        callType = callType,
-                        callerAccountId = SessionManager.userId,
-                        calleeAccountId = calleeAccountId,
-                        calleeName = listener.name,
-                        calleeAvatar = listener.avatar
-                    )
-                }
+            callVm.startCall(
+                callType = callType,
+                callerAccountId = SessionManager.userId,
+                calleeAccountId = calleeAccountId,
+                calleeName = listener.name,
+                calleeAvatar = listener.avatar
             )
         }
-    }
+    )
 }
+
 
 // ---------------- REAL CONTENT ---------------------
 
 @Composable
 private fun ListenerListContent(
     listeners: List<ListenerModel>,
+    presenceMap: Map<String, PresenceState>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
-    var selectedListenerModel by remember { mutableStateOf<ListenerModel?>(null) }
+    var selectedListener by remember { mutableStateOf<ListenerModel?>(null) }
 
     val filtered = listeners.filter {
-        it.name.contains(searchQuery, true)
+        it.name.contains(searchQuery, ignoreCase = true)
     }
 
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
+
         ListenersSearchBar(
             modifier = Modifier.fillMaxWidth(),
             query = searchQuery,
             onQueryChange = { searchQuery = it },
             hint = "Search listeners"
         )
+
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
-            items(
-                filtered,
-                //TODO: need to make model not null
-                key = { it.accountId!! }) { listener ->
+            items(filtered, key = { it.accountId }) { listener ->
 
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    tonalElevation = 0.dp,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onOpenListener(listener) }
-                            .padding(horizontal = 2.dp, vertical = 12.dp)
-                    ) {
+                val status = presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
 
-                        AvatarWithStatus(
-                            modifier = Modifier.size(80.dp),
-                            imageUrl = listener.avatar,
-                            onAvatarClick = {
-                                selectedListenerModel = listener
-                                showImageDialog = true
-                            }
-                        )
-
-                        Spacer(Modifier.width(12.dp))
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = listener.name,
-                                style = MaterialTheme.typography.titleSmall,
-                                overflow = TextOverflow.Ellipsis,
-                                maxLines = 1,
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                text = "${listener.gender}-${listener.age}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Text(
-                                "${listener.rating}⭐ (1k+)",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-
-                            Text(
-                                "Exp: ${listener.experience}",
-                                style = MaterialTheme.typography.bodySmall
-                            )
-                        }
-
-                        IconButton({
-                            onCallClick(listener, CallType.VOICE)
-                        }) { Icon(Icons.Default.Call, null) }
-
-                        IconButton({
-                            onCallClick(listener, CallType.VIDEO)
-                        }) { Icon(Icons.Default.VideoCall, null) }
+                ListenerRow(
+                    listener = listener,
+                    status = status,
+                    onOpenListener = onOpenListener,
+                    onCallClick = onCallClick,
+                    onAvatarClick = {
+                        selectedListener = listener
+                        showImageDialog = true
                     }
-                }
-            }
-// ---------------- FOOTER ---------------------
-            item {
-                Spacer(modifier = Modifier.height(20.dp))
-                Text(
-                    text = "last item in the scrollable list.",
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth()
                 )
-                Spacer(modifier = Modifier.height(40.dp))
             }
+
+            item { Spacer(Modifier.height(40.dp)) }
         }
     }
 
-    if (showImageDialog && selectedListenerModel != null) {
+    if (showImageDialog && selectedListener != null) {
         ProfilePopupDialog(
             show = true,
-            imageUrl = selectedListenerModel!!.avatar,
-            rating = "${selectedListenerModel!!.rating}",
-            experienceHours = selectedListenerModel!!.experience,
-            description = selectedListenerModel!!.about ?: "",
+            imageUrl = selectedListener!!.avatar,
+            rating = "${selectedListener!!.rating}",
+            experienceHours = selectedListener!!.experience,
+            description = selectedListener!!.about.orEmpty(),
             onDismiss = {
                 showImageDialog = false
-                selectedListenerModel = null
+                selectedListener = null
             }
         )
     }
 }
+
+// ---------------- LISTENER ROW---------------------
+@Composable
+private fun ListenerRow(
+    listener: ListenerModel,
+    status: PresenceState,
+    onOpenListener: (ListenerModel) -> Unit,
+    onCallClick: (ListenerModel, CallType) -> Unit,
+    onAvatarClick: () -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 0.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onOpenListener(listener) }
+                .padding(horizontal = 2.dp, vertical = 12.dp)
+        ) {
+
+            AvatarWithStatus(
+                modifier = Modifier.size(80.dp),
+                imageUrl = listener.avatar,
+                userStatus = status,
+                onAvatarClick = onAvatarClick
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 4.dp)
+            ) {
+                Text(listener.name, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(12.dp))
+                Text("${listener.gender}-${listener.age}")
+                Spacer(Modifier.height(6.dp))
+                Text("${listener.rating}⭐ (1k+)")
+                Text("Exp: ${listener.experience}")
+            }
+
+            IconButton(onClick = { onCallClick(listener, CallType.VOICE) }) {
+                Icon(imageVector = Icons.Default.Call, contentDescription = null)
+            }
+
+
+            IconButton(onClick = { onCallClick(listener, CallType.VIDEO) }) {
+                Icon(imageVector = Icons.Default.VideoCall, contentDescription = null)
+            }
+        }
+    }
+}
+
 
 // ---------------- POPUP DIALOG---------------------
 @Composable
