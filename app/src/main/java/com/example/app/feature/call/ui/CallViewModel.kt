@@ -364,7 +364,6 @@ class CallViewModel @Inject constructor(
                 calleeName,
                 calleeAvatar
             )) {
-
                 is ApiResult.Success -> {
                     val call = result.data
                     CallEventBus.emit(
