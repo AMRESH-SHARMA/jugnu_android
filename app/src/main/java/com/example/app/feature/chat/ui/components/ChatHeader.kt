@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -19,6 +20,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -26,6 +28,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.app.core.websocket.PresenceState
+import com.example.app.core.websocket.PresenceViewModel
+import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.ProfilePopupDialog
 
@@ -38,6 +44,14 @@ fun ChatHeader(
     onBack: () -> Unit,
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
+
+    val presenceVm: PresenceViewModel = hiltViewModel()
+    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
+
+    val status = listenerModel?.accountId?.toString()?.let {
+        presenceMap[it] ?: PresenceState.OFFLINE
+    } ?: PresenceState.OFFLINE
+    
     // ⭐ State for opening the image modal (same as listener screen)
     var showImageDialog by remember { mutableStateOf(false) }
 
@@ -67,12 +81,13 @@ fun ChatHeader(
                     },   // ⭐ tap to open modal
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // TODO
-//                    AvatarWithStatus(
-//                        modifier = Modifier.size(40.dp),
-//                        imageUrl = listenerModel?.avatar ?: "",
-//                        onAvatarClick = { showImageDialog = true } // ⭐ also clickable directly
-//                    )
+
+                    AvatarWithStatus(
+                        modifier = Modifier.size(40.dp),
+                        imageUrl = listenerModel?.avatar ?: "",
+                        userStatus = status,
+                        onAvatarClick = { showImageDialog = true }
+                    )
 
                     Spacer(modifier = Modifier.width(10.dp))
 

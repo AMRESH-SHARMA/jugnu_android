@@ -11,12 +11,14 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 object WebSocketModule {
-
     @Provides
     @Singleton
     fun provideOkHttpClient(): OkHttpClient =
         OkHttpClient.Builder()
-            // Keeps WS alive (important for mobile)
+            // -------------------------
+            // WebSocket Ping/Pong frames are NOT delivered as messages.
+            // pingInterval send ping and expects pong within passed pingInterval value
+            // -------------------------
             .pingInterval(30, TimeUnit.SECONDS)
             // Optional: timeouts (safe defaults)
             .connectTimeout(10, TimeUnit.SECONDS)

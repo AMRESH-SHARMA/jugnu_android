@@ -7,8 +7,10 @@ import javax.inject.Singleton
 
 @Singleton
 class PresenceStore @Inject constructor() {
-
-    // Tracks presence of the local logged-in user only.
+    /**
+     * Tracks presence of the local logged-in user only
+     * User can explicitly set their status Online / offline
+     */
     private val _state = MutableStateFlow(PresenceState.OFFLINE)
     val state: StateFlow<PresenceState> = _state
 
