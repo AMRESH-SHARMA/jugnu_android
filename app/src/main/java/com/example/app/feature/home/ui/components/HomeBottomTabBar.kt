@@ -16,7 +16,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import com.example.app.feature.home.ui.HomeTab
 
-
 @Composable
 fun HomeBottomTabBar(
     selected: HomeTab,
