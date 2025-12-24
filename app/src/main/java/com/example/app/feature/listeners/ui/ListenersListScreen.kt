@@ -1,5 +1,14 @@
 package com.example.app.feature.listeners.ui
 
+import android.Manifest
+import android.app.Activity
+import android.content.Context
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -24,16 +33,19 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.VideoCall
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,10 +54,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
@@ -58,8 +73,7 @@ import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.components.ListenersSearchBar
 
-// ---------------- MAIN SCREEN ---------------------------------------
-
+// ---------------- MAIN SCREEN ---------------------
 @Composable
 fun ListenerListScreen(
     modifier: Modifier = Modifier,
@@ -69,11 +83,47 @@ fun ListenerListScreen(
     // ViewModels
     val listenerVm: ListenerViewModel = hiltViewModel()
     val callVm: CallViewModel = hiltViewModel()
-    val presenceVm: PresenceViewModel = hiltViewModel() // <-- reuse existing
+    val presenceVm: PresenceViewModel = hiltViewModel()
 
     // State
     val listeners by listenerVm.listeners.collectAsState()
     val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
+    val context = LocalContext.current
+    val activity = context as Activity
+
+    // Pending call (ONLY cleared after permission result)
+    var pendingCall by remember {
+        mutableStateOf<Triple<ListenerModel, CallType, Long>?>(null)
+    }
+
+    // Track if permission was ever requested
+    var permissionEverRequested by rememberSaveable {
+        mutableStateOf(false)
+    }
+
+    var showPermissionSettingsDialog by remember {
+        mutableStateOf(false)
+    }
+
+    // Permission launcher
+    val permissionLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestMultiplePermissions()
+        ) { result ->
+            val allGranted = result.values.all { it }
+            if (allGranted) {
+                pendingCall?.let { (listener, callType, calleeAccountId) ->
+                    callVm.startCall(
+                        callType = callType,
+                        callerAccountId = SessionManager.userId,
+                        calleeAccountId = calleeAccountId,
+                        calleeName = listener.name,
+                        calleeAvatar = listener.avatar
+                    )
+                }
+            }
+            pendingCall = null
+        }
 
     ListenerListContent(
         listeners = listeners,
@@ -84,20 +134,93 @@ fun ListenerListScreen(
 
             val calleeAccountId = listener.accountId ?: return@ListenerListContent
 
-            callVm.startCall(
-                callType = callType,
-                callerAccountId = SessionManager.userId,
-                calleeAccountId = calleeAccountId,
-                calleeName = listener.name,
-                calleeAvatar = listener.avatar
-            )
+            val requiredPermissions: List<String> = when (callType) {
+                CallType.VOICE ->
+                    listOf(Manifest.permission.RECORD_AUDIO)
+
+                CallType.VIDEO ->
+                    listOf(
+                        Manifest.permission.RECORD_AUDIO,
+                        Manifest.permission.CAMERA
+                    )
+            }
+
+            // 1️⃣ If already granted → start call
+            val allGranted = requiredPermissions.all {
+                context.hasPermission(it)
+            }
+
+            if (allGranted) {
+                callVm.startCall(
+                    callType = callType,
+                    callerAccountId = SessionManager.userId,
+                    calleeAccountId = calleeAccountId,
+                    calleeName = listener.name,
+                    calleeAvatar = listener.avatar
+                )
+                return@ListenerListContent
+            }
+
+            // 2️⃣ Detect TRUE permanent denial
+            val permanentlyDenied =
+                permissionEverRequested &&
+                        requiredPermissions.any { permission ->
+                            !ActivityCompat.shouldShowRequestPermissionRationale(
+                                activity,
+                                permission
+                            ) &&
+                                    !context.hasPermission(permission)
+                        }
+
+            if (permanentlyDenied) {
+                // 🚫 Settings only after real permanent denial
+                showPermissionSettingsDialog = true
+            } else {
+                // 🟡 First / temporary denial → show native Android dialog
+                permissionEverRequested = true
+                pendingCall = Triple(listener, callType, calleeAccountId)
+                permissionLauncher.launch(requiredPermissions.toTypedArray())
+            }
         }
     )
+
+    // ---------------- SETTINGS DIALOG ---------------------
+
+    if (showPermissionSettingsDialog) {
+        AlertDialog(
+            onDismissRequest = { showPermissionSettingsDialog = false },
+            title = { Text("Permission required") },
+            text = {
+                Text(
+                    "Microphone and Camera access are required to make calls. " +
+                            "You can enable them in Settings.", color = Color.White
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPermissionSettingsDialog = false
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                            data = Uri.fromParts("package", context.packageName, null)
+                        }
+                    )
+                }) {
+                    Text("Open Settings", color = Color.White)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showPermissionSettingsDialog = false
+                }) {
+                    Text("Not now", color = Color.White)
+                }
+            }
+        )
+    }
 }
 
 
 // ---------------- REAL CONTENT ---------------------
-
 @Composable
 private fun ListenerListContent(
     listeners: List<ListenerModel>,
@@ -131,7 +254,8 @@ private fun ListenerListContent(
         ) {
             items(filtered, key = { it.accountId }) { listener ->
 
-                val status = presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
+                val status =
+                    presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
 
                 ListenerRow(
                     listener = listener,
@@ -163,6 +287,7 @@ private fun ListenerListContent(
         )
     }
 }
+
 
 // ---------------- LISTENER ROW---------------------
 @Composable
@@ -319,3 +444,10 @@ fun ProfilePopupDialog(
     }
 }
 
+
+// ----------------PERMISSION CHECKER UTILITY---------------------
+fun Context.hasPermission(permission: String): Boolean =
+    ContextCompat.checkSelfPermission(
+        this,
+        permission
+    ) == PackageManager.PERMISSION_GRANTED
