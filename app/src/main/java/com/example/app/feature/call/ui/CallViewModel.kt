@@ -388,6 +388,7 @@ class CallViewModel @Inject constructor(
     fun acceptCall() {
         val call = CallStore.current() ?: return
 
+        // 1️⃣ Optimistic local state
         CallEventBus.emit(
             CallEvent.Accepted(
                 callId = call.callId,
@@ -395,7 +396,7 @@ class CallViewModel @Inject constructor(
                 rtcToken = ""
             )
         )
-
+        // 1️⃣ Signal backend + trigger RTM `call_accepted`
         viewModelScope.launch {
             when (val result = acceptCallUseCase(
                 call.callId,
@@ -403,9 +404,9 @@ class CallViewModel @Inject constructor(
                 call.callerAccountId,
                 call.calleeAccountId
             )) {
-
                 is ApiResult.Success -> {
                     val dto = result.data
+                    // 3️⃣ Update CallStore with REAL RTC data (callee side)
                     CallEventBus.emit(
                         CallEvent.Accepted(
                             callId = call.callId,
@@ -425,10 +426,11 @@ class CallViewModel @Inject constructor(
 
     fun rejectCall() {
         val call = CallStore.current() ?: return
-
+        // 1️⃣ Local State update
         CallEventBus.emit(CallEvent.Rejected(call.callId))
+        // 2️⃣ Side-Effects after
         cleanupSideEffects()
-
+        // 3️⃣ Backend update
         viewModelScope.launch {
             when (val result = rejectCallUseCase(
                 call.callId,
@@ -447,10 +449,11 @@ class CallViewModel @Inject constructor(
 
     fun endCall() {
         val call = CallStore.current() ?: return
-
+        // 1️⃣ Local State update
         CallEventBus.emit(CallEvent.Cancelled(call.callId))
+        // 2️⃣ Side-Effects after
         cleanupSideEffects()
-
+        // 3️⃣ Backend update
         viewModelScope.launch {
             when (val result = endCallUseCase(
                 call.callId,
@@ -468,134 +471,11 @@ class CallViewModel @Inject constructor(
         }
     }
 
-    /*
-    fun startCall(
-        callType: CallType,
-        callerAccountId: Long,
-        calleeAccountId: Long,
-        calleeName: String,
-        calleeAvatar: String?
-    ) {
-        viewModelScope.launch {
-            try {
-                val call = startCallUseCase(
-                    callType,
-                    callerAccountId,
-                    calleeAccountId,
-                    calleeName = calleeName,
-                    calleeAvatar = calleeAvatar
-                )
-//                callManager.onOutgoing(call)
-                CallEventBus.emit(
-                    CallEvent.Outgoing(
-                        callId = call.callId,
-                        callerAccountId = call.callerAccountId,
-                        calleeAccountId = call.calleeAccountId,
-                        callType = call.callType,
-                        calleeName = call.calleeName,
-                        calleeAvatar = call.calleeAvatar
-                    )
-                )
 
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    fun acceptCall() {
-        val call = CallStore.current() ?: return
-
-        // ✅ Optimistic local state
-        CallEventBus.emit(
-            CallEvent.Accepted(
-                callId = call.callId,
-                channel = null,      // not yet known
-                rtcToken = ""
-            )
-        )
-
-        viewModelScope.launch {
-            try {
-                // 1️⃣ Signal backend + trigger RTM `call_accepted`
-                val result = acceptCallUseCase(
-                    call.callId,
-                    call.callType,
-                    call.callerAccountId,
-                    call.calleeAccountId
-                )
-                // 3️⃣ 🔥 THIS IS THE LINE YOU ASKED ABOUT
-                // Update CallStore with REAL RTC data (callee side)
-                CallEventBus.emit(
-                    CallEvent.Accepted(
-                        callId = call.callId,
-                        channel = result.channel,
-                        rtcToken = result.rtcToken
-                    )
-                )
-            } catch (e: Exception) {
-                error.value = e.message
-                // handle failure (If acceptCallUseCase fails rollback to home screen)
-                onAcceptFailed(call, e)
-            }
-        }
-    }
-
-    fun rejectCall() {
-        val call = CallStore.current() ?: return
-
-        // ✅ 1. STATE FIRST
-        CallEventBus.emit(CallEvent.Rejected(call.callId))
-
-        // ✅ 2. SIDE-EFFECTS AFTER
-        cleanupSideEffects()
-
-        viewModelScope.launch {
-            try {
-                rejectCallUseCase(
-                    call.callId,
-                    call.callType,
-                    call.callerAccountId,
-                    call.calleeAccountId
-                )
-//                callManager.onRejected()
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-
-    fun endCall() {
-        Log.d("RTM", "End Call callViewModel")
-        val call = CallStore.current() ?: return
-
-        // ✅ 1. LOCAL STATE UPDATE
-        CallEventBus.emit(CallEvent.Cancelled(call.callId))
-
-        // ✅ 2. SIDE-EFFECTS
-        cleanupSideEffects()
-
-        // 2️⃣ THEN backend + RTM
-        viewModelScope.launch {
-            try {
-                endCallUseCase(
-                    call.callId,
-                    call.callerAccountId,
-                    call.calleeAccountId,
-                    call.status,
-                    call.callType,
-                )
-            } catch (e: Exception) {
-                error.value = e.message
-            }
-        }
-    }
-*/
     private fun onAcceptFailed(call: CallModel, error: Throwable) {
         Log.e("RTM", "Accept failed", error)
         // 1️⃣ Roll back state
         CallEventBus.emit(CallEvent.Ended(call.callId))
-
         // 2️⃣ Cleanup side-effects
         cleanupSideEffects()
     }
@@ -643,7 +523,6 @@ class CallViewModel @Inject constructor(
     }
 
     fun currentRtcManager(): RtcManager? = rtcManager
-
 
     // ----------------------------------------------------------------
     // AUDIO CONTROLS

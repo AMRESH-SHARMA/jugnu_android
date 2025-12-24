@@ -95,6 +95,7 @@ dependencies {
     implementation(libs.androidx.datastore.core)
     implementation(libs.androidx.foundation)
     implementation(libs.ui)
+    implementation(libs.androidx.compose.runtime.saveable)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

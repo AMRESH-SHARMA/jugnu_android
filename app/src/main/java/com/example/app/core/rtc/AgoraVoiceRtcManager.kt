@@ -117,12 +117,35 @@ class AgoraVoiceRtcManager @Inject constructor(
         // _events.tryEmit(RtcEvent.CallEnded)
     }
 
+    /*
+    When remote user join then start billing.
+    onJoinChannelSuccess
+    onUserJoined
+    onUserOffline
+    onConnectionStateChanged
+    onLeaveChannel
+    onError
+
+    Long calls can exceed token TTL, Refresh token silently, Prevent sudden call drop
+    onTokenPrivilegeWillExpire(String token)
+
+
+    call backend to renewToken
+    onRequestToken
+
+    To show audio animation:
+    onAudioVolumeIndication
+
+    Show Poor network warning in UI
+    onNetworkQuality(int uid, int txQuality, int rxQuality)
+
+    * */
 
     // on user offline leave rtc manager
-//    fun onUserOffline(uid: Int, reason: Int) {
-//        if (isOneToOneCall) {
-//            rtcManager.leave()
-//        }
-//    }
+    //    fun onUserOffline(uid: Int, reason: Int) {
+    //        if (isOneToOneCall) {
+    //            rtcManager.leave()
+    //        }
+    //    }
 
 }
