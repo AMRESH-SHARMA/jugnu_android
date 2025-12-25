@@ -6,4 +6,6 @@ sealed class AudioType {
     object OutgoingCall : AudioType()
     object MessageSent : AudioType()
     object MessageReceived : AudioType()
+
+    object Beep : AudioType()
 }

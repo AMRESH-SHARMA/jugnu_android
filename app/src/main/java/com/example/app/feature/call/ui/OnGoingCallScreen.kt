@@ -1,6 +1,5 @@
 package com.example.app.feature.call.ui
 
-import android.util.Log
 import android.view.SurfaceView
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -53,11 +52,6 @@ fun OnGoingCallScreen(
 
     // 🔑 Ask VM for the current RTC manager (do NOT create one here)
     val rtcManager = vm.currentRtcManager()
-
-    Log.w(
-        "RTM",
-        "UI RENDER → status=$status callType=${call!!.callType} rtc=${rtcManager?.javaClass?.simpleName}"
-    )
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -128,6 +122,16 @@ fun OnGoingCallScreen(
                         CallStatus.OUTGOING_RINGING -> "Calling…"
                         CallStatus.CONNECTING -> "Connecting…"
                         CallStatus.CONNECTED -> uiState.durationLabel
+
+                        else -> ""
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = Color.Gray
+                )
+
+                Text(
+                    text = when (status) {
+                        CallStatus.CONNECTED -> "${uiState.remainingSeconds}s"
                         else -> ""
                     },
                     style = MaterialTheme.typography.bodyMedium,
