@@ -319,7 +319,7 @@ class CallViewModel @Inject constructor(
                 val remaining = balanceAtStart - (seconds * ratePerSec)
 //                Log.d("RTM", "pre warn balanceAtStart $balanceAtStart, ratePerSec $ratePerSec")
                 // 🔔 test beep after 3 seconds (trigger ONCE)
-                if (!warnedLowBalance && seconds >= 2) {
+                if (!warnedLowBalance && seconds >= 3) {
                     Log.d("RTM", "warn")
                     warnedLowBalance = true
                     audioPlayer.play(AudioType.Beep)

@@ -1,11 +1,10 @@
-package com.example.app.feature.listeners.ui
+package com.example.app.feature.listeners.ui.list
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.network.ApiResult
 import com.example.app.core.ui.UiEvent
 import com.example.app.core.ui.UiEventBus
-import com.example.app.core.websocket.PresenceState
 import com.example.app.core.websocket.RemotePresenceStore
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.domain.usecase.GetListenersUseCase
@@ -25,13 +24,14 @@ class ListenerViewModel @Inject constructor(
     val listeners: StateFlow<List<ListenerModel>> = _listeners
 
     private var currentPage = 1
-    private val pageSize = 10
+    private val pageSize = 30
 
     private var isLoading = false
     private var hasMore = true
 
     val isLoadingState = MutableStateFlow(false)
     val hasMoreState = MutableStateFlow(true)
+
     init {
         loadNextPage()
     }
@@ -44,12 +44,17 @@ class ListenerViewModel @Inject constructor(
             when (val result = getListeners(currentPage, pageSize)) {
                 is ApiResult.Success -> {
                     val (newItems, total) = result.data
-                    _listeners.value = _listeners.value + newItems
+                    _listeners.value += newItems
                     currentPage++
                     hasMoreState.value = _listeners.value.size < total
                 }
+
                 is ApiResult.Error -> {
-                    UiEventBus.emit(UiEvent.ShowSnackbar(result.message ?: "Unable to load listeners"))
+                    UiEventBus.emit(
+                        UiEvent.ShowSnackbar(
+                            result.message ?: "Unable to load listeners"
+                        )
+                    )
                 }
             }
             isLoadingState.value = false
