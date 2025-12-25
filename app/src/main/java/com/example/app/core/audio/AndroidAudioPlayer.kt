@@ -38,6 +38,9 @@ class AndroidAudioPlayer @Inject constructor(
 
             AudioType.MessageReceived ->
                 playOnce(R.raw.message_sent)
+
+            AudioType.Beep ->
+                playOnce(R.raw.message_sent)
         }
     }
 

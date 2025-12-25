@@ -5,7 +5,7 @@ object AppConstants {
     // =========================
     //        API URL
     // =========================
-    const val BASE_URL = "http://10.124.232.61:3001/"
+    const val BASE_URL = "http://10.19.180.61:3001/"
 
     // WebSocket
     const val WS_PRESENCE_PATH = "ws/presence"
