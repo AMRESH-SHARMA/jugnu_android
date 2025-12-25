@@ -21,28 +21,38 @@ class ListenerViewModel @Inject constructor(
     private val remotePresenceStore: RemotePresenceStore
 ) : ViewModel() {
 
-    val listeners = MutableStateFlow<List<ListenerModel>>(emptyList())
+    private val _listeners = MutableStateFlow<List<ListenerModel>>(emptyList())
+    val listeners: StateFlow<List<ListenerModel>> = _listeners
 
-    val presenceMap: StateFlow<Map<String, PresenceState>> =
-        remotePresenceStore.states
+    private var currentPage = 1
+    private val pageSize = 10
 
+    private var isLoading = false
+    private var hasMore = true
+
+    val isLoadingState = MutableStateFlow(false)
+    val hasMoreState = MutableStateFlow(true)
     init {
-        load()
+        loadNextPage()
     }
 
-    fun load() = viewModelScope.launch {
-        when (val result = getListeners()) {
+    fun loadNextPage() {
+        if (isLoadingState.value || !hasMoreState.value) return
 
-            is ApiResult.Success -> {
-                listeners.value = result.data
+        viewModelScope.launch {
+            isLoadingState.value = true
+            when (val result = getListeners(currentPage, pageSize)) {
+                is ApiResult.Success -> {
+                    val (newItems, total) = result.data
+                    _listeners.value = _listeners.value + newItems
+                    currentPage++
+                    hasMoreState.value = _listeners.value.size < total
+                }
+                is ApiResult.Error -> {
+                    UiEventBus.emit(UiEvent.ShowSnackbar(result.message ?: "Unable to load listeners"))
+                }
             }
-
-            is ApiResult.Error -> {
-                listeners.value = emptyList()
-                UiEventBus.emit(
-                    UiEvent.ShowSnackbar(result.message ?: "Unable to load listeners")
-                )
-            }
+            isLoadingState.value = false
         }
     }
 }

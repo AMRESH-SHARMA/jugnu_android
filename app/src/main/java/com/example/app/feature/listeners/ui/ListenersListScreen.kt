@@ -29,11 +29,13 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,12 +43,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -225,6 +229,7 @@ fun ListenerListScreen(
 private fun ListenerListContent(
     listeners: List<ListenerModel>,
     presenceMap: Map<String, PresenceState>,
+    listenerVm: ListenerViewModel = hiltViewModel(),
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit
@@ -232,9 +237,20 @@ private fun ListenerListContent(
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedListener by remember { mutableStateOf<ListenerModel?>(null) }
+    val listState = rememberLazyListState()
+    // Observe ViewModel state
+    val listeners by listenerVm.listeners.collectAsState()
+    val isLoading by listenerVm.isLoadingState.collectAsState()
+    val hasMore by listenerVm.hasMoreState.collectAsState()
+    val presenceVm: PresenceViewModel = hiltViewModel()
+    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState(initial = emptyMap())
 
-    val filtered = listeners.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
+//    val filtered = listeners.filter {
+//        it.name.contains(searchQuery, ignoreCase = true)
+//    }
+    // Filtered list for search
+    val filtered = if (searchQuery.isBlank()) listeners else {
+        listeners.filter { it.name.contains(searchQuery, ignoreCase = true) }
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
@@ -249,6 +265,7 @@ private fun ListenerListContent(
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = 12.dp)
         ) {
@@ -269,7 +286,52 @@ private fun ListenerListContent(
                 )
             }
 
-            item { Spacer(Modifier.height(40.dp)) }
+//            item { Spacer(Modifier.height(40.dp)) }
+            // Footer for pagination/loading
+            item {
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                    }
+
+                    !hasMore && listeners.isNotEmpty() -> {
+                        // Optional "End of list" text
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "No more listeners",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                        }
+                    }
+
+                    else -> Spacer(modifier = Modifier.height(40.dp))
+                }
+            }
+        }
+        // Scroll trigger for next page
+        LaunchedEffect(listState, searchQuery) {
+            snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
+                .collect { lastVisibleIndex ->
+                    if (lastVisibleIndex != null
+                        && lastVisibleIndex >= listeners.size - 3
+                        && searchQuery.isBlank() // disable pagination while searching
+                    ) {
+                        listenerVm.loadNextPage()
+                    }
+                }
         }
     }
 

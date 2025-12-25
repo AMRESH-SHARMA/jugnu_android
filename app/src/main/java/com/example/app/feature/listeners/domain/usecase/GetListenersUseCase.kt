@@ -9,9 +9,14 @@ import javax.inject.Inject
 class GetListenersUseCase @Inject constructor(
     private val repo: ListenerRepository
 ) {
-    suspend operator fun invoke(): ApiResult<List<ListenerModel>> {
-        return repo.getListeners()
-    }
+    suspend operator fun invoke(
+        page: Int,
+        limit: Int
+    ): ApiResult<Pair<List<ListenerModel>, Int>> =
+        repo.getListeners(page, limit)
+//    suspend operator fun invoke(): ApiResult<List<ListenerModel>> {
+//        return repo.getListeners()
+//    }
 }
 
 
