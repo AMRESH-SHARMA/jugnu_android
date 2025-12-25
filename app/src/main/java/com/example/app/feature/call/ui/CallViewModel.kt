@@ -44,7 +44,6 @@ class CallViewModel @Inject constructor(
     private val acceptCallUseCase: AcceptCall,
     private val rejectCallUseCase: RejectCall,
     private val endCallUseCase: EndCall,
-//    private val callManager: CallManager,
     private val rtcManagerFactory: RtcManagerFactory,
     private val audioPlayer: AudioPlayer,
     private val userRepository: UserRepository
@@ -56,10 +55,8 @@ class CallViewModel @Inject constructor(
 
     /** 🔥 SINGLE SOURCE OF TRUTH */
     val callModel: StateFlow<CallModel?> = CallStore.call
-
     private val _uiState = MutableStateFlow(CallUiState())
     val uiState: StateFlow<CallUiState> = _uiState.asStateFlow()
-
     val error = MutableStateFlow<String?>(null)
 
     private var rtcManager: RtcManager? = null
@@ -78,6 +75,7 @@ class CallViewModel @Inject constructor(
     // TIMERS
     // ----------------------------------------------------------------
 
+    private var callStarted = false
     private var timerJob: Job? = null
     private var connectTimeoutJob: Job? = null
     private var ringingTimeoutJob: Job? = null
@@ -86,10 +84,11 @@ class CallViewModel @Inject constructor(
     private val _headerUiState = MutableStateFlow(CallHeaderUiState())
     val headerUiState: StateFlow<CallHeaderUiState> =
         _headerUiState.asStateFlow()
-
     private val _remoteUid = MutableStateFlow<Int?>(null)
     val remoteUid: StateFlow<Int?> = _remoteUid
-
+    private var warnedLowBalance = false
+    private var balanceAtStart = 0     // seconds user can talk
+    private var ratePerSec = 1         // cost rate
 
     // ----------------------------------------------------------------
     // STATE REACTIONS (reactive safety net)
@@ -164,10 +163,17 @@ class CallViewModel @Inject constructor(
 
                     // ✅ Media connected
                     CallStatus.CONNECTED -> {
+                        if (callStarted) return@collect
+                        callStarted = true
                         Log.d("RTM", "Connected")
                         audioPlayer.stop()
                         cancelRingingTimeout()
                         cancelConnectTimeout()
+                        // TODO
+                        lowBalanceWarningTimer(
+                            balance = 2,   // whatever value comes from backend
+                            rate = 1
+                        )
                         startTimer()
                     }
 
@@ -199,7 +205,6 @@ class CallViewModel @Inject constructor(
                         _headerUiState.value = CallHeaderUiState(
                             name = call.calleeName,
                             avatarUrl = call.calleeAvatar,
-//                            subtitle = callStatusToSubtitle(call.status),
                             isLoading = false
                         )
                         return@collect
@@ -209,8 +214,7 @@ class CallViewModel @Inject constructor(
                     val remoteUserId = call.callerAccountId
 
                     _headerUiState.value = CallHeaderUiState(
-                        isLoading = true,
-//                        subtitle = callStatusToSubtitle(call.status)
+                        isLoading = true
                     )
 
                     when (val result = userRepository.getCallerInfo(remoteUserId)) {
@@ -219,7 +223,6 @@ class CallViewModel @Inject constructor(
                             _headerUiState.value = CallHeaderUiState(
                                 name = result.data.name,
                                 avatarUrl = result.data.avatar,
-//                                subtitle = callStatusToSubtitle(call.status),
                                 isLoading = false
                             )
                         }
@@ -228,40 +231,21 @@ class CallViewModel @Inject constructor(
                             _headerUiState.value = CallHeaderUiState(
                                 name = "Unknown",
                                 avatarUrl = null,
-//                                subtitle = callStatusToSubtitle(call.status),
                                 isLoading = false
                             )
                         }
                     }
                 }
         }
-        // --------------------------------------------------
-        // 3️⃣ Subtitle reacts ONLY to call status
-        // --------------------------------------------------
-//        viewModelScope.launch {
-//            callStatus.collect { status ->
-//                _headerUiState.update {
-//                    it.copy(subtitle = callStatusToSubtitle(status))
-//                }
-//            }
-//        }
     }
-
-
-//    private fun callStatusToSubtitle(status: CallStatus?): String =
-//        when (status) {
-//            CallStatus.INCOMING_RINGING -> "Incoming call"
-//            CallStatus.OUTGOING_RINGING -> "Calling…"
-//            CallStatus.CONNECTED -> "Connected"
-//            CallStatus.CONNECTING -> "Connecting…"
-//            else -> ""
-//        }
 
     // ----------------------------------------------------------------
     // CLEANUP (single source)
     // ----------------------------------------------------------------
 
     private fun cleanupSideEffects() {
+        callStarted = false
+        warnedLowBalance = false
         _remoteUid.value = null
         rtcJoinStarted = false
         rtcEventsJob?.cancel()
@@ -324,14 +308,35 @@ class CallViewModel @Inject constructor(
 
     private fun startTimer() {
         if (timerJob != null) return
+        Log.d("RTM", "startTimer() called")
 
         timerJob = viewModelScope.launch {
             var seconds = 0
             while (isActive) {
                 delay(1_000)
                 seconds++
-                _uiState.update {
-                    it.copy(durationLabel = formatDuration(seconds))
+
+                val remaining = balanceAtStart - (seconds * ratePerSec)
+//                Log.d("RTM", "pre warn balanceAtStart $balanceAtStart, ratePerSec $ratePerSec")
+                // 🔔 test beep after 3 seconds (trigger ONCE)
+                if (!warnedLowBalance && seconds >= 2) {
+                    Log.d("RTM", "warn")
+                    warnedLowBalance = true
+                    audioPlayer.play(AudioType.Beep)
+                }
+
+                // 🔔 low balance alert (trigger ONCE)
+//                if (!warnedLowBalance && remaining in 1..15) {
+//                    warnedLowBalance = true
+//                    audioPlayer.play(AudioType.Beep)
+//                }
+
+                _uiState.update { state ->
+                    state.copy(
+                        elapsedSeconds = seconds,
+                        remainingSeconds = remaining.coerceAtLeast(0),
+                        durationLabel = formatDuration(seconds)
+                    )
                 }
             }
         }
@@ -344,6 +349,12 @@ class CallViewModel @Inject constructor(
 
     private fun formatDuration(sec: Int): String =
         "%02d:%02d".format(sec / 60, sec % 60)
+
+    fun lowBalanceWarningTimer(balance: Int, rate: Int) {
+        balanceAtStart = balance
+        ratePerSec = rate
+        warnedLowBalance = false
+    }
 
     // ----------------------------------------------------------------
     // USER ACTIONS
@@ -491,8 +502,10 @@ class CallViewModel @Inject constructor(
             manager.events.collect { event ->
                 when (event) {
                     RtcEvent.Connected -> {
-                        val callId = CallStore.current()?.callId ?: return@collect
-                        CallEventBus.emit(CallEvent.Connected(callId))
+                        val call = CallStore.current() ?: return@collect
+                        if (call.status != CallStatus.CONNECTED) {
+                            CallEventBus.emit(CallEvent.Connected(call.callId))
+                        }
                     }
 
                     is RtcEvent.RemoteJoined -> {

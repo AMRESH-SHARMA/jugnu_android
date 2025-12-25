@@ -6,6 +6,9 @@ data class CallUiState(
     val isMuted: Boolean = false,
     val isSpeakerOn: Boolean = false,
     val durationLabel: String = "00:00",
+    // ⏱ internal call timing
+    val elapsedSeconds: Int = 0,
+    val remainingSeconds: Int = 0,
 )
 
 data class CallModel(

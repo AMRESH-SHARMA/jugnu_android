@@ -3,7 +3,6 @@ package com.example.app.core.network
 import retrofit2.HttpException
 import java.io.IOException
 
-
 suspend fun <T> safeApiCall(block: suspend () -> T): ApiResult<T> {
     return try {
         ApiResult.Success(block())
