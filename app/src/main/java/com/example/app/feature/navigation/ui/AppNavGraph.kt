@@ -17,6 +17,8 @@ import androidx.compose.ui.zIndex
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.core.call.CallStore
+import com.example.app.core.preferences.user.domain.UserRole
+import com.example.app.core.session.SessionManager
 import com.example.app.core.ui.UiEvent
 import com.example.app.core.ui.UiEventBus
 import com.example.app.feature.call.domain.CallStatus
@@ -56,8 +58,18 @@ fun AppNavGraph() {
 
                     CallStatus.ENDED, null -> {
                         Log.d("RTM", "NAVIAGTE TO END")
-                        navController.navigate(Routes.Graph.HOME) {
-                            popUpTo(Routes.Graph.CALL) { inclusive = true }
+                        when (SessionManager.userRole) {
+                            UserRole.LISTENER -> {
+                                navController.navigate(Routes.Graph.LISTENER) {
+                                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                }
+                            }
+
+                            UserRole.CUSTOMER -> {
+                                navController.navigate(Routes.Graph.HOME) {
+                                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                }
+                            }
                         }
                     }
 
@@ -76,6 +88,7 @@ fun AppNavGraph() {
         ) {
             selectUserRoleNavGraph(navController)
             homeNavGraph(navController)
+            listenerNavGraph(navController)
             walletNavGraph(navController)
             callNavGraph(navController)
         }

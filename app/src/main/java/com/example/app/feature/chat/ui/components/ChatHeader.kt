@@ -33,7 +33,7 @@ import com.example.app.core.websocket.PresenceState
 import com.example.app.core.websocket.PresenceViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
-import com.example.app.feature.listeners.ui.ProfilePopupDialog
+import com.example.app.feature.listeners.ui.list.ProfilePopupDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -51,7 +51,7 @@ fun ChatHeader(
     val status = listenerModel?.accountId?.toString()?.let {
         presenceMap[it] ?: PresenceState.OFFLINE
     } ?: PresenceState.OFFLINE
-    
+
     // ⭐ State for opening the image modal (same as listener screen)
     var showImageDialog by remember { mutableStateOf(false) }
 

@@ -33,14 +33,31 @@ fun SelectUserRoleScreen(
     navController: NavController,
     viewModel: SelectUserRoleViewModel = hiltViewModel()
 ) {
-    var accountId by remember { mutableStateOf("") }
-
     val navigateToHome by viewModel.navigateToHome
+    var accountId by remember { mutableStateOf("") }
+    val savedRole by viewModel.savedRole
+
+
     LaunchedEffect(navigateToHome) {
         if (navigateToHome) {
-            navController.navigate(Routes.Graph.HOME) {
-                popUpTo(Routes.Screen.SelectUserRole.ROOT) { inclusive = true }
+
+            when (savedRole) {
+
+                UserRole.LISTENER -> {
+                    navController.navigate(Routes.Graph.LISTENER) {
+                        popUpTo(Routes.Screen.SelectUserRole.ROOT) { inclusive = true }
+                    }
+                }
+
+                UserRole.CUSTOMER -> {
+                    navController.navigate(Routes.Graph.HOME) {
+                        popUpTo(Routes.Screen.SelectUserRole.ROOT) { inclusive = true }
+                    }
+                }
+
+                else -> Unit
             }
+
             viewModel.resetNavigationFlag()
         }
     }

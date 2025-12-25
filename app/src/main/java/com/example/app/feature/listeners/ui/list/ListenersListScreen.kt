@@ -1,4 +1,4 @@
-package com.example.app.feature.listeners.ui
+package com.example.app.feature.listeners.ui.list
 
 import android.Manifest
 import android.app.Activity
@@ -75,7 +75,6 @@ import com.example.app.core.websocket.PresenceViewModel
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
-import com.example.app.feature.listeners.ui.components.ListenersSearchBar
 
 // ---------------- MAIN SCREEN ---------------------
 @Composable
@@ -254,14 +253,15 @@ private fun ListenerListContent(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        ListenersSearchBar(
-            modifier = Modifier.fillMaxWidth(),
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            hint = "Search listeners"
-        )
-
+        //TODO
+        /*
+                ListenersSearchBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    hint = "Search listeners"
+                )
+        */
         Spacer(Modifier.height(12.dp))
 
         LazyColumn(
@@ -386,12 +386,22 @@ private fun ListenerRow(
                     .weight(1f)
                     .padding(vertical = 4.dp)
             ) {
-                Text(listener.name, style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(12.dp))
-                Text("${listener.gender}-${listener.age}")
-                Spacer(Modifier.height(6.dp))
-                Text("${listener.rating}⭐ (1k+)")
-                Text("Exp: ${listener.experience}")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = listener.name,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = "${listener.gender} • ${listener.age}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("${listener.rating}⭐ (1k+)", style = MaterialTheme.typography.bodySmall)
+                Text("Exp: ${listener.experience}", style = MaterialTheme.typography.bodySmall)
             }
 
             IconButton(onClick = { onCallClick(listener, CallType.VOICE) }) {
@@ -469,6 +479,9 @@ fun ProfilePopupDialog(
                         model = imageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        // TODO
+//                        placeholder = painterResource(R.drawable.ic_avatar_placeholder),
+//                        error = painterResource(R.drawable.ic_avatar_placeholder),
                         modifier = Modifier
                             .fillMaxWidth(0.70f)
                             .aspectRatio(1f)
