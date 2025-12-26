@@ -20,7 +20,6 @@ object AppConstants {
     const val EVENT_CALL_REJECTED = "call_rejected"
     const val EVENT_CALL_CANCELLED = "call_cancelled"
     const val EVENT_CALL_ENDED = "call_ended"
-    const val EVENT_CALL_MISSED = "call_missed"
 
     // Timeouts
     const val STATE_FLOW_STOP_TIMEOUT = 5000L

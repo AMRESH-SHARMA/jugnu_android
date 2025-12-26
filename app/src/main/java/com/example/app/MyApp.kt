@@ -74,11 +74,9 @@ class MyApp : Application() {
 
             is ApiResult.Success -> {
                 val token = result.data
-
-                Log.d("RTM", token)
                 Log.d(
                     "RTM",
-                    "App ID='${BuildConfig.AGORA_APP_ID}' length=${BuildConfig.AGORA_APP_ID.length}"
+                    "App ID='${BuildConfig.AGORA_APP_ID}' length=${BuildConfig.AGORA_APP_ID.length} token=$token"
                 )
 
                 // INIT RTM once

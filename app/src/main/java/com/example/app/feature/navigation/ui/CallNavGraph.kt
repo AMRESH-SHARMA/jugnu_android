@@ -12,7 +12,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.example.app.feature.call.ui.CallViewModel
-import com.example.app.feature.call.ui.IncomingCallScreen
 import com.example.app.feature.call.ui.OnGoingCallScreen
 
 fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
@@ -23,12 +22,12 @@ fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
     ) {
 
         // ---------------- INCOMING CALL ----------------
-        composable(route = Routes.Screen.Call.INCOMING) { backStackEntry ->
-            val callVm: CallViewModel = hiltViewModel()
-            CallRoot {
-                IncomingCallScreen(vm = callVm)
-            }
-        }
+//        composable(route = Routes.Screen.Call.INCOMING) { backStackEntry ->
+//            val callVm: CallViewModel = hiltViewModel()
+//            CallRoot {
+//                IncomingCallScreen(vm = callVm)
+//            }
+//        }
 
         // ---------------- ONGOING CALL ----------------
         composable(route = Routes.Screen.Call.ONGOING) { backStackEntry ->
