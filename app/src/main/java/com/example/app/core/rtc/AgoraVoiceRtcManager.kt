@@ -119,6 +119,14 @@ class AgoraVoiceRtcManager @Inject constructor(
         // _events.tryEmit(RtcEvent.CallEnded)
     }
 
+    override fun muteLocalAudio(mute: Boolean) {
+        rtcEngine?.muteLocalAudioStream(mute)
+    }
+
+    override fun enableSpeaker(enable: Boolean) {
+        rtcEngine?.setEnableSpeakerphone(enable)
+    }
+
 
     /*
     When remote user join then start billing.

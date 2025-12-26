@@ -11,4 +11,7 @@ interface RtcManager {
     )
 
     fun leave()
+
+    fun muteLocalAudio(mute: Boolean)
+    fun enableSpeaker(enable: Boolean)
 }

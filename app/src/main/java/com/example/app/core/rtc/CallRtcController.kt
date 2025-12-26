@@ -1,5 +1,9 @@
 package com.example.app.core.rtc
 
+import android.content.Context
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
+import android.os.Build
 import android.util.Log
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
@@ -7,6 +11,7 @@ import com.example.app.core.call.CallStore
 import com.example.app.core.di.ApplicationScope
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -19,8 +24,12 @@ import javax.inject.Singleton
 @Singleton
 class CallRtcController @Inject constructor(
     private val rtcManagerFactory: RtcManagerFactory,
-    @ApplicationScope private val scope: CoroutineScope
+    @ApplicationScope private val scope: CoroutineScope,
+    @ApplicationContext private val context: Context
 ) {
+    private val audioManager =
+        context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
     private val _videoRenderer = MutableStateFlow<VideoRenderer?>(null)
     val videoRenderer: StateFlow<VideoRenderer?> = _videoRenderer
 
@@ -99,6 +108,54 @@ class CallRtcController @Inject constructor(
         startConnectTimeout()
     }
 
+    fun setMuted(muted: Boolean) {
+        rtcManager?.muteLocalAudio(muted)
+    }
+
+    fun setSpeaker(enabled: Boolean) {
+
+        rtcManager?.enableSpeaker(enabled)
+
+        if (enabled) {
+            // ---------- ROUTE TO SPEAKER ----------
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val speaker = audioManager.availableCommunicationDevices
+                    .firstOrNull { it.type == AudioDeviceInfo.TYPE_BUILTIN_SPEAKER }
+
+                speaker?.let { audioManager.setCommunicationDevice(it) }
+            } else {
+                audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+                audioManager.isSpeakerphoneOn = true
+            }
+
+            // ---------- USE MEDIA STREAM (LOUD) ----------
+            val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_MUSIC,
+                max,
+                AudioManager.FLAG_PLAY_SOUND
+            )
+        } else {
+
+            // ---------- BACK TO EARPIECE ----------
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                audioManager.clearCommunicationDevice()
+            } else {
+                audioManager.isSpeakerphoneOn = false
+                audioManager.mode = AudioManager.MODE_NORMAL
+            }
+
+            // optional: drop voice call volume to normal mid level
+            val mid = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL) / 2
+            audioManager.setStreamVolume(
+                AudioManager.STREAM_VOICE_CALL,
+                mid,
+                0
+            )
+        }
+    }
+
+
     // ------------------------------------------------------------
     // RTC EVENTS HANDLING
     // ------------------------------------------------------------
@@ -167,7 +224,10 @@ class CallRtcController @Inject constructor(
         rtcManager?.leave()
         rtcManager = null
 
-        _videoRenderer.value = null   // 🔥 important
+        _videoRenderer.value = null
+        audioManager.isSpeakerphoneOn = false
+        audioManager.mode = AudioManager.MODE_NORMAL
+
     }
 
 }
