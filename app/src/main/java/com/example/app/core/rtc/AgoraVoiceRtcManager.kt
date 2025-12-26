@@ -44,7 +44,9 @@ class AgoraVoiceRtcManager @Inject constructor(
             }
 
             override fun onLeaveChannel(stats: RtcStats?) {
-                _events.tryEmit(RtcEvent.CallEnded)
+                if (activeCallId != null) {
+                    _events.tryEmit(RtcEvent.CallEnded)
+                }
             }
 
             override fun onError(err: Int) {
@@ -116,6 +118,7 @@ class AgoraVoiceRtcManager @Inject constructor(
         // DO NOT emit CallEnded here
         // _events.tryEmit(RtcEvent.CallEnded)
     }
+
 
     /*
     When remote user join then start billing.
