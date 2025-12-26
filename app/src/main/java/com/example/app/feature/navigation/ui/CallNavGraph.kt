@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraphBuilder
@@ -24,26 +23,16 @@ fun NavGraphBuilder.callNavGraph(navController: NavHostController) {
     ) {
 
         // ---------------- INCOMING CALL ----------------
-        composable(route = Routes.Screen.Call.INCOMING) {
-
-            val parentEntry = remember {
-                navController.getBackStackEntry(Routes.Graph.CALL)
-            }
-            val callVm: CallViewModel = hiltViewModel(parentEntry)
-
+        composable(route = Routes.Screen.Call.INCOMING) { backStackEntry ->
+            val callVm: CallViewModel = hiltViewModel()
             CallRoot {
                 IncomingCallScreen(vm = callVm)
             }
         }
 
         // ---------------- ONGOING CALL ----------------
-        composable(route = Routes.Screen.Call.ONGOING) {
-
-            val parentEntry = remember {
-                navController.getBackStackEntry(Routes.Graph.CALL)
-            }
-            val callVm: CallViewModel = hiltViewModel(parentEntry)
-
+        composable(route = Routes.Screen.Call.ONGOING) { backStackEntry ->
+            val callVm: CallViewModel = hiltViewModel()
             CallRoot {
                 OnGoingCallScreen(vm = callVm)
             }
