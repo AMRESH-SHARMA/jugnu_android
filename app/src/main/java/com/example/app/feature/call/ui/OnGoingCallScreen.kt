@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
+import androidx.compose.material.icons.filled.VolumeMute
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -172,10 +173,11 @@ private fun CallControls(
             enabled = status == CallStatus.CONNECTED
         ) {
             Icon(
-                imageVector = Icons.Default.VolumeUp,
+                imageVector = if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
                 contentDescription = "Speaker"
             )
         }
+
     }
 }
 
