@@ -44,15 +44,18 @@ fun AvatarWithStatus(
             model = imageUrl,
             contentDescription = null,
             contentScale = ContentScale.Crop,
+//            placeholder = painterResource(R.drawable.ic_avatar_placeholder),
+//            error = painterResource(R.drawable.ic_avatar_placeholder),
             modifier = Modifier
                 .fillMaxSize()
                 .clip(RoundedCornerShape(12.dp))
                 .clickable { onAvatarClick() }
         )
 
+        val statusSize = modifier.run { 0.18f * 80.dp.value } // 18% of avatar size
         Box(
             Modifier
-                .size(14.dp)
+                .size(statusSize.dp)
                 .align(Alignment.BottomEnd)
                 .clip(CircleShape)
                 .background(animatedColor)

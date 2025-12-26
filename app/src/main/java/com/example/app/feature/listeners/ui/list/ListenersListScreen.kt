@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,11 +25,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -43,14 +44,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +75,10 @@ import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
 
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.LoadState
+
 // ---------------- MAIN SCREEN ---------------------
 @Composable
 fun ListenerListScreen(
@@ -89,7 +92,7 @@ fun ListenerListScreen(
     val presenceVm: PresenceViewModel = hiltViewModel()
 
     // State
-    val listeners by listenerVm.listeners.collectAsState()
+    val listeners = listenerVm.pagedListeners.collectAsLazyPagingItems()
     val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
@@ -226,9 +229,8 @@ fun ListenerListScreen(
 // ---------------- REAL CONTENT ---------------------
 @Composable
 private fun ListenerListContent(
-    listeners: List<ListenerModel>,
+    listeners: LazyPagingItems<ListenerModel>,
     presenceMap: Map<String, PresenceState>,
-    listenerVm: ListenerViewModel = hiltViewModel(),
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit
@@ -236,21 +238,18 @@ private fun ListenerListContent(
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedListener by remember { mutableStateOf<ListenerModel?>(null) }
-    val listState = rememberLazyListState()
-    // Observe ViewModel state
-    val listeners by listenerVm.listeners.collectAsState()
-    val isLoading by listenerVm.isLoadingState.collectAsState()
-    val hasMore by listenerVm.hasMoreState.collectAsState()
-    val presenceVm: PresenceViewModel = hiltViewModel()
-    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState(initial = emptyMap())
+
+//    val presenceVm: PresenceViewModel = hiltViewModel()
+//    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState(initial = emptyMap())
 
 //    val filtered = listeners.filter {
 //        it.name.contains(searchQuery, ignoreCase = true)
 //    }
     // Filtered list for search
-    val filtered = if (searchQuery.isBlank()) listeners else {
-        listeners.filter { it.name.contains(searchQuery, ignoreCase = true) }
-    }
+//    val filtered = if (searchQuery.isBlank()) listeners else {
+//        listeners.filter { it.name.contains(searchQuery, ignoreCase = true) }
+//    }
+    val listState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         //TODO
@@ -264,12 +263,74 @@ private fun ListenerListContent(
         */
         Spacer(Modifier.height(12.dp))
 
+        when (listeners.loadState.refresh) {
+            is LoadState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+                return
+            }
+
+            is LoadState.Error -> {
+                val error = (listeners.loadState.refresh as LoadState.Error).error
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Failed to load listeners",
+                            color = Color.Gray
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = { listeners.retry() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+                return
+            }
+
+            else -> Unit
+        }
+        if (
+            listeners.loadState.refresh is LoadState.NotLoading &&
+            listeners.itemCount == 0
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No listeners available",
+                    color = Color.Gray
+                )
+            }
+            return
+        }
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 12.dp)
+            contentPadding = PaddingValues(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(filtered, key = { it.accountId }) { listener ->
+
+            items(
+                count = listeners.itemCount,
+                key = { index ->
+                    listeners[index]?.accountId ?: "placeholder_$index"
+                }
+            ) { index ->
+
+                val listener = listeners[index]
+
+                if (listener == null) {
+                    ListenerRowPlaceholder()
+                    return@items
+                }
 
                 val status =
                     presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
@@ -286,52 +347,45 @@ private fun ListenerListContent(
                 )
             }
 
-//            item { Spacer(Modifier.height(40.dp)) }
-            // Footer for pagination/loading
-            item {
-                when {
-                    isLoading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            CircularProgressIndicator()
-                        }
+            // ---- APPEND LOADING ----
+            if (listeners.loadState.append is LoadState.Loading) {
+                item(key = "append_loader") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(22.dp)
+                        )
                     }
-
-                    !hasMore && listeners.isNotEmpty() -> {
-                        // Optional "End of list" text
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "No more listeners",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
-                            )
-                        }
-                    }
-
-                    else -> Spacer(modifier = Modifier.height(40.dp))
                 }
             }
-        }
-        // Scroll trigger for next page
-        LaunchedEffect(listState, searchQuery) {
-            snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
-                .collect { lastVisibleIndex ->
-                    if (lastVisibleIndex != null
-                        && lastVisibleIndex >= listeners.size - 3
-                        && searchQuery.isBlank() // disable pagination while searching
+
+            // ---- APPEND ERROR ----
+            if (listeners.loadState.append is LoadState.Error) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        listenerVm.loadNextPage()
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Failed to load more",
+                                color = Color.Gray
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            TextButton(onClick = { listeners.retry() }) {
+                                Text("Retry")
+                            }
+                        }
                     }
                 }
+            }
         }
     }
 
@@ -353,6 +407,92 @@ private fun ListenerListContent(
 
 // ---------------- LISTENER ROW---------------------
 @Composable
+fun ListenerRowPlaceholder() {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+//            .padding(horizontal = 2.dp, vertical = 6.dp)
+            .heightIn(min = 104.dp) // lock height
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // Avatar placeholder
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Gray.copy(alpha = 0.25f))
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 4.dp)
+            ) {
+
+                // Name placeholder
+                Box(
+                    modifier = Modifier
+                        .height(18.dp)
+                        .fillMaxWidth(0.6f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.25f))
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Rating placeholder
+                Box(
+                    modifier = Modifier
+                        .height(14.dp)
+                        .fillMaxWidth(0.4f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Experience placeholder
+                Box(
+                    modifier = Modifier
+                        .height(14.dp)
+                        .fillMaxWidth(0.3f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Call icon placeholders
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Gray.copy(alpha = 0.2f))
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Gray.copy(alpha = 0.2f))
+            )
+        }
+    }
+}
+@Composable
 private fun ListenerRow(
     listener: ListenerModel,
     status: PresenceState,
@@ -363,7 +503,7 @@ private fun ListenerRow(
     Surface(
         shape = RoundedCornerShape(20.dp),
         tonalElevation = 0.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp)
     ) {
         Row(
             modifier = Modifier

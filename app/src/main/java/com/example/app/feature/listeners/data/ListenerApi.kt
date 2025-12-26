@@ -10,8 +10,5 @@ interface ListenerApi {
         @Query("page") page: Int,
         @Query("limit") limit: Int
     ): BaseResponse<List<ListenerDto>>
-//    @GET("users/listeners")
-//    suspend fun getListeners(): BaseResponse<List<ListenerDto>>
-
 }
 
