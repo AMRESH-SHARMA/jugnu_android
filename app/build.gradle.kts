@@ -96,6 +96,7 @@ dependencies {
     implementation(libs.androidx.foundation)
     implementation(libs.ui)
     implementation(libs.androidx.compose.runtime.saveable)
+    implementation(libs.androidx.benchmark.common)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

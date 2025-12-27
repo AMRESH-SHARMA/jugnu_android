@@ -40,10 +40,12 @@ class AgoraVoiceRtcManager @Inject constructor(
             }
 
             override fun onUserOffline(uid: Int, reason: Int) {
+                Log.d("RTM", "onUserOffline")
                 _events.tryEmit(RtcEvent.RemoteLeft(uid))
             }
 
             override fun onLeaveChannel(stats: RtcStats?) {
+                Log.d("RTM", "onLeaveChannel")
                 if (activeCallId != null) {
                     _events.tryEmit(RtcEvent.CallEnded)
                 }
