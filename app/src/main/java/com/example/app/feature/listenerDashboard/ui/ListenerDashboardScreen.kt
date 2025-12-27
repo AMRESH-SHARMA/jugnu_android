@@ -26,6 +26,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,9 +44,13 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import com.example.app.core.ui.UiState
+import com.example.app.feature.listenerDashboard.domain.ListenerStats
 import com.example.app.feature.listenerDashboard.ui.components.ListenerBottomTabBar
 import com.example.app.feature.listenerDashboard.ui.components.ListenerTab
+
 
 /* ---------------------------------------------------
    DATA + RANGE
@@ -78,7 +84,13 @@ private val labelsMap = mapOf(
 --------------------------------------------------- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListenerDashboardScreen(navController: NavHostController) {
+fun ListenerDashboardScreen(
+    navController: NavHostController,
+    vm: ListenerDashboardViewModel = hiltViewModel()
+) {
+    val uiState by vm.stats.collectAsState()
+
+    LaunchedEffect(Unit) { vm.load() }
 
     var selectedTab by remember { mutableStateOf(ListenerTab.DASHBOARD) }
 
@@ -101,44 +113,49 @@ fun ListenerDashboardScreen(navController: NavHostController) {
             when (selectedTab) {
 
                 ListenerTab.DASHBOARD -> {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp)
-                    ) {
+                    when (uiState) {
 
-                        HeaderSection(username = "John!")
+                        is UiState.Success -> {
+                            val stats = (uiState as UiState.Success).data
 
-                        Spacer(Modifier.height(20.dp))
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
 
-                        OverviewCards()
+                                HeaderSection(username = "John!")
 
-                        Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(20.dp))
 
-                        RevenueChartCard()
+                                OverviewCards(stats)
 
-                        Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(20.dp))
 
-                        TasksCard()
+                                RevenueChartCard()
 
-                        Spacer(Modifier.height(20.dp))
+                                Spacer(Modifier.height(20.dp))
 
-                        PopularProducts()
+                                TasksCard()
+
+                                Spacer(Modifier.height(20.dp))
+
+                                StatRows(stats)
+                            }
+                        }
+
+                        // optional placeholders (you said you won't show these)
+                        UiState.Loading -> Unit
+                        is UiState.Error -> Unit
                     }
                 }
 
-                ListenerTab.CALLS -> {
-                    // TODO: calls list screen
-                }
-
-                ListenerTab.SETTINGS -> {
-                    // TODO: reuse settings
-                    // SettingsScreen(navController)
-                }
+                else -> Unit
             }
         }
     }
 }
+
 
 /* ---------------------------------------------------
    HEADER
@@ -326,13 +343,16 @@ fun RevenueLineChartCurvy(
    OVERVIEW CARDS
 --------------------------------------------------- */
 @Composable
-fun OverviewCards() {
+fun OverviewCards(stats: ListenerStats) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        OverviewCard("Total Sales", "$4,200", "+1.5%")
-        OverviewCard("Total Visitors", "18,729", "+0.3%")
+        OverviewCard("Total Callers", stats.uniqueCallers.toString(), "+1.5%")
+        OverviewCard("Net Earnings", "₹${stats.netEarnings}", "+0.3%")
+        //TODO
+//        OverviewCard("Ratings", stats.totalRatings.toString(), "")
+//        OverviewCard("Reviews", stats.totalReviews.toString(), "")
     }
 }
 
@@ -382,35 +402,36 @@ fun TasksCard() {
    OVERVIEW CARDS
 --------------------------------------------------- */
 @Composable
-fun PopularProducts() {
+fun StatRows(stats: ListenerStats) {
     Column {
-        Text("Popular Products", color = Color.White, fontSize = 16.sp)
-        Spacer(Modifier.height(12.dp))
-
-        ProductCard("Creative Bag", "Available", "14k views")
-        ProductCard("Electric Mug", "Available", "8k views")
+//        Text("Stats", color = Color.White, fontSize = 16.sp)
+//        Spacer(Modifier.height(12.dp))
+        StatCard("Answered Calls", stats.totalAnsweredCalls.toString())
+        StatCard("Missed Calls", stats.totalMissedCalls.toString())
+        StatCard("Ratings", stats.totalRatings.toString())
+        StatCard("Reviews", stats.totalReviews.toString())
     }
 }
 
 @Composable
-fun ProductCard(name: String, status: String, views: String) {
+fun StatCard(name: String, value: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 6.dp),
+            .padding(vertical = 2.dp),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.background
         )
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
-                    .size(45.dp)
-                    .clip(RoundedCornerShape(12.dp))
+                    .size(25.dp)
+                    .clip(RoundedCornerShape(6.dp))
                     .background(Color.DarkGray)
             )
 
@@ -418,10 +439,9 @@ fun ProductCard(name: String, status: String, views: String) {
 
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, color = Color.White, fontWeight = FontWeight.Medium)
-                Text(views, color = Color.Gray, fontSize = 12.sp)
             }
 
-            Text(status, color = Color.Green, fontSize = 12.sp)
+            Text(value, color = Color.Green, fontSize = 12.sp)
         }
     }
 }

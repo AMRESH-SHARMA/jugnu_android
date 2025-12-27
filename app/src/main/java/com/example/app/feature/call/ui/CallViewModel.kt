@@ -266,7 +266,7 @@ class CallViewModel @Inject constructor(
     // ----------------------------------------------------------------
     // UI AUDIO / SPEAKER TOGGLES (state only)
     // ----------------------------------------------------------------
-    
+
     fun toggleMute() {
         val newState = !_uiState.value.isMuted
         _uiState.update { it.copy(isMuted = newState) }
@@ -278,5 +278,4 @@ class CallViewModel @Inject constructor(
         _uiState.update { it.copy(isSpeakerOn = newState) }
         callRtcController.setSpeaker(newState)
     }
-
 }

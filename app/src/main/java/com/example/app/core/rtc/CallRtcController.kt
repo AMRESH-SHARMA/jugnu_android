@@ -48,7 +48,6 @@ class CallRtcController @Inject constructor(
                 }
 
                 when (status) {
-
                     // 🔄 When call transitions to CONNECTING —> join RTC
                     CallStatus.CONNECTING -> joinIfReady(call)
 
@@ -227,7 +226,5 @@ class CallRtcController @Inject constructor(
         _videoRenderer.value = null
         audioManager.isSpeakerphoneOn = false
         audioManager.mode = AudioManager.MODE_NORMAL
-
     }
-
 }
