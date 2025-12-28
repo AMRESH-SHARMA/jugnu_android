@@ -1,16 +1,39 @@
-*.iml
+# Gradle
 .gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
-/.idea/modules.xml
-/.idea/workspace.xml
-/.idea/navEditor.xml
-/.idea/assetWizardSettings.xml
-.DS_Store
 /build
-/captures
-.externalNativeBuild
-.cxx
+**/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+# IntelliJ / Android Studio
+*.iml
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/runConfigurations/
+
+# Explicitly ignore noisy IDEA files
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/dictionaries
+.idea/shelf/
+.idea/deploymentTargetSelector.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/modules.xml
+.idea/caches
+.idea/libraries
+
+# Local config
 local.properties
+/local.properties
 google-services.json
+
+# Native / external builds
+.cxx
+.externalNativeBuild
+
+# OS specific
+.DS_Store
+
+# Others
+captures/
