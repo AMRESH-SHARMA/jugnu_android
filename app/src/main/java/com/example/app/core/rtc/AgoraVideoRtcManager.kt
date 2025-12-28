@@ -136,6 +136,15 @@ class AgoraVideoRtcManager @Inject constructor(
         rtcEngine = null
     }
 
+    override fun muteLocalAudio(mute: Boolean) {
+        rtcEngine?.muteLocalAudioStream(mute)
+    }
+
+    override fun enableSpeaker(enable: Boolean) {
+        rtcEngine?.setEnableSpeakerphone(enable)
+    }
+
+
     /** Called by UI when local surface is ready */
     fun setupLocalVideo(view: SurfaceView) {
         rtcEngine?.apply {

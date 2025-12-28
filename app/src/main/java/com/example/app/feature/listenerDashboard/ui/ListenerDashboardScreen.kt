@@ -1,6 +1,6 @@
-package com.example.app.feature.listeners.ui
+package com.example.app.feature.listenerDashboard.ui
 
-
+import android.graphics.Paint
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -14,21 +14,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
@@ -38,6 +44,12 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
+import com.example.app.core.ui.UiState
+import com.example.app.feature.listenerDashboard.domain.ListenerStats
+import com.example.app.feature.listenerDashboard.ui.components.ListenerBottomTabBar
+import com.example.app.feature.listenerDashboard.ui.components.ListenerTab
 
 /* ---------------------------------------------------
    DATA + RANGE
@@ -71,27 +83,78 @@ private val labelsMap = mapOf(
 --------------------------------------------------- */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ListenerDashboardScreen() {
+fun ListenerDashboardScreen(
+    navController: NavHostController,
+    vm: ListenerDashboardViewModel = hiltViewModel()
+) {
+    val uiState by vm.stats.collectAsState()
+
+    LaunchedEffect(Unit) { vm.load() }
+
+    var selectedTab by remember { mutableStateOf(ListenerTab.DASHBOARD) }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
+        bottomBar = {
+            ListenerBottomTabBar(
+                selected = selectedTab,
+                onTabSelected = { selectedTab = it }
+            )
+        },
         containerColor = MaterialTheme.colorScheme.background
-    ) { padding ->
+    ) { innerPadding ->
 
-        Column(
+        Box(
             modifier = Modifier
-                .padding(padding)
-                .padding(16.dp)
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
         ) {
+            when (selectedTab) {
 
-            HeaderSection("John!")
+                ListenerTab.DASHBOARD -> {
+                    when (uiState) {
 
-            Spacer(Modifier.height(20.dp))
+                        is UiState.Success -> {
+                            val stats = (uiState as UiState.Success).data
 
-            RevenueChartCard()
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(16.dp)
+                            ) {
+
+                                HeaderSection(username = "John!")
+
+                                Spacer(Modifier.height(20.dp))
+
+                                OverviewCards(stats)
+
+                                Spacer(Modifier.height(20.dp))
+
+                                RevenueChartCard()
+
+                                Spacer(Modifier.height(20.dp))
+
+                                TasksCard()
+
+                                Spacer(Modifier.height(20.dp))
+
+                                StatRows(stats)
+                            }
+                        }
+
+                        // optional placeholders (you said you won't show these)
+                        UiState.Loading -> Unit
+                        is UiState.Error -> Unit
+                    }
+                }
+
+                else -> Unit
+            }
         }
     }
 }
+
 
 /* ---------------------------------------------------
    HEADER
@@ -264,12 +327,120 @@ fun RevenueLineChartCurvy(
                 label,
                 x,
                 size.height + 30,
-                android.graphics.Paint().apply {
+                Paint().apply {
                     color = android.graphics.Color.GRAY
                     textSize = 28f
-                    textAlign = android.graphics.Paint.Align.CENTER
+                    textAlign = Paint.Align.CENTER
                 }
             )
+        }
+    }
+}
+
+
+/* ---------------------------------------------------
+   OVERVIEW CARDS
+--------------------------------------------------- */
+@Composable
+fun OverviewCards(stats: ListenerStats) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        OverviewCard("Total Callers", stats.uniqueCallers.toString(), "+1.5%")
+        OverviewCard("Net Earnings", "₹${stats.netEarnings}", "+0.3%")
+        //TODO
+//        OverviewCard("Ratings", stats.totalRatings.toString(), "")
+//        OverviewCard("Reviews", stats.totalReviews.toString(), "")
+    }
+}
+
+@Composable
+fun OverviewCard(title: String, value: String, change: String) {
+    Card(
+        modifier = Modifier.padding(4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiary
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(title, color = MaterialTheme.colorScheme.secondary)
+            Text(value, color = MaterialTheme.colorScheme.onSurface)
+            Text(change, color = Color.Green, fontSize = 12.sp)
+        }
+    }
+}
+
+
+/* ---------------------------------------------------
+   TASK CARDS
+--------------------------------------------------- */
+@Composable
+fun TasksCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiary
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text("Tasks Done", color = Color.Gray)
+            Spacer(Modifier.height(8.dp))
+
+            LinearProgressIndicator(
+                progress = 0.6f,
+                color = Color(0xFFFF8000)
+            )
+        }
+    }
+}
+
+/* ---------------------------------------------------
+   OVERVIEW CARDS
+--------------------------------------------------- */
+@Composable
+fun StatRows(stats: ListenerStats) {
+    Column {
+//        Text("Stats", color = Color.White, fontSize = 16.sp)
+//        Spacer(Modifier.height(12.dp))
+        StatCard("Answered Calls", stats.totalAnsweredCalls.toString())
+        StatCard("Missed Calls", stats.totalMissedCalls.toString())
+        StatCard("Ratings", stats.totalRatings.toString())
+        StatCard("Reviews", stats.totalReviews.toString())
+    }
+}
+
+@Composable
+fun StatCard(name: String, value: String) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.background
+        )
+    ) {
+        Row(
+            modifier = Modifier.padding(6.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(25.dp)
+                    .clip(RoundedCornerShape(6.dp))
+                    .background(Color.DarkGray)
+            )
+
+            Spacer(Modifier.width(12.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(name, color = Color.White, fontWeight = FontWeight.Medium)
+            }
+
+            Text(value, color = Color.Green, fontSize = 12.sp)
         }
     }
 }

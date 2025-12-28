@@ -123,7 +123,7 @@ class PresenceWebSocketManager @Inject constructor(
 //        }
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            Log.d("RTM", "WS OPEN: $response")
+//            Log.d("RTM", "WS OPEN: $response")
 
             isConnecting.set(false)
             isConnected.set(true)
@@ -139,7 +139,7 @@ class PresenceWebSocketManager @Inject constructor(
          * onMessage: is triggered ONLY for text / binary messages not for ping pong control frames
          */
         override fun onMessage(webSocket: WebSocket, text: String) {
-            Log.w("RTM", "WS onMesssage = $text")
+//            Log.w("RTM", "WS onMesssage = $text")
             try {
                 val broadcast = json.decodeFromString<PresenceBroadcastMessage>(text)
                 val state = broadcast.status.toPresenceState()
@@ -174,7 +174,7 @@ class PresenceWebSocketManager @Inject constructor(
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            Log.d("RTM", "WS CLOSED $reason")
+//            Log.d("RTM", "WS CLOSED $reason")
 
             isConnecting.set(false)
             isConnected.set(false)

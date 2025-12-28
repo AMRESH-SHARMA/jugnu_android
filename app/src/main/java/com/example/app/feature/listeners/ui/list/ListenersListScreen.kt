@@ -1,4 +1,4 @@
-package com.example.app.feature.listeners.ui
+package com.example.app.feature.listeners.ui.list
 
 import android.Manifest
 import android.app.Activity
@@ -15,6 +15,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,16 +25,18 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -71,7 +74,10 @@ import com.example.app.core.websocket.PresenceViewModel
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
-import com.example.app.feature.listeners.ui.components.ListenersSearchBar
+
+import androidx.paging.compose.collectAsLazyPagingItems
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.LoadState
 
 // ---------------- MAIN SCREEN ---------------------
 @Composable
@@ -86,7 +92,7 @@ fun ListenerListScreen(
     val presenceVm: PresenceViewModel = hiltViewModel()
 
     // State
-    val listeners by listenerVm.listeners.collectAsState()
+    val listeners = listenerVm.pagedListeners.collectAsLazyPagingItems()
     val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
@@ -223,7 +229,7 @@ fun ListenerListScreen(
 // ---------------- REAL CONTENT ---------------------
 @Composable
 private fun ListenerListContent(
-    listeners: List<ListenerModel>,
+    listeners: LazyPagingItems<ListenerModel>,
     presenceMap: Map<String, PresenceState>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
@@ -233,26 +239,98 @@ private fun ListenerListContent(
     var showImageDialog by remember { mutableStateOf(false) }
     var selectedListener by remember { mutableStateOf<ListenerModel?>(null) }
 
-    val filtered = listeners.filter {
-        it.name.contains(searchQuery, ignoreCase = true)
-    }
+//    val presenceVm: PresenceViewModel = hiltViewModel()
+//    val presenceMap by presenceVm.remotePresenceStore.states.collectAsState(initial = emptyMap())
+
+//    val filtered = listeners.filter {
+//        it.name.contains(searchQuery, ignoreCase = true)
+//    }
+    // Filtered list for search
+//    val filtered = if (searchQuery.isBlank()) listeners else {
+//        listeners.filter { it.name.contains(searchQuery, ignoreCase = true) }
+//    }
+    val listState = rememberLazyListState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-
-        ListenersSearchBar(
-            modifier = Modifier.fillMaxWidth(),
-            query = searchQuery,
-            onQueryChange = { searchQuery = it },
-            hint = "Search listeners"
-        )
-
+        //TODO
+        /*
+                ListenersSearchBar(
+                    modifier = Modifier.fillMaxWidth(),
+                    query = searchQuery,
+                    onQueryChange = { searchQuery = it },
+                    hint = "Search listeners"
+                )
+        */
         Spacer(Modifier.height(12.dp))
 
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = 12.dp)
+        when (listeners.loadState.refresh) {
+            is LoadState.Loading -> {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+                return
+            }
+
+            is LoadState.Error -> {
+                val error = (listeners.loadState.refresh as LoadState.Error).error
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = "Failed to load listeners",
+                            color = Color.Gray
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        TextButton(onClick = { listeners.retry() }) {
+                            Text("Retry")
+                        }
+                    }
+                }
+                return
+            }
+
+            else -> Unit
+        }
+        if (
+            listeners.loadState.refresh is LoadState.NotLoading &&
+            listeners.itemCount == 0
         ) {
-            items(filtered, key = { it.accountId }) { listener ->
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = "No listeners available",
+                    color = Color.Gray
+                )
+            }
+            return
+        }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+
+            items(
+                count = listeners.itemCount,
+                key = { index ->
+                    listeners[index]?.accountId ?: "placeholder_$index"
+                }
+            ) { index ->
+
+                val listener = listeners[index]
+
+                if (listener == null) {
+                    ListenerRowPlaceholder()
+                    return@items
+                }
 
                 val status =
                     presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
@@ -269,7 +347,45 @@ private fun ListenerListContent(
                 )
             }
 
-            item { Spacer(Modifier.height(40.dp)) }
+            // ---- APPEND LOADING ----
+            if (listeners.loadState.append is LoadState.Loading) {
+                item(key = "append_loader") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(22.dp)
+                        )
+                    }
+                }
+            }
+
+            // ---- APPEND ERROR ----
+            if (listeners.loadState.append is LoadState.Error) {
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                text = "Failed to load more",
+                                color = Color.Gray
+                            )
+                            Spacer(Modifier.height(6.dp))
+                            TextButton(onClick = { listeners.retry() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -291,6 +407,92 @@ private fun ListenerListContent(
 
 // ---------------- LISTENER ROW---------------------
 @Composable
+fun ListenerRowPlaceholder() {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        tonalElevation = 0.dp,
+        modifier = Modifier
+            .fillMaxWidth()
+//            .padding(horizontal = 2.dp, vertical = 6.dp)
+            .heightIn(min = 104.dp) // lock height
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+
+            // Avatar placeholder
+            Box(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.Gray.copy(alpha = 0.25f))
+            )
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 4.dp)
+            ) {
+
+                // Name placeholder
+                Box(
+                    modifier = Modifier
+                        .height(18.dp)
+                        .fillMaxWidth(0.6f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.25f))
+                )
+
+                Spacer(modifier = Modifier.height(10.dp))
+
+                // Rating placeholder
+                Box(
+                    modifier = Modifier
+                        .height(14.dp)
+                        .fillMaxWidth(0.4f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+
+                Spacer(modifier = Modifier.height(6.dp))
+
+                // Experience placeholder
+                Box(
+                    modifier = Modifier
+                        .height(14.dp)
+                        .fillMaxWidth(0.3f)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.Gray.copy(alpha = 0.2f))
+                )
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Call icon placeholders
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Gray.copy(alpha = 0.2f))
+            )
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(32.dp)
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(Color.Gray.copy(alpha = 0.2f))
+            )
+        }
+    }
+}
+@Composable
 private fun ListenerRow(
     listener: ListenerModel,
     status: PresenceState,
@@ -301,7 +503,7 @@ private fun ListenerRow(
     Surface(
         shape = RoundedCornerShape(20.dp),
         tonalElevation = 0.dp,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().heightIn(min = 104.dp)
     ) {
         Row(
             modifier = Modifier
@@ -324,12 +526,22 @@ private fun ListenerRow(
                     .weight(1f)
                     .padding(vertical = 4.dp)
             ) {
-                Text(listener.name, style = MaterialTheme.typography.titleSmall)
-                Spacer(Modifier.height(12.dp))
-                Text("${listener.gender}-${listener.age}")
-                Spacer(Modifier.height(6.dp))
-                Text("${listener.rating}⭐ (1k+)")
-                Text("Exp: ${listener.experience}")
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = listener.name,
+                        style = MaterialTheme.typography.titleSmall
+                    )
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Text(
+                        text = "${listener.gender} • ${listener.age}",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Text("${listener.rating}⭐ (1k+)", style = MaterialTheme.typography.bodySmall)
+                Text("Exp: ${listener.experience}", style = MaterialTheme.typography.bodySmall)
             }
 
             IconButton(onClick = { onCallClick(listener, CallType.VOICE) }) {
@@ -407,6 +619,9 @@ fun ProfilePopupDialog(
                         model = imageUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        // TODO
+//                        placeholder = painterResource(R.drawable.ic_avatar_placeholder),
+//                        error = painterResource(R.drawable.ic_avatar_placeholder),
                         modifier = Modifier
                             .fillMaxWidth(0.70f)
                             .aspectRatio(1f)

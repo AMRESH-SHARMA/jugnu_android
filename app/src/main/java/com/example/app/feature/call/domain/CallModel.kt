@@ -24,10 +24,11 @@ data class CallModel(
 )
 
 enum class CallStatus {
-    IDLE,
     INCOMING_RINGING,
     OUTGOING_RINGING,
     CONNECTING,
     CONNECTED,
-    ENDED
+    ENDED,
+    CANCELLED,
+    REJECTED
 }

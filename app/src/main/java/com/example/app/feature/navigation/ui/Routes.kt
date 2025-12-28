@@ -3,6 +3,7 @@ object Routes {
     object Graph {
         const val SELECT_USER_ROLE = "select_user_role_graph"
         const val HOME = "home_graph"
+        const val LISTENER = "listener_graph"
         const val CHAT = "chat_graph"
         const val WALLET = "wallet_graph"
         const val CALL = "call_graph"
@@ -18,6 +19,12 @@ object Routes {
         object Home {
             const val ROOT = "home"
         }
+
+        object Listener {
+            const val ROOT = "listener"
+            const val ListenerDashboard = "listener_dashboard"
+        }
+
 
         object Chat {
             const val ROOT = "chat"

@@ -5,27 +5,37 @@ import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.core.call.CallStore
+import com.example.app.core.preferences.user.domain.UserRole
+import com.example.app.core.session.SessionManager
 import com.example.app.core.ui.UiEvent
 import com.example.app.core.ui.UiEventBus
 import com.example.app.feature.call.domain.CallStatus
+import com.example.app.feature.call.ui.CallViewModel
+import com.example.app.feature.call.ui.IncomingCallBanner
 import kotlinx.coroutines.flow.drop
 
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
     val snackbarHostState = remember { SnackbarHostState() }
+    // Observe call state for UI overlays
+    val callState by CallStore.call.collectAsState(initial = null)
 
     LaunchedEffect(Unit) {
         UiEventBus.events.collect { event ->
@@ -44,9 +54,7 @@ fun AppNavGraph() {
             .drop(1) // skip initial null
             .collect { call ->
                 when (call?.status) {
-                    CallStatus.INCOMING_RINGING -> {
-                        navController.navigate(Routes.Screen.Call.INCOMING)
-                    }
+                    CallStatus.INCOMING_RINGING -> Unit
 
                     CallStatus.OUTGOING_RINGING,
                     CallStatus.CONNECTING,
@@ -56,8 +64,18 @@ fun AppNavGraph() {
 
                     CallStatus.ENDED, null -> {
                         Log.d("RTM", "NAVIAGTE TO END")
-                        navController.navigate(Routes.Graph.HOME) {
-                            popUpTo(Routes.Graph.CALL) { inclusive = true }
+                        when (SessionManager.userRole) {
+                            UserRole.LISTENER -> {
+                                navController.navigate(Routes.Graph.LISTENER) {
+                                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                }
+                            }
+
+                            UserRole.CUSTOMER -> {
+                                navController.navigate(Routes.Graph.HOME) {
+                                    popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                }
+                            }
                         }
                     }
 
@@ -76,10 +94,30 @@ fun AppNavGraph() {
         ) {
             selectUserRoleNavGraph(navController)
             homeNavGraph(navController)
+            listenerNavGraph(navController)
             walletNavGraph(navController)
             callNavGraph(navController)
         }
+
+        // ---------------------------------------------------------
+        // 📣 INCOMING CALL BANNER (overlay, no layout shift)
+        // ---------------------------------------------------------
+        val callVm: CallViewModel = hiltViewModel()
+
+        if (callState?.status == CallStatus.INCOMING_RINGING) {
+            IncomingCallBanner(
+                vm = callVm,
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .zIndex(200f)
+            )
+        }
+
+
+        // ---------------------------------------------------------
         // OVERLAY SNACKBAR
+        // ---------------------------------------------------------
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier

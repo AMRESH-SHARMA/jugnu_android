@@ -17,15 +17,19 @@ class SelectUserRoleViewModel @Inject constructor(
 
     private val _navigateToHome = mutableStateOf(false)
     val navigateToHome: State<Boolean> get() = _navigateToHome
+    private val _savedRole = mutableStateOf<UserRole?>(null)
+    val savedRole: State<UserRole?> get() = _savedRole
 
     fun save(accountId: Long, role: UserRole) {
         viewModelScope.launch {
             repository.saveUserPrefs(accountId, role)
+            _savedRole.value = role
             _navigateToHome.value = true  // signal that save is complete
         }
     }
 
     fun resetNavigationFlag() {
         _navigateToHome.value = false
+        _savedRole.value = null
     }
 }

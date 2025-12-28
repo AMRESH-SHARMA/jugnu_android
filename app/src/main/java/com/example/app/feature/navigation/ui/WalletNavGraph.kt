@@ -5,9 +5,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
-import com.example.app.feature.listeners.ui.ListenerDashboardScreen
 import com.example.app.feature.wallet.domain.AmountFlowType
 import com.example.app.feature.wallet.ui.EnterAmountScreen
+import com.example.app.feature.wallet.ui.WalletScreen
 
 fun NavGraphBuilder.walletNavGraph(navController: NavController) {
 
@@ -16,12 +16,10 @@ fun NavGraphBuilder.walletNavGraph(navController: NavController) {
         route = Routes.Graph.WALLET
     ) {
         composable(Routes.Screen.Wallet.ROOT) {
-            ListenerDashboardScreen(
+            WalletScreen(
+                navController,
+                onBackClick = { navController.popBackStack() }
             )
-//            WalletScreen(
-//                navController,
-//                onBackClick = { navController.popBackStack() }
-//            )
         }
 
         composable(

@@ -11,6 +11,10 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.concurrent.ConcurrentHashMap
 
+// =========================
+// It listens to RTM messages from the server/other device.
+// Emit an internal CallEvent via CallEventBus
+// =========================
 class RtmEventListenerImpl(
     private val scope: CoroutineScope
 ) : RtmEventListener {
@@ -38,12 +42,11 @@ class RtmEventListenerImpl(
         try {
             val signal = json.decodeFromString<CallSignalPayload>(jsonPayload)
 
-            Log.d(
-                "RTM",
-                "Signal $signal"
-            )
-
             scope.launch {
+                Log.d(
+                    "RTM",
+                    "RtmEventListenerImpl $signal"
+                )
                 when (signal.event) {
                     AppConstants.EVENT_INCOMING_CALL -> {
                         CallEventBus.emit(
@@ -81,8 +84,13 @@ class RtmEventListenerImpl(
                         )
                     }
 
-                    AppConstants.EVENT_CALL_ENDED,
                     AppConstants.EVENT_CALL_CANCELLED -> {
+                        CallEventBus.emit(
+                            CallEvent.Cancelled(signal.callId)
+                        )
+                    }
+
+                    AppConstants.EVENT_CALL_ENDED -> {
                         CallEventBus.emit(
                             CallEvent.Ended(signal.callId)
                         )
@@ -99,6 +107,6 @@ class RtmEventListenerImpl(
     }
 
     fun onTokenExpired() {
-        Log.w("RTM", "RTM token expired")
+//        Log.w("RTM", "RTM token expired")
     }
 }

@@ -36,15 +36,7 @@ sealed class CallEvent {
         val callId: String
     ) : CallEvent()
 
-    data class Ended(
-        val callId: String
-    ) : CallEvent()
+    data class Ended(val callId: String) : CallEvent()
 
-    data class Cancelled(
-        val callId: String
-    ) : CallEvent()
-
-    data class Missed(
-        val callId: String
-    ) : CallEvent()
+    data class Cancelled(val callId: String) : CallEvent()
 }
