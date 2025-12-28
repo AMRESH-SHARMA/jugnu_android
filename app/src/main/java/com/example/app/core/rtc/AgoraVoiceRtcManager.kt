@@ -40,11 +40,15 @@ class AgoraVoiceRtcManager @Inject constructor(
             }
 
             override fun onUserOffline(uid: Int, reason: Int) {
+                Log.d("RTM", "onUserOffline")
                 _events.tryEmit(RtcEvent.RemoteLeft(uid))
             }
 
             override fun onLeaveChannel(stats: RtcStats?) {
-                _events.tryEmit(RtcEvent.CallEnded)
+                Log.d("RTM", "onLeaveChannel")
+                if (activeCallId != null) {
+                    _events.tryEmit(RtcEvent.CallEnded)
+                }
             }
 
             override fun onError(err: Int) {
@@ -116,6 +120,15 @@ class AgoraVoiceRtcManager @Inject constructor(
         // DO NOT emit CallEnded here
         // _events.tryEmit(RtcEvent.CallEnded)
     }
+
+    override fun muteLocalAudio(mute: Boolean) {
+        rtcEngine?.muteLocalAudioStream(mute)
+    }
+
+    override fun enableSpeaker(enable: Boolean) {
+        rtcEngine?.setEnableSpeakerphone(enable)
+    }
+
 
     /*
     When remote user join then start billing.

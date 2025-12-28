@@ -1,6 +1,5 @@
 package com.example.app.core.network.data
 
-import android.util.Log
 import com.example.app.core.network.ApiResult
 import com.example.app.core.network.safeApiCall
 import javax.inject.Inject
@@ -13,7 +12,7 @@ class ApiRepository @Inject constructor(
 ) {
     suspend fun getRtmToken(accountId: Long): ApiResult<String> = safeApiCall {
         val response = authApi.getRtmToken(mapOf("accountId" to accountId))
-        Log.w("RTM", "TOKEN $response")
+//        Log.w("RTM", "TOKEN $response")
         response.data.token
     }
 

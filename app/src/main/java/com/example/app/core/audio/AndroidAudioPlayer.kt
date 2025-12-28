@@ -45,8 +45,10 @@ class AndroidAudioPlayer @Inject constructor(
     }
 
     override fun stop() {
-        mediaPlayer?.stop()
-        mediaPlayer?.release()
+        mediaPlayer?.apply {
+            stop()
+            release()
+        }
         mediaPlayer = null
     }
 
@@ -60,7 +62,6 @@ class AndroidAudioPlayer @Inject constructor(
 
     private fun playLoop(resId: Int) {
         if (isPlaying()) return  // 🔥 prevent duplicate looping sounds
-
         stop()
         mediaPlayer = MediaPlayer.create(context, resId).apply {
             isLooping = true

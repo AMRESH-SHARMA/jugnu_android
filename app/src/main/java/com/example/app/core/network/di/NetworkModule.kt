@@ -4,6 +4,7 @@ import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.network.data.CallNotificationApi
 import com.example.app.core.network.data.RtmAuthApi
 import com.example.app.feature.call.data.CallApi
+import com.example.app.feature.listenerDashboard.data.ListenerDashBoardApi
 import com.example.app.feature.listeners.data.ListenerApi
 import com.example.app.feature.user.data.UserApi
 import com.example.app.feature.wallet.data.PaymentApi
@@ -80,4 +81,15 @@ object NetworkModule {
     @Singleton
     fun providePaymentApi(retrofit: Retrofit): PaymentApi =
         retrofit.create(PaymentApi::class.java)
+
+    // -----------------------------
+    // Listener Dashboard
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun provideListenerDashboardApi(
+        retrofit: Retrofit
+    ): ListenerDashBoardApi {
+        return retrofit.create(ListenerDashBoardApi::class.java)
+    }
 }

@@ -34,7 +34,6 @@ class RejectCall @Inject constructor(
 
         // SLOW PATH → persist rejection
         return when (val result = repo.rejectCall(callId)) {
-
             is ApiResult.Success -> {
                 ApiResult.Success(Unit) // nothing to return to VM
             }
