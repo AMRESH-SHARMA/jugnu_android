@@ -2,6 +2,7 @@ package com.example.app
 
 import android.app.Application
 import android.util.Log
+import com.example.app.BuildConfig
 import com.example.app.core.device.TokenManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.network.ApiResult

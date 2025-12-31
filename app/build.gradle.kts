@@ -33,7 +33,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.app"
+        applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
         versionCode = 1
@@ -50,7 +50,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+//            isMinifyEnabled = false
+            isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

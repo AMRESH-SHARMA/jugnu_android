@@ -14,6 +14,45 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ListenerDashboardViewModel @Inject constructor(
+    private val getListenerStats: GetListenerStatsUseCase
+) : ViewModel() {
+    val stats = MutableStateFlow<UiState<ListenerStats>>(UiState.Loading)
+
+    var fromDate: String? = null
+    var toDate: String? = null
+
+    fun setDateRange(from: String?, to: String?) {
+        fromDate = from
+        toDate = to
+    }
+
+    fun load() = viewModelScope.launch {
+
+        val listenerId = SessionManager.userId
+
+        when (val res = getListenerStats(listenerId, fromDate, toDate)) {
+            is ApiResult.Success -> stats.value = UiState.Success(res.data)
+            is ApiResult.Error -> stats.value = UiState.Error(res.message)
+        }
+    }
+//    fun load() = viewModelScope.launch {
+//        stats.value = UiState.Loading
+//
+//        val listenerId = SessionManager.userId
+//
+//        stats.value = when (
+//            val res = getListenerStats(listenerId, fromDate, toDate)
+//        ) {
+//            is ApiResult.Success -> UiState.Success(res.data)
+//            is ApiResult.Error -> UiState.Error(res.message)
+//        }
+//    }
+}
+
+
+/*
+@HiltViewModel
+class ListenerDashboardViewModel @Inject constructor(
     private val getListenerStats: GetListenerStatsUseCase,
 ) : ViewModel() {
 
@@ -30,4 +69,6 @@ class ListenerDashboardViewModel @Inject constructor(
         }
     }
 }
+
+ */
 
