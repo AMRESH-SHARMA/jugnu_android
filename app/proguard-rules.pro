@@ -22,3 +22,4 @@
 
 #Prevent code obfuscation
 -keep class io.agora.**{*;}
+-dontwarn com.google.devtools.build.android.desugar.runtime.ThrowableExtension
