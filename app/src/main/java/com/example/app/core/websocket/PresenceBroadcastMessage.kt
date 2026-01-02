@@ -8,6 +8,12 @@ data class PresenceBroadcastMessage(
     val status: String
 )
 
+@Serializable
+data class PresenceSnapshotMessage(
+    val type: String,
+    val data: Map<String, String>
+)
+
 // TODO
 fun PresenceBroadcastMessage.toState(): PresenceState =
     when (status) {

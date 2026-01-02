@@ -14,6 +14,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -44,7 +45,6 @@ class PresenceWebSocketManager @Inject constructor(
     }
 
     /** PUBLIC API **/
-
     fun connect() {
         if (!userSession.isLoggedIn()) return
         if (isConnected.get() || isConnecting.get()) return
@@ -54,6 +54,7 @@ class PresenceWebSocketManager @Inject constructor(
         val request = Request.Builder()
             .url(buildWsUrl())
             .addHeader("Authorization", "Bearer ${userSession.accountId}")
+            .addHeader("X-Role", userSession.role.name)
             .build()
 
         webSocket = okHttpClient.newWebSocket(request, socketListener)
@@ -90,7 +91,6 @@ class PresenceWebSocketManager @Inject constructor(
     }
 
     /** INTERNAL **/
-
     private fun scheduleReconnect() {
         if (!userSession.isLoggedIn()) return
         if (reconnectJob?.isActive == true) return
@@ -139,8 +139,33 @@ class PresenceWebSocketManager @Inject constructor(
          * onMessage: is triggered ONLY for text / binary messages not for ping pong control frames
          */
         override fun onMessage(webSocket: WebSocket, text: String) {
-//            Log.w("RTM", "WS onMesssage = $text")
+            Log.w("RTM", "WS onMesssage = $text")
+
             try {
+                val obj = JSONObject(text)
+
+                // ---- SNAPSHOT ----
+                if (obj.optString("type") == "presence_snapshot") {
+                    val snapshot = json.decodeFromString<PresenceSnapshotMessage>(text)
+
+                    snapshot.data.forEach { (id, status) ->
+                        val state = status.toPresenceState()
+                        remotePresenceStore.update(id, state)
+
+                        scope.launch {
+                            PresenceEventBus.events.emit(
+                                PresenceEvent.StatusChanged(
+                                    accountId = id,
+                                    state = state
+                                )
+                            )
+                        }
+                    }
+
+                    return
+                }
+
+                // ---- SINGLE UPDATE ----
                 val broadcast = json.decodeFromString<PresenceBroadcastMessage>(text)
                 val state = broadcast.status.toPresenceState()
 
@@ -155,10 +180,11 @@ class PresenceWebSocketManager @Inject constructor(
                     )
                 }
 
-            } catch (ignored: Exception) {
-                // non-presence message → ignore
+            } catch (e: Exception) {
+                Log.e("RTM", "WS decode error", e)
             }
         }
+
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
             Log.e("RTM", "WS FAILURE = ${t.message}")
