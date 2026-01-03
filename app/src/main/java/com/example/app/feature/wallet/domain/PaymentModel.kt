@@ -3,14 +3,14 @@ package com.example.app.feature.wallet.domain
 import java.time.Instant
 
 data class WalletModel(
-    val balance: Long
+    val balanceCoins: Long
 )
 
 data class WalletHistoryModel(
-    val amount: Long,
+    val amountCoins: Long,
     val type: WalletTxnType,
     val reason: String,
-    val balanceAfter: Long,
+    val balanceCoinsAfter: Long,
     val time: Instant
 )
 

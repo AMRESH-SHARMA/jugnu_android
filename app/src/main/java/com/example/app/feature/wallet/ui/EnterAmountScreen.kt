@@ -1,6 +1,5 @@
 package com.example.app.feature.wallet.ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -78,7 +77,10 @@ fun EnterAmountScreen(
 
                             )
                         Spacer(modifier = Modifier.width(10.dp))
-                        Text(text = balance.toString(), color = MaterialTheme.colorScheme.onTertiary)
+                        Text(
+                            text = "🪙 %,d".format(balance),
+                            color = MaterialTheme.colorScheme.onTertiary
+                        )
                         Spacer(modifier = Modifier.width(8.dp))
 
                     }
@@ -117,7 +119,7 @@ fun EnterAmountScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Continue")
+                    Text("Continue", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
         }

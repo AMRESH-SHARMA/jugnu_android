@@ -55,7 +55,7 @@ class EnterAmountViewModel @Inject constructor(
         viewModelScope.launch {
             when (val res = getBalanceUseCase(userId)) {
                 is ApiResult.Success ->
-                    _currentBalance.value = res.data.balance
+                    _currentBalance.value = res.data.balanceCoins
 
                 is ApiResult.Error ->
                     _currentBalance.value = null

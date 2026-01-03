@@ -7,16 +7,16 @@ import com.example.app.feature.wallet.domain.WalletTxnType
 import java.time.Instant
 
 fun WalletDto.toDomain(): WalletModel {
-    return WalletModel(balance = balance)
+    return WalletModel(balanceCoins = balanceCoins)
 }
 
 @SuppressLint("NewApi")
 fun WalletHistoryDto.toDomain(): WalletHistoryModel {
     return WalletHistoryModel(
-        amount = amount,
+        amountCoins = amountCoins,
         type = WalletTxnType.valueOf(type),
         reason = reason,
-        balanceAfter = balanceAfter,
+        balanceCoinsAfter = balanceCoinsAfter,
         time = Instant.parse(createdAt) // ISO 8601
     )
 }
