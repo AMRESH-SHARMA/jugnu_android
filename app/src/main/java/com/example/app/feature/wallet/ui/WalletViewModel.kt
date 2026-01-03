@@ -34,7 +34,7 @@ class WalletViewModel @Inject constructor(
 
         viewModelScope.launch {
             when (val res = getBalance(accountId)) {
-                is ApiResult.Success -> _balance.value = res.data.balance
+                is ApiResult.Success -> _balance.value = res.data.balanceCoins
                 is ApiResult.Error -> { /* handle later */
                 }
             }
