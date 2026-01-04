@@ -92,6 +92,7 @@ fun AppNavGraph() {
             navController = navController,
             startDestination = Routes.Graph.SELECT_USER_ROLE
         ) {
+            authNavGraph(navController)
             selectUserRoleNavGraph(navController)
             homeNavGraph(navController)
             listenerNavGraph(navController)
