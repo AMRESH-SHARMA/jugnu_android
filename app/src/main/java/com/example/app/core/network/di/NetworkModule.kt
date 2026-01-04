@@ -1,5 +1,9 @@
 package com.example.app.core.network.di
 
+import com.example.app.BuildConfig
+import com.example.app.core.network.appconfig.AppConfigApi
+import com.example.app.core.network.appconfig.AppConfigRepository
+import com.example.app.core.network.appconfig.ForceUpdateInterceptor
 import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.network.data.CallNotificationApi
 import com.example.app.core.network.data.RtmAuthApi
@@ -13,6 +17,8 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import javax.inject.Singleton
@@ -21,11 +27,49 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
+    // -----------------------------
+    // Interceptor: adds version header globally before every request goes out.
+    // -----------------------------
     @Provides
     @Singleton
-    fun provideRetrofit(): Retrofit =
+    fun provideVersionInterceptor(): Interceptor =
+        Interceptor { chain ->
+            val newRequest = chain.request()
+                .newBuilder()
+                .addHeader(
+                    "X-App-Version",
+                    BuildConfig.VERSION_CODE.toString()
+                )
+                .build()
+
+            chain.proceed(newRequest)
+        }
+
+    // -----------------------------
+    // OkHttp client with interceptor
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(
+        versionInterceptor: Interceptor,
+        forceUpdateInterceptor: ForceUpdateInterceptor
+    ): OkHttpClient =
+        OkHttpClient.Builder()
+            .addInterceptor(versionInterceptor)
+            .addInterceptor(forceUpdateInterceptor)
+            .build()
+
+    // -----------------------------
+    // Retrofit using this client
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun provideRetrofit(
+        okHttpClient: OkHttpClient
+    ): Retrofit =
         Retrofit.Builder()
             .baseUrl("${AppConstants.BASE_URL}api/v1/")
+            .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
@@ -92,4 +136,21 @@ object NetworkModule {
     ): ListenerDashBoardApi {
         return retrofit.create(ListenerDashBoardApi::class.java)
     }
+
+    // -----------------------------
+    // Force Update
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun provideAppConfigApi(
+        retrofit: Retrofit
+    ): AppConfigApi =
+        retrofit.create(AppConfigApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideAppConfigRepository(
+        api: AppConfigApi
+    ): AppConfigRepository = AppConfigRepository(api)
+
 }
