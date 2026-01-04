@@ -30,6 +30,10 @@ runtimeSaveable = "1.10.0"
 paging = "3.3.6"
 pagingCompose = "3.3.6"
 benchmarkCommon = "1.4.1"
+uiTextVersion = "1.10.0"
+animation = "1.10.0"
+animationCoreVersion = "1.10.0"
+uiUnit = "1.10.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -70,6 +74,10 @@ androidx-foundation = { group = "androidx.compose.foundation", name = "foundatio
 ui = { group = "androidx.compose.ui", name = "ui", version.ref = "uiVersion" }
 androidx-compose-runtime-saveable = { group = "androidx.compose.runtime", name = "runtime-saveable", version.ref = "runtimeSaveable" }
 androidx-benchmark-common = { group = "androidx.benchmark", name = "benchmark-common", version.ref = "benchmarkCommon" }
+androidx-ui-text = { group = "androidx.compose.ui", name = "ui-text", version.ref = "uiTextVersion" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
+androidx-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCoreVersion" }
+androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
