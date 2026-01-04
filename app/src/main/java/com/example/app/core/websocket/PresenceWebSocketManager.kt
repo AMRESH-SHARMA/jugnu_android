@@ -17,11 +17,12 @@ import okhttp3.WebSocketListener
 import org.json.JSONObject
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Singleton
 class PresenceWebSocketManager @Inject constructor(
-    private val okHttpClient: OkHttpClient,
+    @Named("websocket") private val okHttpClient: OkHttpClient,
     private val userSession: UserSession,
     private val remotePresenceStore: RemotePresenceStore,
     @ApplicationScope private val scope: CoroutineScope

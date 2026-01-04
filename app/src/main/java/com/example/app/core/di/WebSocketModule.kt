@@ -6,6 +6,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -13,7 +14,9 @@ import javax.inject.Singleton
 object WebSocketModule {
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient =
+    @Named("websocket")
+    //provideOkHttpClient
+    fun provideWebSocketClient(): OkHttpClient =
         OkHttpClient.Builder()
             // -------------------------
             // WebSocket Ping/Pong frames are NOT delivered as messages.

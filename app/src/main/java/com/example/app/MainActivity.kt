@@ -10,8 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.core.view.WindowCompat
-import com.example.app.feature.navigation.ui.AppNavGraph
 import com.example.app.feature.theme.AppTheme
+import com.example.app.root.AppRoot
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -42,10 +42,10 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     modifier = Modifier.fillMaxSize()
                 ) { innerPadding ->
-                    AppNavGraph(
-                    )
+                    AppRoot()   // 👈 root that decides update vs nav graph
                 }
             }
         }
     }
 }
+
