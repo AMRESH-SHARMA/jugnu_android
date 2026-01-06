@@ -3,17 +3,18 @@ package com.example.app.core.network.di
 import com.example.app.BuildConfig
 import com.example.app.core.network.appconfig.AppConfigApi
 import com.example.app.core.network.appconfig.AppConfigRepository
-import com.example.app.core.network.appconfig.ForceUpdateInterceptor
 import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.network.data.CallNotificationApi
 import com.example.app.core.network.data.RtmAuthApi
+import com.example.app.core.network.interceptor.DynamicBaseUrlInterceptor
+import com.example.app.core.network.interceptor.ForceUpdateInterceptor
+import com.example.app.core.remoteconfig.RemoteConfig
 import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listenerDashboard.data.ListenerDashBoardApi
 import com.example.app.feature.listeners.data.ListenerApi
 import com.example.app.feature.login.data.AuthApi
 import com.example.app.feature.user.data.UserApi
 import com.example.app.feature.wallet.data.PaymentApi
-import com.example.app.utils.AppConstants
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -53,11 +54,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         versionInterceptor: Interceptor,
-        forceUpdateInterceptor: ForceUpdateInterceptor
+        forceUpdateInterceptor: ForceUpdateInterceptor,
+        dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(versionInterceptor)
             .addInterceptor(forceUpdateInterceptor)
+            .addInterceptor(dynamicBaseUrlInterceptor)
             .build()
 
     // -----------------------------
@@ -69,7 +72,8 @@ object NetworkModule {
         okHttpClient: OkHttpClient
     ): Retrofit =
         Retrofit.Builder()
-            .baseUrl("${AppConstants.BASE_URL}api/v1/")
+//            .baseUrl("${AppConstants.BASE_URL}api/v1/")
+            .baseUrl(RemoteConfig.DEFAULT_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

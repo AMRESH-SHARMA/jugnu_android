@@ -1,6 +1,8 @@
 package com.example.app.core.rtc
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.view.SurfaceView
 import com.example.app.BuildConfig
@@ -92,6 +94,9 @@ class AgoraVideoRtcManager @Inject constructor(
 
             // 🎥 Video
             enableVideo()
+            setClientRole(Constants.CLIENT_ROLE_BROADCASTER)
+            enableLocalVideo(true)
+            startPreview()
             setVideoEncoderConfiguration(
                 VideoEncoderConfiguration(
                     VideoEncoderConfiguration.VD_640x360,
@@ -155,95 +160,21 @@ class AgoraVideoRtcManager @Inject constructor(
     }
 
     /** Called when remote user joins */
+    //TODO: Async/Worker Thread
+//    fun setupRemoteVideo(uid: Int, view: SurfaceView) {
+//        rtcEngine?.setupRemoteVideo(
+//            VideoCanvas(view, VideoCanvas.RENDER_MODE_HIDDEN, uid)
+//        )
+//    }
+    //TODO: Sync/Main Thread: both fn works but we need to confirm which is better
     fun setupRemoteVideo(uid: Int, view: SurfaceView) {
-        rtcEngine?.setupRemoteVideo(
-            VideoCanvas(view, VideoCanvas.RENDER_MODE_HIDDEN, uid)
-        )
+        val engine = rtcEngine ?: return
+
+        Handler(Looper.getMainLooper()).post {
+            Log.d("RTM", "setupRemoteVideo on main | uid=$uid view=$view")
+            engine.setupRemoteVideo(
+                VideoCanvas(view, VideoCanvas.RENDER_MODE_HIDDEN, uid)
+            )
+        }
     }
 }
-
-//@Singleton
-//class AgoraVideoRtcManager @Inject constructor(
-//    @ApplicationContext private val context: Context
-//) : RtcManager {
-//
-//    private val _events = MutableSharedFlow<RtcEvent>(extraBufferCapacity = 8)
-//    override val events: Flow<RtcEvent> = _events.asSharedFlow()
-//
-//    private var rtcEngine: RtcEngine? = null
-//
-//    private fun ensureEngine() {
-//        if (rtcEngine != null) return
-//
-//        val rtcListener = object : IRtcEngineEventHandler() {
-//
-//            override fun onJoinChannelSuccess(
-//                channel: String?,
-//                uid: Int,
-//                elapsed: Int
-//            ) {
-//                _events.tryEmit(RtcEvent.Connected)
-//            }
-//
-//            override fun onUserJoined(uid: Int, elapsed: Int) {
-//                _events.tryEmit(RtcEvent.RemoteJoined(uid))
-//            }
-//
-//            override fun onUserOffline(uid: Int, reason: Int) {
-//                _events.tryEmit(RtcEvent.RemoteLeft(uid))
-//            }
-//
-//            override fun onLeaveChannel(stats: RtcStats?) {
-//                _events.tryEmit(RtcEvent.CallEnded)
-//            }
-//
-//            override fun onError(err: Int) {
-//                _events.tryEmit(RtcEvent.Error(err))
-//            }
-//        }
-//
-//        Log.d(
-//            "RTM",
-//            "Creating RTC Engine | appId=${BuildConfig.AGORA_APP_ID.take(8)}..."
-//        )
-//
-//        rtcEngine = RtcEngine.create(
-//            context.applicationContext,
-//            BuildConfig.AGORA_APP_ID,
-//            rtcListener
-//        ).apply {
-//            setChannelProfile(Constants.CHANNEL_PROFILE_COMMUNICATION)
-//            enableAudio()
-//            enableVideo()
-//            startPreview()
-//        }
-//    }
-//
-//    override fun join(callId: String, channel: String, token: String?) {
-//        ensureEngine()
-//        rtcEngine?.joinChannel(
-//            token,     // ✅ RTC token from backend
-//            channel,   // ✅ channel from backend
-//            null,
-//            0
-//        )
-//    }
-//
-//    override fun leave() {
-//        rtcEngine?.apply {
-//            stopPreview()
-//            leaveChannel()
-//        }
-//
-//        // 🔥 notify UI to close call screen
-//        _events.tryEmit(RtcEvent.CallEnded)
-//    }
-//
-//    /** Call ONLY on logout / app shutdown */
-//    fun destroy() {
-//        rtcEngine?.let {
-//            RtcEngine.destroy()
-//            rtcEngine = null
-//        }
-//    }
-//}

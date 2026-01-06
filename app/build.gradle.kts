@@ -20,7 +20,6 @@ plugins {
     alias(libs.plugins.kotlinAndroidKsp)
     alias(libs.plugins.hiltAndroid)
     id("kotlin-parcelize")
-//    id("kotlinx-serialization")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     id("com.google.gms.google-services")
 
@@ -36,8 +35,8 @@ android {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 5
+        versionName = "5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -50,8 +49,8 @@ android {
 
     buildTypes {
         release {
-//            isMinifyEnabled = false
-            isMinifyEnabled = true
+            //TODO
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

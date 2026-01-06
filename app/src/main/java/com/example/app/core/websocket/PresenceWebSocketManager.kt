@@ -2,6 +2,7 @@ package com.example.app.core.websocket
 
 import android.util.Log
 import com.example.app.core.di.ApplicationScope
+import com.example.app.core.remoteconfig.RemoteConfig
 import com.example.app.core.session.UserSession
 import com.example.app.utils.AppConstants
 import kotlinx.coroutines.CoroutineScope
@@ -107,12 +108,16 @@ class PresenceWebSocketManager @Inject constructor(
         retryDelayMs = 1_000L
     }
 
-    private fun buildWsUrl(): String =
-        AppConstants.BASE_URL
+    private fun buildWsUrl(): String {
+        val base = (RemoteConfig.wsBaseUrl
+            ?: RemoteConfig.apiBaseUrl.substringBefore("/api/v1"))
             .trimEnd('/')
             .replace("https://", "wss://")
-            .replace("http://", "ws://") +
-                "/" + AppConstants.WS_PRESENCE_PATH.trimStart('/')
+            .replace("http://", "ws://")
+
+        return base + "/" + AppConstants.WS_PRESENCE_PATH.trimStart('/')
+    }
+
 
     /** SOCKET LISTENER **/
 

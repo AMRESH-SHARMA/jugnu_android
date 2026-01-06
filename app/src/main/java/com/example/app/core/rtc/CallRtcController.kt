@@ -27,6 +27,9 @@ class CallRtcController @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     @ApplicationContext private val context: Context
 ) {
+    private val _remoteUid = MutableStateFlow<Int?>(null)
+    val remoteUid: StateFlow<Int?> = _remoteUid
+
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -163,6 +166,18 @@ class CallRtcController @Inject constructor(
         scope.launch {
             manager.events.collect { event ->
                 when (event) {
+                    // ----- video specific -----
+                    is RtcEvent.RemoteJoined -> {
+                        Log.d("RTC", "Remote joined uid=${event.uid}")
+                        _remoteUid.value = event.uid
+                    }
+
+                    is RtcEvent.RemoteLeft -> {
+                        Log.d("RTC", "Remote left")
+                        _remoteUid.value = null
+                    }
+
+                    // ----- lifecycle -----
                     is RtcEvent.Connected -> {
                         val call = CallStore.current() ?: return@collect
                         CallEventBus.emit(CallEvent.Connected(call.callId))
@@ -182,8 +197,6 @@ class CallRtcController @Inject constructor(
                         val call = CallStore.current() ?: return@collect
                         CallEventBus.emit(CallEvent.Ended(call.callId))
                     }
-
-                    else -> {}
                 }
             }
         }

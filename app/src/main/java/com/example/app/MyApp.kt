@@ -2,12 +2,14 @@ package com.example.app
 
 import android.app.Application
 import android.util.Log
-import com.example.app.BuildConfig
 import com.example.app.core.device.TokenManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.network.ApiResult
 import com.example.app.core.network.data.ApiRepository
 import com.example.app.core.observer.EventObserver
+import com.example.app.core.remoteconfig.ConfigLoader
+import com.example.app.core.remoteconfig.RemoteConfig
+import com.example.app.core.remoteconfig.RemoteConfigRepository
 import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
@@ -25,6 +27,9 @@ class MyApp : Application() {
     @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
+
+    @Inject
+    lateinit var remoteConfigRepo: RemoteConfigRepository
 
     @Inject
     lateinit var tokenManager: TokenManager
@@ -46,6 +51,18 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+
+        appScope.launch(Dispatchers.IO) {
+
+            // 1️⃣ load cached value (fast)
+            val cached = remoteConfigRepo.loadApiBaseUrl()
+            if (cached != null) RemoteConfig.updateApi(cached)
+
+            // 2️⃣ fetch GitHub config (background)
+            ConfigLoader.refresh(remoteConfigRepo)
+        }
+
+        // 2️⃣ Now it’s safe to start the rest
         tokenManager.start()
         observeUserSession()
         eventObserver.toString()

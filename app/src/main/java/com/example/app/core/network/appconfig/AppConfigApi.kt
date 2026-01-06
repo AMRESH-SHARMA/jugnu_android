@@ -3,7 +3,7 @@ package com.example.app.core.network.appconfig
 import retrofit2.http.GET
 
 interface AppConfigApi {
-    @GET("app-config")
+    @GET("/app-config")
     suspend fun getConfig(): AppConfigResponse
 }
 

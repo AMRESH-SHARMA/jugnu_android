@@ -1,4 +1,4 @@
-package com.example.app.core.network.appconfig
+package com.example.app.core.network.interceptor
 
 import com.example.app.root.ForceUpdateBus
 import okhttp3.Interceptor
