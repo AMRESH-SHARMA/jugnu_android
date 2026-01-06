@@ -2,16 +2,20 @@ package com.example.app.feature.call.ui
 
 import android.view.SurfaceView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CallEnd
@@ -25,20 +29,30 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.UiComposable
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import coil.compose.AsyncImage
 import com.example.app.core.call.CallType
 import com.example.app.core.rtc.VideoRenderer
 import com.example.app.feature.call.domain.CallStatus
+import kotlin.math.roundToInt
 
 @Composable
+@UiComposable
 fun OnGoingCallScreen(
     vm: CallViewModel
 ) {
@@ -55,14 +69,17 @@ fun OnGoingCallScreen(
     Box(Modifier.fillMaxSize()) {
         // VIDEO layer only when connected AND remote video present
 
-
-        if (renderer != null &&
-            call!!.callType == CallType.VIDEO &&
-            status == CallStatus.CONNECTED
-        ) {
-            //TODO if remoteuid null show avataar
-            VideoArea(renderer!!, remoteUid ?: -1)
+//        if (renderer != null &&
+//            call!!.callType == CallType.VIDEO &&
+//            status == CallStatus.CONNECTED
+//        ) {
+//            //TODO if remoteuid null show avataar
+//            VideoArea(renderer!!, remoteUid ?: -1)
+//        }
+        if (renderer != null && call!!.callType == CallType.VIDEO) {
+            VideoArea(renderer!!, remoteUid)
         }
+
 
         Column(
             modifier = Modifier
@@ -109,18 +126,20 @@ fun OnGoingCallScreen(
                     text = when (status) {
                         CallStatus.OUTGOING_RINGING -> "Calling…"
                         CallStatus.CONNECTING -> "Connecting…"
-                        CallStatus.CONNECTED -> uiState.durationLabel
+                        CallStatus.CONNECTED ->
+                            if (remoteUid != null) uiState.durationLabel else "Connecting…"
+
                         else -> ""
                     },
                     color = Color.Gray
                 )
-
-                Text(
-                    text = if (status == CallStatus.CONNECTED)
-                        "${uiState.remainingSeconds}s"
-                    else "",
-                    color = Color.Gray
-                )
+                //TODO: Remaining Seconds
+//                Text(
+//                    text = if (status == CallStatus.CONNECTED)
+//                        "${uiState.remainingSeconds}s"
+//                    else "",
+//                    color = Color.Gray
+//                )
             }
 
             CallControls(
@@ -182,35 +201,62 @@ private fun CallControls(
 }
 
 @Composable
+@UiComposable
 fun VideoArea(
     renderer: VideoRenderer,
     remoteUid: Int?
 ) {
+
+    val context = LocalContext.current
+
     Box(Modifier.fillMaxSize()) {
 
-        // remote
+        // --- REMOTE ---
+        val remoteView = remember { SurfaceView(context) }
+
+        LaunchedEffect(remoteUid) {
+            if (remoteUid != null) {
+                renderer.bindRemote(remoteUid, remoteView)
+            }
+        }
         AndroidView(
             modifier = Modifier.fillMaxSize(),
-            factory = { SurfaceView(it) },
-            update = { view ->
-                if (remoteUid != null) {
-                    renderer.bindRemote(remoteUid, view)
-                }
-            }
+            factory = { remoteView }
         )
 
-        // local preview
-        AndroidView(
+
+        // --- LOCAL (draggable preview) ---
+        val localView = remember { SurfaceView(context) }
+
+        LaunchedEffect(Unit) {
+            renderer.bindLocal(localView)
+        }
+
+        var offsetX by remember { mutableStateOf(0f) }
+        var offsetY by remember { mutableStateOf(0f) }
+
+        Box(
             modifier = Modifier
-                .size(120.dp)
+                .width(120.dp)
+                .aspectRatio(3f / 4f)
                 .align(Alignment.BottomEnd)
-                .padding(16.dp),
-            factory = { context ->
-                SurfaceView(context).apply {
-                    renderer.bindLocal(this)
+                .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
+                .pointerInput(Unit) {
+                    detectDragGestures { change, drag ->
+                        change.consume()
+                        offsetX += drag.x
+                        offsetY += drag.y
+                    }
                 }
-            }
-        )
+//                .clip(MaterialTheme.shapes.large)
+//                .background(Color.Black.copy(alpha = 0.15f))
+                .padding(bottom = 72.dp, end = 16.dp)
+        ) {
+            AndroidView(
+                modifier = Modifier.matchParentSize(),
+                factory = { localView }
+            )
+        }
     }
 }
 
