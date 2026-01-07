@@ -32,7 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -232,12 +232,12 @@ fun VideoArea(
             renderer.bindLocal(localView)
         }
 
-        var offsetX by remember { mutableStateOf(0f) }
-        var offsetY by remember { mutableStateOf(0f) }
+        var offsetX by remember { mutableFloatStateOf(0f) }
+        var offsetY by remember { mutableFloatStateOf(0f) }
 
         Box(
             modifier = Modifier
-                .width(120.dp)
+                .width(240.dp)
                 .aspectRatio(3f / 4f)
                 .align(Alignment.BottomEnd)
                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
