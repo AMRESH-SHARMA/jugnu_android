@@ -14,6 +14,7 @@ import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
 import com.example.app.core.websocket.PresenceWebSocketManager
+import com.example.app.utils.AppConstants
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -54,12 +55,20 @@ class MyApp : Application() {
 
         appScope.launch(Dispatchers.IO) {
 
-            // 1️⃣ load cached value (fast)
-            val cached = remoteConfigRepo.loadApiBaseUrl()
-            if (cached != null) RemoteConfig.updateApi(cached)
+            if (AppConstants.USE_DEFAULT_URL) {
 
-            // 2️⃣ fetch GitHub config (background)
-            ConfigLoader.refresh(remoteConfigRepo)
+                // 👉 Force default URL
+                RemoteConfig.updateApi(AppConstants.DEFAULT_BASE_URL)
+
+            } else {
+
+                // 1️⃣ load cached value (fast)
+                val cached = remoteConfigRepo.loadApiBaseUrl()
+                if (cached != null) RemoteConfig.updateApi(cached)
+
+                // 2️⃣ fetch GitHub config (background)
+                ConfigLoader.refresh(remoteConfigRepo)
+            }
         }
 
         // 2️⃣ Now it’s safe to start the rest

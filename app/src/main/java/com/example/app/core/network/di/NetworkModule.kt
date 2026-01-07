@@ -71,7 +71,6 @@ object NetworkModule {
         okHttpClient: OkHttpClient
     ): Retrofit =
         Retrofit.Builder()
-//            .baseUrl("${AppConstants.BASE_URL}api/v1/")
             .baseUrl(RemoteConfig.DEFAULT_BASE_URL)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
