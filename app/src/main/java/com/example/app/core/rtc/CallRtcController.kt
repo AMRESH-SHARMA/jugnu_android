@@ -160,6 +160,10 @@ class CallRtcController @Inject constructor(
         }
     }
 
+    fun switchCamera() {
+        _videoRenderer.value?.switchCamera()
+    }
+
     /*
     fun setSpeaker(enabled: Boolean) {
     rtcManager?.enableSpeaker(enabled)

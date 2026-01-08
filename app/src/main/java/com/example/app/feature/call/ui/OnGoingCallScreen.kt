@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Cached
 import androidx.compose.material.icons.filled.CallEnd
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
@@ -33,6 +34,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -206,12 +208,18 @@ fun VideoArea(
     renderer: VideoRenderer,
     remoteUid: Int?
 ) {
-
     val context = LocalContext.current
+
+    // UI state for camera (front/back icon)
+    var isFrontCamera by remember { mutableStateOf(true) }
+
+    // drag state
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
 
     Box(Modifier.fillMaxSize()) {
 
-        // --- REMOTE ---
+        /* ---------------- REMOTE VIDEO ---------------- */
         val remoteView = remember { SurfaceView(context) }
 
         LaunchedEffect(remoteUid) {
@@ -219,25 +227,22 @@ fun VideoArea(
                 renderer.bindRemote(remoteUid, remoteView)
             }
         }
+
         AndroidView(
             modifier = Modifier.fillMaxSize(),
             factory = { remoteView }
         )
 
-
-        // --- LOCAL (draggable preview) ---
+        /* ---------------- LOCAL PREVIEW ---------------- */
         val localView = remember { SurfaceView(context) }
 
         LaunchedEffect(Unit) {
             renderer.bindLocal(localView)
         }
 
-        var offsetX by remember { mutableFloatStateOf(0f) }
-        var offsetY by remember { mutableFloatStateOf(0f) }
-
         Box(
             modifier = Modifier
-                .width(240.dp)
+                .width(150.dp)
                 .aspectRatio(3f / 4f)
                 .align(Alignment.BottomEnd)
                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
@@ -248,15 +253,37 @@ fun VideoArea(
                         offsetY += drag.y
                     }
                 }
-//                .clip(MaterialTheme.shapes.large)
-//                .background(Color.Black.copy(alpha = 0.15f))
-                .padding(bottom = 72.dp, end = 16.dp)
+                .padding(bottom = 88.dp, end = 16.dp)
+                .clip(MaterialTheme.shapes.large)
+                .background(Color.Black)
         ) {
             AndroidView(
                 modifier = Modifier.matchParentSize(),
                 factory = { localView }
             )
+
+            /* -------- SWITCH CAMERA BUTTON -------- */
+
+            IconButton(
+                onClick = {
+                    renderer.switchCamera()
+                    isFrontCamera = !isFrontCamera
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.6f),
+                        shape = CircleShape
+                    )
+                    .size(32.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Cached, // camera flip icon
+                    contentDescription = "Switch camera",
+                    tint = Color.White
+                )
+            }
         }
     }
 }
-

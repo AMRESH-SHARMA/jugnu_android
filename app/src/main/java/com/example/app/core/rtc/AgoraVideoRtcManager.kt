@@ -149,6 +149,10 @@ class AgoraVideoRtcManager @Inject constructor(
         rtcEngine?.setEnableSpeakerphone(enable)
     }
 
+    fun switchCamera() {
+        rtcEngine?.switchCamera()
+    }
+
 
     /** Called by UI when local surface is ready */
     fun setupLocalVideo(view: SurfaceView) {

@@ -14,4 +14,6 @@ interface RtcManager {
 
     fun muteLocalAudio(mute: Boolean)
     fun enableSpeaker(enable: Boolean)
+
+//    fun switchCamera()
 }

@@ -280,4 +280,9 @@ class CallViewModel @Inject constructor(
         _uiState.update { it.copy(isSpeakerOn = newState) }
         callRtcController.setSpeaker(newState)
     }
+
+    fun switchCamera() {
+        callRtcController.switchCamera()
+    }
+
 }
