@@ -1,7 +1,7 @@
 package com.example.app.feature.login.ui
 
+import Routes
 import android.util.Log
-import android.widget.Toast
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.keyframes
 import androidx.compose.foundation.layout.Arrangement
@@ -36,19 +36,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.app.R
 import com.example.app.feature.components.HeadingTextComponent
 import com.example.app.feature.components.ImageComponent
-import com.example.app.R
 import kotlinx.coroutines.launch
-import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.hilt.navigation.compose.hiltViewModel
-
 
 @Composable
 fun LoginScreen(navController: NavController) {
@@ -86,7 +85,9 @@ fun LoginScreen(navController: NavController) {
     }
 
     Surface(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(20.dp),
         color = MaterialTheme.colorScheme.background
     ) {
         Column(
@@ -150,12 +151,14 @@ fun LoginScreen(navController: NavController) {
                             Log.d("LoginScreen", "OTP request success, navigating to OTP screen")
                             navController.navigate(Routes.Screen.Auth.otpRoute(mobileNumber))
                         }
+
                         is LoginUiState.Error -> {
                             val msg = (otpState as LoginUiState.Error).message
                             Log.e("LoginScreen", "OTP request failed: $msg")
                             // Optional: show Toast if you want
                             // Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         }
+
                         else -> Unit
                     }
                 }

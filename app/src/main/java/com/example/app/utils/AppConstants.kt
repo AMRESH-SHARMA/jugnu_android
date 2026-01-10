@@ -7,8 +7,8 @@ object AppConstants {
     // =========================
 
     const val REMOTE_CONFIG_URL = "https://amresh-sharma.github.io/helium-config/config.json"
-    const val USE_DEFAULT_URL = true
-    const val DEFAULT_BASE_URL = "http://10.229.128.61:3001/api/v1/"
+    const val USE_DEFAULT_URL = false
+    const val DEFAULT_BASE_URL = "http://10.185.252.61:3001/api/v1/"
     const val WS_PRESENCE_PATH = "ws/presence"
 
     // =========================

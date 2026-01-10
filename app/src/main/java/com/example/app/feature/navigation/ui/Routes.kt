@@ -26,6 +26,7 @@ object Routes {
 
         object Home {
             const val ROOT = "home"
+            const val OFFER_MODAL = "offer_modal"
         }
 
         object Listener {

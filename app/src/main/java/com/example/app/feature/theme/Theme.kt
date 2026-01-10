@@ -13,7 +13,7 @@ private val DarkColorScheme = darkColorScheme(
     background = DARK_GREEN300,
     surface = DARK_GREEN300,
     tertiary = DARK_GREEN200,
-    onTertiary = WHITE200,
+    onTertiary = White100,
 )
 
 private val DarkAndroidBackgroundTheme = BackgroundTheme(color = DARK_GREEN300)

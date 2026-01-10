@@ -20,7 +20,7 @@ val DARK_GREEN200 = Color(0xFF232D36)
 
 val DARK_GREEN300 = Color(0xFF12171B)
 
-//val WHITE200 = Color(0xFFe0e0e0)
+val White100 = Color(0xFFFFFFFF)
 val WHITE200 = Color(0xFFFDFDFD)
 val BLACK200 = Color(0xFA212020)
 val GRAY100 = Color(0xC1EFF0F3)

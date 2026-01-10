@@ -21,4 +21,13 @@ object RemoteConfig {
     fun updateWs(url: String?) {
         wsBaseUrl = url
     }
+
+    //OFFER RELATED
+    private var offerConfig: OfferConfig? = null
+
+    fun updateOffer(config: OfferConfig?) {
+        offerConfig = config
+    }
+
+    fun getOffer(): OfferConfig? = offerConfig
 }

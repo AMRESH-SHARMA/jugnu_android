@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.app.core.ui.UiState
 import com.example.app.feature.listenerDashboard.domain.ListenerStats
 import com.example.app.feature.listenerDashboard.ui.components.ListenerBottomTabBar
@@ -134,7 +135,7 @@ fun ListenerDashboardScreen(
                                     .fillMaxSize()
                                     .padding(16.dp)
                             ) {
-                                HeaderSection(username = "John!")
+                                HeaderSection(username = stats.name, avatarUrl = stats.avatar)
 
                                 Spacer(Modifier.height(20.dp))
 
@@ -153,7 +154,12 @@ fun ListenerDashboardScreen(
                                                 vm.load()
                                             }
                                         },
-                                        label = { Text("All time") }
+                                        label = {
+                                            Text(
+                                                "All time",
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        }
                                     )
 
                                     // LAST 30 DAYS
@@ -171,7 +177,12 @@ fun ListenerDashboardScreen(
                                                 vm.load()
                                             }
                                         },
-                                        label = { Text("Last 30 days") }
+                                        label = {
+                                            Text(
+                                                "Last 30 days",
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        }
                                     )
 
                                     // TODO
@@ -276,22 +287,24 @@ fun ListenerDashboardScreen(
 --------------------------------------------------- */
 
 @Composable
-fun HeaderSection(username: String) {
+fun HeaderSection(username: String, avatarUrl: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            "Good Morning, $username",
+            "Hello, $username",
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
         )
 
-        Box(
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = "Caller Avatar",
             modifier = Modifier
-                .size(40.dp)
-                .background(Color.Gray, CircleShape)
+                .size(44.dp)
+                .clip(CircleShape)
         )
     }
 }
@@ -479,8 +492,8 @@ fun OverviewCard(title: String, value: String, change: String) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, color = MaterialTheme.colorScheme.secondary)
-            Text(value, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, color = MaterialTheme.colorScheme.onTertiary)
+            Text(value, color = MaterialTheme.colorScheme.onTertiary)
             Text(change, color = Color.Green, fontSize = 12.sp)
         }
     }
@@ -500,7 +513,7 @@ fun TasksCard() {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Tasks Done", color = Color.Gray)
+            Text("Tasks Done", color = MaterialTheme.colorScheme.onTertiary)
             Spacer(Modifier.height(8.dp))
 
             LinearProgressIndicator(

@@ -4,6 +4,8 @@ import com.example.app.feature.listenerDashboard.domain.ListenerStats
 
 fun ListenerStatsDto.toDomain(): ListenerStats =
     ListenerStats(
+        avatar = avatar,
+        name = name,
         uniqueCallers = uniqueCallers,
         totalAnsweredCalls = totalAnsweredCalls,
         totalMissedCalls = totalMissedCalls,
@@ -13,5 +15,5 @@ fun ListenerStatsDto.toDomain(): ListenerStats =
         platformFeeTotal = platformFeeTotal,
         netEarnings = netEarnings,
         totalRatings = totalRatings,
-        totalReviews = totalReviews
+        totalReviews = totalReviews,
     )

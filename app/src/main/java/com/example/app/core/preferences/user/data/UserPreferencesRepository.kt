@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.example.app.core.preferences.user.domain.UserRole
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +19,11 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_ACCOUNT_ID = stringPreferencesKey("account_id")
         val KEY_ROLE = stringPreferencesKey("role")
         val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
+
+
+        // 🆕 Offer tracking (single offer, content-based)
+        val KEY_LAST_OFFER_DATE = stringPreferencesKey("last_offer_date")
+        val KEY_LAST_OFFER_SIGNATURE = stringPreferencesKey("last_offer_signature")
     }
 
     val userPrefsFlow = dataStore.data.map { prefs ->
@@ -41,6 +47,31 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun saveToken(token: String) {
         dataStore.edit { prefs ->
             prefs[KEY_FCM_TOKEN] = token
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 🆕 Offer helpers (FINAL, production-safe)
+    // ---------------------------------------------------------
+
+    suspend fun getLastOfferShownDate(): String? {
+        return dataStore.data.first()[KEY_LAST_OFFER_DATE]
+    }
+
+    suspend fun getLastOfferSignature(): String? {
+        return dataStore.data.first()[KEY_LAST_OFFER_SIGNATURE]
+    }
+
+    /**
+     * Call this when the offer dialog is dismissed
+     */
+    suspend fun markOfferShown(
+        signature: String,
+        date: String
+    ) {
+        dataStore.edit { prefs ->
+            prefs[KEY_LAST_OFFER_SIGNATURE] = signature
+            prefs[KEY_LAST_OFFER_DATE] = date
         }
     }
 }

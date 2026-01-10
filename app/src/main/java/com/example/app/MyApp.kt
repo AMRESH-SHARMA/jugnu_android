@@ -56,12 +56,9 @@ class MyApp : Application() {
         appScope.launch(Dispatchers.IO) {
 
             if (AppConstants.USE_DEFAULT_URL) {
-
                 // 👉 Force default URL
                 RemoteConfig.updateApi(AppConstants.DEFAULT_BASE_URL)
-
             } else {
-
                 // 1️⃣ load cached value (fast)
                 val cached = remoteConfigRepo.loadApiBaseUrl()
                 if (cached != null) RemoteConfig.updateApi(cached)
