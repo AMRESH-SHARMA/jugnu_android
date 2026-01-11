@@ -24,7 +24,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.app.feature.home.ui.Contact
 
-
 @Composable
 fun HorizontalContactsRow(
     contacts: List<Contact>,

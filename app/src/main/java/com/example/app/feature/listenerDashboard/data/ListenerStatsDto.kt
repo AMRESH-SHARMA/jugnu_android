@@ -1,6 +1,8 @@
 package com.example.app.feature.listenerDashboard.data
 
 data class ListenerStatsDto(
+    val avatar: String,
+    val name: String,
     val uniqueCallers: Long,
     val totalAnsweredCalls: Long,
     val totalMissedCalls: Long,

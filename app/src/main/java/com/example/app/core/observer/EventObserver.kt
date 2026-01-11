@@ -1,15 +1,20 @@
 package com.example.app.core.observer
 
+import android.content.Context
 import android.util.Log
 import com.example.app.core.audio.CallAudioController
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallManager
+import com.example.app.core.call.notification.IncomingCallNotificationManager
+import com.example.app.core.call.notification.IncomingCallRingingService
+import com.example.app.core.call.notification.MissedCallNotificationManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.rtc.CallRtcController
 import com.example.app.core.websocket.PresenceEvent
 import com.example.app.core.websocket.PresenceEventBus
 import com.example.app.core.websocket.PresenceManager
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +32,9 @@ class EventObserver @Inject constructor(
     private val presenceManager: PresenceManager,
     private val callAudioController: CallAudioController,  //Just inject to make sure CallAudioController must initialized
     private val callRtcController: CallRtcController,  //Just inject to make sure CallRtcController must initialized
+    private val incomingCallNotificationManager: IncomingCallNotificationManager,
+    private val missedCallNotificationManager: MissedCallNotificationManager,
+    @ApplicationContext private val appContext: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
     init {
@@ -48,7 +56,10 @@ class EventObserver @Inject constructor(
                         presenceManager.onCallStarted()
                     }
 
-                    is CallEvent.Accepted -> callManager.onAccepted(event)
+                    is CallEvent.Accepted -> {
+                        callManager.onAccepted(event)
+                    }
+
                     is CallEvent.Connected -> callManager.onConnected()
 
                     is CallEvent.Rejected -> {
@@ -57,8 +68,17 @@ class EventObserver @Inject constructor(
                     }
 
 
-                    is CallEvent.Ended,
+                    is CallEvent.Ended -> {
+                        callManager.onEnded()
+                        presenceManager.onCallEnded()
+                    }
+
                     is CallEvent.Cancelled -> {
+                        // 🔕 Stop ringing/Dismiss incoming call notification
+                        IncomingCallRingingService.stop(appContext)
+                        incomingCallNotificationManager.dismiss(event.callId)
+                        // ✅ Show missed call
+                        missedCallNotificationManager.showMissedCall(event.callId)
                         callManager.onEnded()
                         presenceManager.onCallEnded()
                     }

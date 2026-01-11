@@ -22,6 +22,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -37,9 +39,15 @@ fun SelectUserRoleScreen(
     var accountId by remember { mutableStateOf("") }
     val savedRole by viewModel.savedRole
 
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(navigateToHome) {
         if (navigateToHome) {
+
+            // ✅ Hide keyboard FIRST
+            keyboardController?.hide()
+            focusManager.clearFocus(force = true)
 
             when (savedRole) {
 

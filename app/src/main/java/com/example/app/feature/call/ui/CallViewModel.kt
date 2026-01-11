@@ -281,8 +281,8 @@ class CallViewModel @Inject constructor(
         callRtcController.setSpeaker(newState)
     }
 
-    fun switchCamera() {
-        callRtcController.switchCamera()
-    }
+//    fun switchCamera() {
+//        callRtcController.switchCamera()
+//    }
 
 }

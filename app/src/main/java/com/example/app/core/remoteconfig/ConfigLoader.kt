@@ -1,5 +1,6 @@
 package com.example.app.core.remoteconfig
 
+import android.util.Log
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
@@ -11,11 +12,18 @@ data class AppConfig(
     val wsBaseUrl: String,
     val cdnBaseUrl: String,
     val minVersion: Int,
-    val forceUpdate: Boolean
+    val forceUpdate: Boolean,
+    val offer: OfferConfig? = null
+)
+
+@Serializable
+data class OfferConfig(
+    val title: String,
+    val body: String,
+    val enabled: Boolean = true
 )
 
 object ConfigLoader {
-
     private val client = OkHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -32,13 +40,15 @@ object ConfigLoader {
                 // update memory
                 RemoteConfig.updateApi(config.apiBaseUrl)
                 RemoteConfig.updateWs(config.wsBaseUrl)
+                RemoteConfig.updateOffer(config.offer)
 
+                Log.d("RTM CONFIG", "RemoteConfig updated → offer=${config.offer}")
                 // persist
                 repo.saveApiBaseUrl(config.apiBaseUrl)
                 repo.saveWsBaseUrl(config.wsBaseUrl)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            Log.e("RTM CONFIG", "❌ ConfigLoader.refresh FAILED", e)
         }
     }
-
 }

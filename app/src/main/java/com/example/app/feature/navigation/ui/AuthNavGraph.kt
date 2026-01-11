@@ -1,5 +1,6 @@
 package com.example.app.feature.navigation.ui
 
+import Routes
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -8,7 +9,6 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.app.feature.login.ui.LoginScreen
 import com.example.app.feature.login.ui.OtpVerificationScreen
-
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
     navigation(

@@ -4,10 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.width
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -36,12 +33,12 @@ fun HomeTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.clickable { onWalletClick() }
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = "Wallet",
-                        tint = MaterialTheme.colorScheme.onTertiary,
-
-                        )
+//                    Icon(
+//                        imageVector = Icons.Default.AccountBalanceWallet,
+//                        contentDescription = "Wallet",
+//                        tint = MaterialTheme.colorScheme.onTertiary,
+//
+//                        )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(text = balance, color = MaterialTheme.colorScheme.onTertiary)
                     Spacer(modifier = Modifier.width(8.dp))

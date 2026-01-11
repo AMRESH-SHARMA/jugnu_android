@@ -89,10 +89,11 @@ fun OnGoingCallScreen(
                 .padding(24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 96.dp)
             ) {
 
                 // avatar for voice calls
@@ -174,11 +175,14 @@ private fun CallControls(
 
         IconButton(
             onClick = onToggleMute,
-            enabled = status == CallStatus.CONNECTED
+            enabled = status == CallStatus.CONNECTED,
+            modifier = Modifier.size(64.dp)
         ) {
             Icon(
                 imageVector = if (isMuted) Icons.Default.MicOff else Icons.Default.Mic,
-                contentDescription = "Mute"
+                contentDescription = "Mute",
+                tint = Color.White,
+                modifier = Modifier.size(32.dp)
             )
         }
 
@@ -186,16 +190,24 @@ private fun CallControls(
             onClick = onEndCall,
             containerColor = Color.Red
         ) {
-            Icon(Icons.Default.CallEnd, null, tint = Color.White)
+            Icon(
+                Icons.Default.CallEnd,
+                null,
+                tint = Color.White,
+                modifier = Modifier.size(32.dp)
+            )
         }
 
         IconButton(
             onClick = onToggleSpeaker,
-            enabled = status == CallStatus.CONNECTED
+            enabled = status == CallStatus.CONNECTED,
+            modifier = Modifier.size(64.dp)
         ) {
             Icon(
                 imageVector = if (isSpeakerOn) Icons.Default.VolumeUp else Icons.Default.VolumeMute,
-                contentDescription = "Speaker"
+                contentDescription = "Speaker",
+                tint = if (isSpeakerOn) Color.Green else Color.White,
+                modifier = Modifier.size(32.dp)
             )
         }
 

@@ -38,10 +38,10 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
-
-
     val balance by viewModel.balance.collectAsState()
     var currentTab by remember { mutableStateOf(initialTab) }
+
+
     Scaffold(
         topBar = {
             HomeTopBar(
@@ -105,7 +105,6 @@ fun HomeScreen(
         }
     }
 }
-
 
 /** Sample contact data */
 data class Contact(val id: String, val name: String, val avatarColorHex: Long)
