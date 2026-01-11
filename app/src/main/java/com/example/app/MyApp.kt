@@ -2,10 +2,12 @@ package com.example.app
 
 import android.app.Application
 import android.util.Log
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.app.core.device.TokenManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.network.ApiResult
 import com.example.app.core.network.data.ApiRepository
+import com.example.app.core.observer.AppForegroundTracker
 import com.example.app.core.observer.EventObserver
 import com.example.app.core.remoteconfig.ConfigLoader
 import com.example.app.core.remoteconfig.RemoteConfig
@@ -24,6 +26,9 @@ import javax.inject.Inject
 
 @HiltAndroidApp
 class MyApp : Application() {
+
+    @Inject
+    lateinit var appForegroundTracker: AppForegroundTracker
 
     @Inject
     @ApplicationScope
@@ -52,6 +57,10 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        /** Observe whether app is in foreground/background */
+        ProcessLifecycleOwner.get()
+            .lifecycle
+            .addObserver(appForegroundTracker)
 
         appScope.launch(Dispatchers.IO) {
 

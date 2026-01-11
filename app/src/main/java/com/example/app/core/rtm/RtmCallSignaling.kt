@@ -32,7 +32,7 @@ class RtmCallSignaling @Inject constructor() {
                     // fire-and-forget (expected behavior)
                     Log.d(
                         "RTM",
-                        "Published Event ${payload.event} → channel=$channel callId=${payload.callId}"
+                        "Published RTM Event ${payload.event} → channel=$channel callId=${payload.callId}"
                     )
                 }
 

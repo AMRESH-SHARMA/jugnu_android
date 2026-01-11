@@ -35,8 +35,8 @@ android {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "6.0"
+        versionCode = 7
+        versionName = "7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -101,6 +101,7 @@ dependencies {
     implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.animation.core)
     implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.lifecycle.process)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
