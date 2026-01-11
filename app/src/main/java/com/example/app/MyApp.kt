@@ -2,15 +2,21 @@ package com.example.app
 
 import android.app.Application
 import android.util.Log
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.example.app.core.device.TokenManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.network.ApiResult
 import com.example.app.core.network.data.ApiRepository
+import com.example.app.core.observer.AppForegroundTracker
 import com.example.app.core.observer.EventObserver
+import com.example.app.core.remoteconfig.ConfigLoader
+import com.example.app.core.remoteconfig.RemoteConfig
+import com.example.app.core.remoteconfig.RemoteConfigRepository
 import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
 import com.example.app.core.websocket.PresenceWebSocketManager
+import com.example.app.utils.AppConstants
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -22,8 +28,14 @@ import javax.inject.Inject
 class MyApp : Application() {
 
     @Inject
+    lateinit var appForegroundTracker: AppForegroundTracker
+
+    @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
+
+    @Inject
+    lateinit var remoteConfigRepo: RemoteConfigRepository
 
     @Inject
     lateinit var tokenManager: TokenManager
@@ -45,6 +57,27 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        /** Observe whether app is in foreground/background */
+        ProcessLifecycleOwner.get()
+            .lifecycle
+            .addObserver(appForegroundTracker)
+
+        appScope.launch(Dispatchers.IO) {
+
+            if (AppConstants.USE_DEFAULT_URL) {
+                // 👉 Force default URL
+                RemoteConfig.updateApi(AppConstants.DEFAULT_BASE_URL)
+            } else {
+                // 1️⃣ load cached value (fast)
+                val cached = remoteConfigRepo.loadApiBaseUrl()
+                if (cached != null) RemoteConfig.updateApi(cached)
+
+                // 2️⃣ fetch GitHub config (background)
+                ConfigLoader.refresh(remoteConfigRepo)
+            }
+        }
+
+        // 2️⃣ Now it’s safe to start the rest
         tokenManager.start()
         observeUserSession()
         eventObserver.toString()

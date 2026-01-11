@@ -48,7 +48,6 @@ fun AppNavGraph() {
     // ---------------------------------------------------------
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
-
     LaunchedEffect(Unit) {
         CallStore.call
             .drop(1) // skip initial null
@@ -91,7 +90,10 @@ fun AppNavGraph() {
         NavHost(
             navController = navController,
             startDestination = Routes.Graph.SELECT_USER_ROLE
+            //TODO
+//                    startDestination = Routes.Graph.AUTH
         ) {
+            authNavGraph(navController)
             selectUserRoleNavGraph(navController)
             homeNavGraph(navController)
             listenerNavGraph(navController)

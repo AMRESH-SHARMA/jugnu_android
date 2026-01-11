@@ -64,7 +64,6 @@ fun WalletScreen(
     val role = walletVM.role
     val balance by walletVM.balance.collectAsState()
     val items by historyVM.items.collectAsState()
-    val loading by historyVM.loading.collectAsState()
     val listState = rememberLazyListState()
     // ⭐ TopAppBar
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
@@ -137,7 +136,7 @@ fun WalletScreen(
                 items.forEach { txn ->
                     TransactionItem(
                         title = txn.reason,
-                        amount = formatAmount(txn.amount),
+                        amount = formatAmount(txn.amountCoins),
                         time = formatTime(txn.time)
                     )
                 }
@@ -189,12 +188,13 @@ fun WalletBalanceCard(balance: Double, currency: String) {
         ) {
 
             Text(
-                text = "Total Balance",
+                text = "Total Coins",
                 style = MaterialTheme.typography.titleMedium.copy(color = Color.White)
             )
 
             Text(
-                text = "$currency ${"%,.2f".format(animatedValue)}",
+                //TODO: text = "🪙 ${"%,.2f".format(animatedValue)}",
+                text = "🪙 ${"%,d".format(animatedValue.toInt())}",
                 style = MaterialTheme.typography.headlineLarge.copy(color = Color.White)
             )
         }
@@ -255,12 +255,13 @@ fun HorizontalActionButton(
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(14.dp),
         tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.secondaryContainer
+        color = MaterialTheme.colorScheme.primary
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
+
             verticalAlignment = Alignment.CenterVertically
         ) {
 
@@ -268,7 +269,7 @@ fun HorizontalActionButton(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSecondaryContainer
+                color = MaterialTheme.colorScheme.onTertiary
             )
 
             Spacer(modifier = Modifier.weight(1f))
@@ -277,7 +278,7 @@ fun HorizontalActionButton(
             Icon(
                 imageVector = icon,
                 contentDescription = title,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                tint = MaterialTheme.colorScheme.onTertiary,
             )
         }
     }

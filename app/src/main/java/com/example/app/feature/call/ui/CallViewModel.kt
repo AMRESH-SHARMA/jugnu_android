@@ -24,6 +24,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -53,8 +54,7 @@ class CallViewModel @Inject constructor(
     val error = MutableStateFlow<String?>(null)
 
     // UI-only RTC info (who joined)
-    private val _remoteUid = MutableStateFlow<Int?>(null)
-    val remoteUid: StateFlow<Int?> = _remoteUid
+    val remoteUid: StateFlow<Int?> = callRtcController.remoteUid
 
     // header (name / avatar)
     private val _headerUiState = MutableStateFlow(CallHeaderUiState())
@@ -115,19 +115,21 @@ class CallViewModel @Inject constructor(
         }
 
         // --------------------------------------------------
-        // Start / stop UI duration timer based on status
+        // Start / stop UI duration timer only when BOTH connected and remote present
         // --------------------------------------------------
         viewModelScope.launch {
-            CallStore.call.collect { call ->
-                when (call?.status) {
+            combine(CallStore.call, remoteUid) { call, uid ->
+                call?.status to uid
+            }.collect { (status, uid) ->
 
-                    CallStatus.CONNECTED -> startTimer()
+                when {
+                    status == CallStatus.CONNECTED && uid != null -> startTimer()
 
-                    CallStatus.CANCELLED,
-                    CallStatus.REJECTED,
-                    CallStatus.ENDED -> stopTimer()
-
-                    else -> Unit
+                    status in listOf(
+                        CallStatus.CANCELLED,
+                        CallStatus.REJECTED,
+                        CallStatus.ENDED
+                    ) -> stopTimer()
                 }
             }
         }
@@ -278,4 +280,9 @@ class CallViewModel @Inject constructor(
         _uiState.update { it.copy(isSpeakerOn = newState) }
         callRtcController.setSpeaker(newState)
     }
+
+//    fun switchCamera() {
+//        callRtcController.switchCamera()
+//    }
+
 }

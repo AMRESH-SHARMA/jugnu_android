@@ -20,7 +20,6 @@ plugins {
     alias(libs.plugins.kotlinAndroidKsp)
     alias(libs.plugins.hiltAndroid)
     id("kotlin-parcelize")
-//    id("kotlinx-serialization")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     id("com.google.gms.google-services")
 
@@ -33,11 +32,11 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.example.app"
+        applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 7
+        versionName = "7.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -50,6 +49,7 @@ android {
 
     buildTypes {
         release {
+            //TODO
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -97,6 +97,11 @@ dependencies {
     implementation(libs.ui)
     implementation(libs.androidx.compose.runtime.saveable)
     implementation(libs.androidx.benchmark.common)
+    implementation(libs.androidx.ui.text)
+    implementation(libs.androidx.compose.animation)
+    implementation(libs.androidx.animation.core)
+    implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.lifecycle.process)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

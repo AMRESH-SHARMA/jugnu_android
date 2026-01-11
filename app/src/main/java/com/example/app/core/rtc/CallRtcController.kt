@@ -1,12 +1,14 @@
 package com.example.app.core.rtc
 
 import android.content.Context
+import android.content.Intent
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
 import android.os.Build
 import android.util.Log
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
+import com.example.app.core.call.CallForegroundService
 import com.example.app.core.call.CallStore
 import com.example.app.core.di.ApplicationScope
 import com.example.app.feature.call.domain.CallModel
@@ -27,6 +29,9 @@ class CallRtcController @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope,
     @ApplicationContext private val context: Context
 ) {
+    private val _remoteUid = MutableStateFlow<Int?>(null)
+    val remoteUid: StateFlow<Int?> = _remoteUid
+
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
@@ -56,6 +61,7 @@ class CallRtcController @Inject constructor(
                         if (callStarted) return@collect
                         callStarted = true
                         cancelConnectTimeout()
+                        startCallService()
                     }
 
                     // ❌ Ended in any way
@@ -154,6 +160,39 @@ class CallRtcController @Inject constructor(
         }
     }
 
+    fun switchCamera() {
+        _videoRenderer.value?.switchCamera()
+    }
+
+    /*
+    fun setSpeaker(enabled: Boolean) {
+    rtcManager?.enableSpeaker(enabled)
+
+    // Always treat as a call
+    audioManager.mode = AudioManager.MODE_IN_COMMUNICATION
+
+    if (enabled) {
+        // route to loud speaker
+        audioManager.isSpeakerphoneOn = true
+
+        // BOOST voice-call volume instead of using STREAM_MUSIC
+        val max = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL)
+        audioManager.setStreamVolume(
+            AudioManager.STREAM_VOICE_CALL,
+            max,
+            AudioManager.FLAG_PLAY_SOUND
+        )
+
+    } else {
+        // back to earpiece / bluetooth / wired
+        audioManager.isSpeakerphoneOn = false
+
+        val mid = audioManager.getStreamMaxVolume(AudioManager.STREAM_VOICE_CALL) / 2
+        audioManager.setStreamVolume(AudioManager.STREAM_VOICE_CALL, mid, 0)
+    }
+}
+
+    */
 
     // ------------------------------------------------------------
     // RTC EVENTS HANDLING
@@ -163,6 +202,18 @@ class CallRtcController @Inject constructor(
         scope.launch {
             manager.events.collect { event ->
                 when (event) {
+                    // ----- video specific -----
+                    is RtcEvent.RemoteJoined -> {
+                        Log.d("RTC", "Remote joined uid=${event.uid}")
+                        _remoteUid.value = event.uid
+                    }
+
+                    is RtcEvent.RemoteLeft -> {
+                        Log.d("RTC", "Remote left")
+                        _remoteUid.value = null
+                    }
+
+                    // ----- lifecycle -----
                     is RtcEvent.Connected -> {
                         val call = CallStore.current() ?: return@collect
                         CallEventBus.emit(CallEvent.Connected(call.callId))
@@ -182,8 +233,6 @@ class CallRtcController @Inject constructor(
                         val call = CallStore.current() ?: return@collect
                         CallEventBus.emit(CallEvent.Ended(call.callId))
                     }
-
-                    else -> {}
                 }
             }
         }
@@ -215,6 +264,8 @@ class CallRtcController @Inject constructor(
     private fun cleanup() {
         Log.d("RTC", "Cleanup called")
 
+        stopCallService()
+
         rtcJoinStarted = false
         callStarted = false
 
@@ -227,4 +278,25 @@ class CallRtcController @Inject constructor(
         audioManager.isSpeakerphoneOn = false
         audioManager.mode = AudioManager.MODE_NORMAL
     }
+
+    // ------------------------------------------------------------
+    // FOREGROUND SERVICE HELPER FUNCTION
+    // ------------------------------------------------------------
+
+    private fun startCallService() {
+        val intent = Intent(context, CallForegroundService::class.java)
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            context.startForegroundService(intent)
+        } else {
+            context.startService(intent)
+        }
+    }
+
+
+    private fun stopCallService() {
+        val intent = Intent(context, com.example.app.core.call.CallForegroundService::class.java)
+        context.stopService(intent)
+    }
+
 }

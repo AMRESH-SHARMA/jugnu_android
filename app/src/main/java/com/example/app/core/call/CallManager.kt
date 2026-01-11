@@ -7,7 +7,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CallManager @Inject constructor() {
+class CallManager @Inject constructor(
+    private val pendingCallStore: PendingCallStore
+) {
 
     private fun log(action: String) {
         val current = CallStore.current()
@@ -96,14 +98,16 @@ class CallManager @Inject constructor() {
     // ------------------------------------------------------------
     // TERMINATION
     // ------------------------------------------------------------
-
     fun onRejected() {
         log("onRejected()")
+        pendingCallStore.clear()
         CallStore.clear()
     }
 
     fun onEnded() {
         log("onEnded()")
+        pendingCallStore.clear()
         CallStore.clear()
     }
+
 }

@@ -1,1 +1,39 @@
-/build
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Android Studio
+.idea/
+*.iml
+*.ipr
+*.iws
+/.settings/
+
+# Local properties (never commit SDK paths)
+local.properties
+
+# Keystore / signing
+*.jks
+*.keystore
+
+# Release + generated artifacts
+app/release/
+*.apk
+*.aab
+*.ap_
+outputs/
+
+# Logs
+*.log
+
+# NDK / CMake
+.cxx/
+externalNativeBuild/
+
+# Captures
+captures/
+
+# Misc
+.DS_Store
+.env

@@ -19,12 +19,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DatePickerDefaults
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,10 +51,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import coil.compose.AsyncImage
 import com.example.app.core.ui.UiState
 import com.example.app.feature.listenerDashboard.domain.ListenerStats
 import com.example.app.feature.listenerDashboard.ui.components.ListenerBottomTabBar
 import com.example.app.feature.listenerDashboard.ui.components.ListenerTab
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 /* ---------------------------------------------------
    DATA + RANGE
@@ -78,6 +87,8 @@ private val labelsMap = mapOf(
     )
 )
 
+enum class StatsFilter { ALL_TIME, DAYS_30, CUSTOM }
+
 /* ---------------------------------------------------
    SCREEN
 --------------------------------------------------- */
@@ -92,6 +103,11 @@ fun ListenerDashboardScreen(
     LaunchedEffect(Unit) { vm.load() }
 
     var selectedTab by remember { mutableStateOf(ListenerTab.DASHBOARD) }
+
+    var showPicker by remember { mutableStateOf(false) }
+    val pickerState = rememberDateRangePickerState()
+
+    var activeFilter by remember { mutableStateOf(StatsFilter.ALL_TIME) }
 
     Scaffold(
         bottomBar = {
@@ -110,73 +126,185 @@ fun ListenerDashboardScreen(
                 .background(MaterialTheme.colorScheme.background)
         ) {
             when (selectedTab) {
-
                 ListenerTab.DASHBOARD -> {
                     when (uiState) {
-
                         is UiState.Success -> {
                             val stats = (uiState as UiState.Success).data
-
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
                                     .padding(16.dp)
                             ) {
+                                HeaderSection(username = stats.name, avatarUrl = stats.avatar)
 
-                                HeaderSection(username = "John!")
+                                Spacer(Modifier.height(20.dp))
+
+                                // ---------- FILTER ROW ----------
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    // ALL TIME
+                                    FilterChip(
+                                        selected = activeFilter == StatsFilter.ALL_TIME,
+                                        onClick = {
+                                            if (activeFilter != StatsFilter.ALL_TIME) {   // 👈 only if changed
+                                                activeFilter = StatsFilter.ALL_TIME
+                                                vm.setDateRange(null, null)
+                                                vm.load()
+                                            }
+                                        },
+                                        label = {
+                                            Text(
+                                                "All time",
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        }
+                                    )
+
+                                    // LAST 30 DAYS
+                                    FilterChip(
+                                        selected = activeFilter == StatsFilter.DAYS_30,
+                                        onClick = {
+                                            if (activeFilter != StatsFilter.DAYS_30) {   // 👈 only if changed
+                                                activeFilter = StatsFilter.DAYS_30
+
+                                                val today = LocalDate.now()
+                                                val from = today.minusDays(30).toString()
+                                                val to = today.toString()
+
+                                                vm.setDateRange(from, to)
+                                                vm.load()
+                                            }
+                                        },
+                                        label = {
+                                            Text(
+                                                "Last 30 days",
+                                                color = MaterialTheme.colorScheme.onTertiary
+                                            )
+                                        }
+                                    )
+
+                                    // TODO
+                                    // CUSTOM
+//                            FilterChip(
+//                                selected = activeFilter == StatsFilter.CUSTOM,
+//                                onClick = { showPicker = true },
+//                                label = { Text("Custom") }
+//                            )
+                                }
 
                                 Spacer(Modifier.height(20.dp))
 
                                 OverviewCards(stats)
-
                                 Spacer(Modifier.height(20.dp))
-
-                                RevenueChartCard()
-
-                                Spacer(Modifier.height(20.dp))
+                                //TODO
+//                        RevenueChartCard()
+//                        Spacer(Modifier.height(20.dp))
 
                                 TasksCard()
-
                                 Spacer(Modifier.height(20.dp))
 
                                 StatRows(stats)
                             }
                         }
 
-                        // optional placeholders (you said you won't show these)
-                        UiState.Loading -> Unit
                         is UiState.Error -> Unit
+                        else -> {}
                     }
                 }
 
-                else -> Unit
+                ListenerTab.CALLS -> {
+                    // TODO
+                }
+
+                ListenerTab.SETTINGS -> {
+                    // TODO
+                }
             }
+
+            // ---------- DATE RANGE PICKER ----------
+            if (showPicker) {
+                DatePickerDialog(
+                    onDismissRequest = { showPicker = false },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                val start = pickerState.selectedStartDateMillis
+                                val end = pickerState.selectedEndDateMillis
+
+                                if (start != null && end != null) {
+
+                                    fun Long.toDate(): String =
+                                        Instant.ofEpochMilli(this)
+                                            .atZone(ZoneId.systemDefault())
+                                            .toLocalDate()
+                                            .toString()
+
+                                    vm.setDateRange(
+                                        start.toDate(),
+                                        end.toDate()
+                                    )
+
+                                    activeFilter = StatsFilter.CUSTOM
+                                    vm.load()
+                                    showPicker = false
+                                }
+                            }
+                        ) {
+                            Text(
+                                "Apply",
+                                Modifier.background(MaterialTheme.colorScheme.primaryContainer),
+                                color = MaterialTheme.colorScheme.onTertiary
+                            )
+                        }
+                    }
+                ) {
+                    DateRangePicker(
+                        state = pickerState,
+                        title = {},          // 👈 hides "Select dates heading"
+                        colors = DatePickerDefaults.colors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            selectedDayContainerColor = Color(0xFF00C853),      // green circle
+                            selectedDayContentColor = Color.White,              // white text
+                            dayInSelectionRangeContainerColor = Color(0x3300C853), // light green range fill
+                            dayInSelectionRangeContentColor = Color.White,
+
+                            // 👇 TODAY styling
+                            todayContentColor = Color.White,                 // today's number
+                            todayDateBorderColor = Color(0xFF00C853)         // green circle ring
+                        ),
+                    )
+                }
+            }
+
         }
     }
 }
-
 
 /* ---------------------------------------------------
    HEADER
 --------------------------------------------------- */
 
 @Composable
-fun HeaderSection(username: String) {
+fun HeaderSection(username: String, avatarUrl: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
-            "Good Morning, $username",
+            "Hello, $username",
             color = Color.White,
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold
         )
 
-        Box(
+        AsyncImage(
+            model = avatarUrl,
+            contentDescription = "Caller Avatar",
             modifier = Modifier
-                .size(40.dp)
-                .background(Color.Gray, CircleShape)
+                .size(44.dp)
+                .clip(CircleShape)
         )
     }
 }
@@ -191,7 +319,7 @@ fun RevenueRangeSelector(
     onSelect: (RevenueRange) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        RevenueRange.values().forEach { range ->
+        RevenueRange.entries.forEach { range ->
             FilterChip(
                 selected = selected == range,
                 onClick = { onSelect(range) },
@@ -337,7 +465,6 @@ fun RevenueLineChartCurvy(
     }
 }
 
-
 /* ---------------------------------------------------
    OVERVIEW CARDS
 --------------------------------------------------- */
@@ -365,8 +492,8 @@ fun OverviewCard(title: String, value: String, change: String) {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, color = MaterialTheme.colorScheme.secondary)
-            Text(value, color = MaterialTheme.colorScheme.onSurface)
+            Text(title, color = MaterialTheme.colorScheme.onTertiary)
+            Text(value, color = MaterialTheme.colorScheme.onTertiary)
             Text(change, color = Color.Green, fontSize = 12.sp)
         }
     }
@@ -386,7 +513,7 @@ fun TasksCard() {
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Tasks Done", color = Color.Gray)
+            Text("Tasks Done", color = MaterialTheme.colorScheme.onTertiary)
             Spacer(Modifier.height(8.dp))
 
             LinearProgressIndicator(
@@ -433,13 +560,10 @@ fun StatCard(name: String, value: String) {
                     .clip(RoundedCornerShape(6.dp))
                     .background(Color.DarkGray)
             )
-
             Spacer(Modifier.width(12.dp))
-
             Column(modifier = Modifier.weight(1f)) {
                 Text(name, color = Color.White, fontWeight = FontWeight.Medium)
             }
-
             Text(value, color = Color.Green, fontSize = 12.sp)
         }
     }

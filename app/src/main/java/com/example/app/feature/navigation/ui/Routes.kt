@@ -12,12 +12,21 @@ object Routes {
 
     object Screen {
 
+        // 🔐 AUTH
+        object Auth {
+            const val LOGIN = "login"
+            const val OTP = "otp/{mobile}"
+
+            fun otpRoute(mobile: String) = "otp/$mobile"
+        }
+
         object SelectUserRole {
             const val ROOT = "select_user_role"
         }
 
         object Home {
             const val ROOT = "home"
+            const val OFFER_MODAL = "offer_modal"
         }
 
         object Listener {

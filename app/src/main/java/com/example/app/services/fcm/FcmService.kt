@@ -1,13 +1,19 @@
 package com.example.app.services.fcm
 
+
 import android.Manifest
-import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
-import com.example.app.MainActivity
+import androidx.core.content.ContextCompat
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
+import com.example.app.core.call.CallType
+import com.example.app.core.call.PendingCallStore
+import com.example.app.core.call.notification.IncomingCallNotificationManager
 import com.example.app.core.di.ApplicationScope
+import com.example.app.core.observer.AppForegroundTracker
 import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.utils.AppConstants
@@ -18,10 +24,20 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import javax.inject.Inject
 
 @AndroidEntryPoint
 class FcmService : FirebaseMessagingService() {
+
+    @Inject
+    lateinit var appForegroundTracker: AppForegroundTracker
+
+    @Inject
+    lateinit var incomingCallNotificationManager: IncomingCallNotificationManager
+
+    @Inject
+    lateinit var pendingCallStore: PendingCallStore
 
     @Inject
     lateinit var prefs: UserPreferencesRepository
@@ -31,91 +47,92 @@ class FcmService : FirebaseMessagingService() {
     lateinit var appScope: CoroutineScope
 
     override fun onNewToken(token: String) {
-        Log.d("RTM", "FCM NEW TOKEN = $token")
+        Log.d("FCM", "New FCM token: $token")
         appScope.launch(Dispatchers.IO) {
-            prefs.saveToken(token)  // TokenManager will sync to backend
+            prefs.saveToken(token)
         }
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onMessageReceived(message: RemoteMessage) {
 
-        Log.d("RTM", "FCM Received = ${message.data}")
+        Log.d("FCM", "Received: ${message.data}")
 
-        val type = message.data["event"] ?: return
+        // Android 13+ → notification permission guard
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            Log.w("FCM", "POST_NOTIFICATIONS not granted, ignoring notification")
+            return
+        }
 
-        try {
-            // Convert Map<String, String> → JSON string
-            val jsonString = kotlinx.serialization.json.Json.encodeToString(
-                message.data
-            )
+        val event = message.data["event"] ?: return
 
-            // Decode into the SAME payload used by RTM
-            val payload = kotlinx.serialization.json.Json.decodeFromString<CallSignalPayload>(
-                jsonString
-            )
-
-            when (type) {
-
-                // --------------------------------------------------------------
-                // 1. INCOMING CALL (fallback when RTM unreachable)
-                // --------------------------------------------------------------
-                AppConstants.EVENT_INCOMING_CALL -> {
-// TODO
-//                    CallEventBus.emit(
-//                        CallEvent.Incoming(
-//                            callId = payload.callId,
-//                            callType = payload.callType,
-//                            callerAccountId = payload.callerAccountId,
-//                            calleeAccountId = payload.calleeAccountId,
-//                            channel = payload.channel
-//                        )
-//                    )
-                }
-
-                // --------------------------------------------------------------
-                // 3. Call ended fallback
-                // --------------------------------------------------------------
-                AppConstants.EVENT_CALL_REJECTED,
-                AppConstants.EVENT_CALL_ENDED -> {
-                    Log.d("RTM", "FCM CALL ENDED (fallback)")
-                    CallEventBus.emit(CallEvent.Ended(payload.callId))
-                }
-
-                // --------------------------------------------------------------
-                // 4. Caller cancelled before callee answered
-                // --------------------------------------------------------------
-                AppConstants.EVENT_CALL_CANCELLED -> {
-                    Log.d("RTM", "FCM CALL CANCELLED (fallback)")
-                    CallEventBus.emit(CallEvent.Ended(payload.callId))
-                }
-
-            }
-
+        val payload = try {
+            val json = Json.encodeToString(message.data)
+            Json.decodeFromString<CallSignalPayload>(json)
         } catch (e: Exception) {
-            Log.e("RTM", "FCM Failed to parse FCM payload", e)
+            Log.e("FCM", "Failed to parse payload", e)
+            return
         }
-    }
 
-    // --------------------------------------------------------------
-    // Wake MainActivity when app is backgrounded or killed
-    // --------------------------------------------------------------
-    private fun navigateToMain(route: String, extras: Map<String, Any?> = emptyMap()) {
-        val intent = Intent(this, MainActivity::class.java).apply {
+        when (event) {
 
-            putExtra("route", route)
+            // ----------------------------------------------------------
+            // INCOMING CALL (background / killed)
+            // ----------------------------------------------------------
+            AppConstants.EVENT_INCOMING_CALL -> {
 
-            extras.forEach { (k, v) ->
-                when (v) {
-                    is Long -> putExtra(k, v)
-                    is Int -> putExtra(k, v)
-                    is String -> putExtra(k, v)
+                // App visible → RTM + in-app UI will handle
+                if (appForegroundTracker.isForeground.value) {
+                    Log.d("FCM", "App in foreground → ignore FCM incoming call")
+                    return
                 }
+
+                // Persist minimal data for cold start
+                pendingCallStore.save(
+                    callId = payload.callId,
+                    callType = payload.callType ?: CallType.VOICE,
+                    callerAccountId = payload.callerAccountId ?: return
+                )
+
+                val callTypeText = when (payload.callType) {
+                    CallType.VIDEO -> "Incoming video call"
+                    CallType.VOICE -> "Incoming voice call"
+                    null -> "Incoming call"
+                }
+
+                incomingCallNotificationManager.showIncomingCall(
+                    callId = payload.callId,
+                    callType = callTypeText
+                )
             }
 
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-        }
+            // ----------------------------------------------------------
+            // CALL TERMINATION FALLBACKS
+            // ----------------------------------------------------------
+            AppConstants.EVENT_CALL_REJECTED,
+            AppConstants.EVENT_CALL_ENDED,
+            AppConstants.EVENT_CALL_CANCELLED -> {
 
-        startActivity(intent)
+                Log.d("FCM", "Call ended via FCM")
+                // 🔕 Stop ringing/Dismiss incoming call notification
+//                        IncomingCallRingingService.stop(appContext)
+//                        incomingCallNotificationManager.dismiss(event.callId)
+//                IncomingCallRingingService.stop(applicationContext)
+
+//                     2️⃣ Dismiss incoming call notification
+                incomingCallNotificationManager.dismiss(payload.callId)
+
+//                     3️⃣ Clear pending cold-start call
+                pendingCallStore.clear()
+                CallEventBus.emit(
+                    CallEvent.Ended(payload.callId)
+                )
+            }
+        }
     }
 }
