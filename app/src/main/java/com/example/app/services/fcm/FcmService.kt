@@ -1,6 +1,5 @@
 package com.example.app.services.fcm
 
-
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
@@ -14,8 +13,10 @@ import com.example.app.core.call.PendingCallStore
 import com.example.app.core.call.notification.IncomingCallNotificationManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.observer.AppForegroundTracker
+import com.example.app.core.observer.ScreenStateTracker
 import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.core.rtm.CallSignalPayload
+import com.example.app.core.session.SessionManager
 import com.example.app.utils.AppConstants
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -34,6 +35,9 @@ class FcmService : FirebaseMessagingService() {
     lateinit var appForegroundTracker: AppForegroundTracker
 
     @Inject
+    lateinit var screenStateTracker: ScreenStateTracker
+
+    @Inject
     lateinit var incomingCallNotificationManager: IncomingCallNotificationManager
 
     @Inject
@@ -47,7 +51,7 @@ class FcmService : FirebaseMessagingService() {
     lateinit var appScope: CoroutineScope
 
     override fun onNewToken(token: String) {
-        Log.d("FCM", "New FCM token: $token")
+        Log.d("RTM", "New FCM token: $token")
         appScope.launch(Dispatchers.IO) {
             prefs.saveToken(token)
         }
@@ -56,7 +60,7 @@ class FcmService : FirebaseMessagingService() {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onMessageReceived(message: RemoteMessage) {
 
-        Log.d("FCM", "Received: ${message.data}")
+        Log.d("RTM", "ON FCM EVENT Received: ${message.data}")
 
         // Android 13+ → notification permission guard
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -65,17 +69,26 @@ class FcmService : FirebaseMessagingService() {
                 Manifest.permission.POST_NOTIFICATIONS
             ) != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.w("FCM", "POST_NOTIFICATIONS not granted, ignoring notification")
+            Log.w("RTM", "POST_NOTIFICATIONS not granted, ignoring notification")
             return
         }
 
         val event = message.data["event"] ?: return
+        // Screen On and app in foreground ignore fcm
+        val appInForeground = appForegroundTracker.isForeground.value
+        val screenOn = screenStateTracker.isScreenOn()
+        if (event == AppConstants.EVENT_INCOMING_CALL &&
+            appInForeground && screenOn
+        ) {
+            Log.d("RTM", "Foreground + screen ON → ignore FCM")
+            return
+        }
 
         val payload = try {
             val json = Json.encodeToString(message.data)
             Json.decodeFromString<CallSignalPayload>(json)
         } catch (e: Exception) {
-            Log.e("FCM", "Failed to parse payload", e)
+            Log.e("RTM", "Failed to parse payload", e)
             return
         }
 
@@ -85,13 +98,6 @@ class FcmService : FirebaseMessagingService() {
             // INCOMING CALL (background / killed)
             // ----------------------------------------------------------
             AppConstants.EVENT_INCOMING_CALL -> {
-
-                // App visible → RTM + in-app UI will handle
-                if (appForegroundTracker.isForeground.value) {
-                    Log.d("FCM", "App in foreground → ignore FCM incoming call")
-                    return
-                }
-
                 // Persist minimal data for cold start
                 pendingCallStore.save(
                     callId = payload.callId,
@@ -109,6 +115,17 @@ class FcmService : FirebaseMessagingService() {
                     callId = payload.callId,
                     callType = callTypeText
                 )
+
+                // 2️⃣ Emit local Incoming event (THIS IS THE KEY)
+                CallEventBus.emit(
+                    CallEvent.Incoming(
+                        callId = payload.callId,
+                        callerAccountId = payload.callerAccountId!!,
+                        calleeAccountId = SessionManager.userId,
+                        callType = payload.callType ?: CallType.VOICE,
+                        channel = payload.channel // optional
+                    )
+                )
             }
 
             // ----------------------------------------------------------
@@ -118,20 +135,20 @@ class FcmService : FirebaseMessagingService() {
             AppConstants.EVENT_CALL_ENDED,
             AppConstants.EVENT_CALL_CANCELLED -> {
 
-                Log.d("FCM", "Call ended via FCM")
-                // 🔕 Stop ringing/Dismiss incoming call notification
-//                        IncomingCallRingingService.stop(appContext)
-//                        incomingCallNotificationManager.dismiss(event.callId)
-//                IncomingCallRingingService.stop(applicationContext)
-
-//                     2️⃣ Dismiss incoming call notification
-                incomingCallNotificationManager.dismiss(payload.callId)
-
-//                     3️⃣ Clear pending cold-start call
-                pendingCallStore.clear()
-                CallEventBus.emit(
-                    CallEvent.Ended(payload.callId)
-                )
+//                Log.d("RTM", "Call ended via FCM")
+//                // 🔕 Stop ringing/Dismiss incoming call notification
+////                        IncomingCallRingingService.stop(appContext)
+////                        incomingCallNotificationManager.dismiss(event.callId)
+////                IncomingCallRingingService.stop(applicationContext)
+//
+////                     2️⃣ Dismiss incoming call notification
+//                incomingCallNotificationManager.dismiss(payload.callId)
+//
+////                     3️⃣ Clear pending cold-start call
+//                pendingCallStore.clear()
+//                CallEventBus.emit(
+//                    CallEvent.Ended(payload.callId)
+//                )
             }
         }
     }

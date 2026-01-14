@@ -4,6 +4,7 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
+import android.app.Person
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -22,15 +23,15 @@ class IncomingCallNotificationManager @Inject constructor(
     companion object {
         private const val CHANNEL_ID = "incoming_call_channel"
         private const val CHANNEL_NAME = "Incoming Calls"
+
+        private const val INCOMING_CALL_NOTIFICATION_ID = 2001
+
     }
 
     // ------------------------------------------------------------
     // SHOW INCOMING CALL NOTIFICATION (FCM / background-safe)
     // ------------------------------------------------------------
-    fun showIncomingCall(
-        callId: String,
-        callType: String
-    ) {
+    fun showIncomingCall(callId: String, callType: String) {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
@@ -38,7 +39,7 @@ class IncomingCallNotificationManager @Inject constructor(
 
         val fullScreenIntent = PendingIntent.getActivity(
             context,
-            callId.hashCode(),
+            0,
             Intent(context, MainActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
                 putExtra("callId", callId)
@@ -46,42 +47,82 @@ class IncomingCallNotificationManager @Inject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_lockphone)
-            .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(callType)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setAutoCancel(true)
-            .setFullScreenIntent(fullScreenIntent, true)
-            .setForegroundServiceBehavior(
-                NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
-            )
+        val person = Person.Builder()
+            .setName("Incoming call")
             .build()
 
-        manager.notify(callId.hashCode(), notification)
+        val notification =
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+//            Notification.Builder(context, CHANNEL_ID)
+//                .setSmallIcon(R.drawable.ic_lockphone)
+//                .setContentTitle(context.getString(R.string.app_name))
+//                .setContentText(callType)
+//                .setCategory(Notification.CATEGORY_CALL)
+//                .setVisibility(Notification.VISIBILITY_PUBLIC)
+//                .setAutoCancel(true)
+//                .setOngoing(false)
+//                .setFullScreenIntent(fullScreenIntent, true)
+////                .setStyle(
+////                    Notification.CallStyle.forIncomingCall(
+////                        person,
+////                        fullScreenIntent, // decline
+////                        fullScreenIntent  // answer
+////                    )
+////                )
+//                .build()
+//        } else {
+            // Fallback for < API 31
+            NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.drawable.ic_lockphone)
+                .setContentTitle(context.getString(R.string.app_name))
+                .setContentText(callType)
+                .setCategory(NotificationCompat.CATEGORY_CALL)
+                .setPriority(NotificationCompat.PRIORITY_MAX)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOngoing(true)
+                .setFullScreenIntent(fullScreenIntent, true)
+                .build()
+//        }
+
+        manager.notify(INCOMING_CALL_NOTIFICATION_ID, notification)
     }
 
-    // ------------------------------------------------------------
-    // FOREGROUND SERVICE NOTIFICATION (ringing / ongoing call)
-    // ------------------------------------------------------------
-    fun buildForegroundNotification(
-        callId: String,
-        callType: String
-    ): Notification {
-
-        return NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_lockphone)
-            .setContentTitle(context.getString(R.string.app_name))
-            .setContentText(callType)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(true)
-            .setAutoCancel(false)
-            .build()
-    }
+//    fun showIncomingCall(
+//        callId: String,
+//        callType: String
+//    ) {
+//        val manager =
+//            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+//
+//        createChannelIfNeeded(manager)
+//
+//        val fullScreenIntent = PendingIntent.getActivity(
+//            context,
+//            callId.hashCode(),
+//            Intent(context, MainActivity::class.java).apply {
+//                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+//                putExtra("callId", callId)
+//            },
+//            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+//        )
+//
+//        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+//            .setSmallIcon(R.drawable.ic_lockphone)
+//            .setContentTitle(context.getString(R.string.app_name))
+//            .setContentText(callType)
+//            .setCategory(NotificationCompat.CATEGORY_CALL)
+//            .setPriority(NotificationCompat.PRIORITY_MAX)
+//            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+//            .setOngoing(true)
+//            .setAutoCancel(true)
+//            .setFullScreenIntent(fullScreenIntent, true)
+//            .setForegroundServiceBehavior(
+//                NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE
+//            )
+//            .build()
+//
+//        manager.notify(callId.hashCode(), notification)
+//    }
 
     // ------------------------------------------------------------
     // DISMISS
@@ -89,7 +130,7 @@ class IncomingCallNotificationManager @Inject constructor(
     fun dismiss(callId: String) {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        manager.cancel(callId.hashCode())
+        manager.cancel(INCOMING_CALL_NOTIFICATION_ID)
     }
 
     // ------------------------------------------------------------

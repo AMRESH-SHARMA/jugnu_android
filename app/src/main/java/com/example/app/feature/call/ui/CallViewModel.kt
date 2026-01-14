@@ -251,7 +251,7 @@ class CallViewModel @Inject constructor(
     fun endCall() {
         val call = CallStore.current() ?: return
 
-        CallEventBus.emit(CallEvent.Cancelled(call.callId))
+        CallEventBus.emit(CallEvent.Cancelled(call.callId, call.calleeAccountId))
 
         viewModelScope.launch {
             val res = endCallUseCase(

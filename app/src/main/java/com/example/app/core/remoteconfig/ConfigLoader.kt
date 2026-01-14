@@ -31,6 +31,8 @@ object ConfigLoader {
         try {
             val request = Request.Builder()
                 .url(RemoteConfig.REMOTE_CONFIG_URL)
+                .addHeader("Accept", "application/json")
+                .addHeader("Cache-Control", "no-cache")
                 .build()
 
             client.newCall(request).execute().use { res ->
