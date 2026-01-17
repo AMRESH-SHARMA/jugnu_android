@@ -6,6 +6,7 @@ import android.os.Build
 import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
+import com.example.app.AppConstants
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallType
@@ -17,7 +18,6 @@ import com.example.app.core.observer.ScreenStateTracker
 import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.core.rtm.CallSignalPayload
 import com.example.app.core.session.SessionManager
-import com.example.app.utils.AppConstants
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 import dagger.hilt.android.AndroidEntryPoint

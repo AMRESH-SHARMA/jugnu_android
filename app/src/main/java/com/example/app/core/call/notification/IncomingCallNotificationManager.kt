@@ -127,7 +127,7 @@ class IncomingCallNotificationManager @Inject constructor(
     // ------------------------------------------------------------
     // DISMISS
     // ------------------------------------------------------------
-    fun dismiss(callId: String) {
+    fun dismiss() {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         manager.cancel(INCOMING_CALL_NOTIFICATION_ID)

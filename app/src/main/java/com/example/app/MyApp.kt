@@ -16,7 +16,6 @@ import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
 import com.example.app.core.websocket.PresenceWebSocketManager
-import com.example.app.utils.AppConstants
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

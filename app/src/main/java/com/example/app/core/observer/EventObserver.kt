@@ -64,21 +64,23 @@ class EventObserver @Inject constructor(
 
                     is CallEvent.Rejected -> {
                         /** callee rejects call without picking */
-                        incomingCallNotificationManager.dismiss(event.callId)
+                        incomingCallNotificationManager.dismiss()
                         callManager.onRejected()
                         presenceManager.onCallEnded()
                     }
 
                     is CallEvent.Ended -> {
+                        /** after picking call is ended */
+                        incomingCallNotificationManager.dismiss()
                         callManager.onEnded()
                         presenceManager.onCallEnded()
                     }
 
                     is CallEvent.Cancelled -> {
                         /** Dismiss incoming call notification/ show missed call */
-                        incomingCallNotificationManager.dismiss(event.callId)
+                        incomingCallNotificationManager.dismiss()
                         if (SessionManager.userId == event.calleeAccountId) {
-                            missedCallNotificationManager.showMissedCall(event.callId)
+                            missedCallNotificationManager.showMissedCall()
                         }
                         callManager.onEnded()
                         presenceManager.onCallEnded()

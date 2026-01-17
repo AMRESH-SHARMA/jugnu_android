@@ -57,11 +57,6 @@
             android:exported="false"
             android:foregroundServiceType="microphone|camera" />
 
-        <service
-            android:name=".core.call.notification.IncomingCallRingingService"
-            android:exported="false"
-            android:foregroundServiceType="mediaPlayback|microphone" />
-
         <receiver
             android:name=".core.call.CallNotificationReceiver"
             android:exported="false" />

@@ -1,9 +1,9 @@
 package com.example.app.core.rtm
 
 import android.util.Log
+import com.example.app.AppConstants
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
-import com.example.app.utils.AppConstants
 import io.agora.rtm.MessageEvent
 import io.agora.rtm.RtmEventListener
 import kotlinx.coroutines.CoroutineScope

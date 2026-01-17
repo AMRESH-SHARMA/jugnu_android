@@ -1,4 +1,4 @@
-package com.example.app.utils
+package com.example.app
 
 object AppConstants {
 
@@ -8,7 +8,7 @@ object AppConstants {
 
     const val REMOTE_CONFIG_URL = "https://json.extendsclass.com/bin/09ed15210b50"
     const val USE_DEFAULT_URL = true
-    const val DEFAULT_BASE_URL = "http://10.100.238.61:3001/api/v1/"
+    const val DEFAULT_BASE_URL = "http://10.81.159.61:3001/api/v1/"
     const val WS_PRESENCE_PATH = "ws/presence"
 
     // =========================

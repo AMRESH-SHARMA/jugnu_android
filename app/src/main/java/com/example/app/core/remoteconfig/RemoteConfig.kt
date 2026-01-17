@@ -1,6 +1,6 @@
 package com.example.app.core.remoteconfig
 
-import com.example.app.utils.AppConstants
+import com.example.app.AppConstants
 
 object RemoteConfig {
 
