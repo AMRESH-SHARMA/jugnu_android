@@ -3,6 +3,9 @@ package com.example.app.feature.login.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.network.ApiResult
+import com.example.app.core.preferences.user.data.UserPreferencesRepository
+import com.example.app.core.preferences.user.domain.UserRole
+import com.example.app.core.session.SessionManager
 import com.example.app.core.session.UserSession
 import com.example.app.feature.login.domain.usecase.RequestOtpUseCase
 import com.example.app.feature.login.domain.usecase.VerifyOtpUseCase
@@ -23,7 +26,8 @@ sealed class OtpUiState {
 class OtpViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
     private val verifyOtpUseCase: VerifyOtpUseCase,
-    private val userSession: UserSession
+    private val userSession: UserSession,
+    private val userPreferencesRepository: UserPreferencesRepository
 ) : ViewModel() {
     private val _otpRequestState = MutableStateFlow<OtpUiState>(OtpUiState.Idle)
     val otpRequestState: StateFlow<OtpUiState> = _otpRequestState
@@ -51,13 +55,31 @@ class OtpViewModel @Inject constructor(
         viewModelScope.launch {
             _otpVerifyState.value = OtpUiState.Loading
             val fcmToken = userSession.fcmToken
+
             when (val result = verifyOtpUseCase(phone, otp, fcmToken)) {
-                is ApiResult.Success -> _otpVerifyState.value = OtpUiState.Success(result.data)
-                is ApiResult.Error -> _otpVerifyState.value =
-                    OtpUiState.Error(result.message ?: "Invalid OTP")
+                is ApiResult.Success -> {
+                    val data = result.data
+
+                    if (data != null) {
+                        SessionManager.accessToken = data.accessToken
+                        userPreferencesRepository.saveAccessToken(data.accessToken)
+                        userPreferencesRepository.saveUserPrefs(
+                            id = data.accountId,
+                            role = UserRole.CUSTOMER
+                        )
+                    }
+
+                    _otpVerifyState.value = OtpUiState.Success(data)
+                }
+
+                is ApiResult.Error -> {
+                    _otpVerifyState.value =
+                        OtpUiState.Error(result.message ?: "Invalid OTP")
+                }
             }
         }
     }
+
 
     // ------------------ Resend OTP Timer ------------------
     fun startResendTimer(totalTime: Int = 60) {

@@ -64,13 +64,20 @@ fun OtpVerificationScreen(
         when (otpVerifyState) {
             is OtpUiState.Success -> {
                 Toast.makeText(context, "OTP Verified!", Toast.LENGTH_SHORT).show()
-                // Navigate to next screen
-                // navController.navigate(Routes.Screen.Home)
+
+                navController.navigate(Routes.Graph.HOME) {
+                    popUpTo(Routes.Graph.AUTH) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
             }
+
             is OtpUiState.Error -> {
                 val msg = (otpVerifyState as OtpUiState.Error).message
                 Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
             }
+
             else -> Unit
         }
     }

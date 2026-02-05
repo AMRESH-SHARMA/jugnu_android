@@ -10,6 +10,7 @@ object SessionManager {
     var fcmToken: String? = null
 
     // Runtime-only values (not persisted)
+    var accessToken: String = ""
     //    var rtmToken: String = ""
     //    var rtcToken: String = ""
     //    var currentCallId: String = ""

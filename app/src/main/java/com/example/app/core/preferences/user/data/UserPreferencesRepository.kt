@@ -19,7 +19,7 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_ACCOUNT_ID = stringPreferencesKey("account_id")
         val KEY_ROLE = stringPreferencesKey("role")
         val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
-
+        val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
 
         // 🆕 Offer tracking (single offer, content-based)
         val KEY_LAST_OFFER_DATE = stringPreferencesKey("last_offer_date")
@@ -37,6 +37,9 @@ class UserPreferencesRepository @Inject constructor(
         prefs[KEY_FCM_TOKEN]
     }
 
+    val accessTokenFlow = dataStore.data.map { prefs ->
+        prefs[KEY_ACCESS_TOKEN]
+    }
     suspend fun saveUserPrefs(id: Long, role: UserRole) {
         dataStore.edit { prefs ->
             prefs[KEY_ACCOUNT_ID] = id.toString()
@@ -50,8 +53,22 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun saveAccessToken(token: String) {
+        dataStore.edit { prefs ->
+            prefs[KEY_ACCESS_TOKEN] = token
+        }
+    }
+
+    suspend fun clearSession() {
+        dataStore.edit { prefs ->
+            prefs.remove(KEY_ACCESS_TOKEN)
+            prefs.remove(KEY_ACCOUNT_ID)
+            prefs.remove(KEY_ROLE)
+        }
+    }
+
     // ---------------------------------------------------------
-    // 🆕 Offer helpers (FINAL, production-safe)
+    // 🆕 Advertisement/Offer helpers
     // ---------------------------------------------------------
 
     suspend fun getLastOfferShownDate(): String? {
