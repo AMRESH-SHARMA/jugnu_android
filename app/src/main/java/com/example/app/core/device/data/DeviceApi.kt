@@ -10,5 +10,5 @@ data class DeviceTokenRequest(
 
 interface DeviceApi {
     @POST("users/device-token")
-    suspend fun sendDeviceToken(@Body body: DeviceTokenRequest)
+    suspend fun sendFCMToken(@Body body: DeviceTokenRequest)
 }

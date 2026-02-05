@@ -42,7 +42,7 @@ class EndCall @Inject constructor(
 
         // FAST PATH → notify remote user via RTM
         val remoteUserAccId =
-            if (callerAccountId == SessionManager.userId) calleeAccountId
+            if (callerAccountId == SessionManager.userAccountId) calleeAccountId
             else callerAccountId
 
         rtmCallSignaling.sendCallEvent(

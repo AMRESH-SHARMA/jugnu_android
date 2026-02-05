@@ -49,7 +49,7 @@ class FcmService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         Log.d("FCM", "New FCM token: $token")
         appScope.launch(Dispatchers.IO) {
-            prefs.saveToken(token)
+            prefs.saveFcmToken(token)
         }
     }
 

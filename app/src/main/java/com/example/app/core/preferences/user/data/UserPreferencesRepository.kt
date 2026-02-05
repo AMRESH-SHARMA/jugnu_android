@@ -33,7 +33,7 @@ class UserPreferencesRepository @Inject constructor(
         )
     }
 
-    val tokenFlow = dataStore.data.map { prefs ->
+    val fcmTokenFlow = dataStore.data.map { prefs ->
         prefs[KEY_FCM_TOKEN]
     }
 
@@ -44,7 +44,7 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
-    suspend fun saveToken(token: String) {
+    suspend fun saveFcmToken(token: String) {
         dataStore.edit { prefs ->
             prefs[KEY_FCM_TOKEN] = token
         }

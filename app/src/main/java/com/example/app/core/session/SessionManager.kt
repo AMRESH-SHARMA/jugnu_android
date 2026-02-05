@@ -5,7 +5,7 @@ import com.example.app.core.preferences.user.domain.UserRole
 object SessionManager {
 
     // From DataStore (persisted)
-    var userId: Long = 0L
+    var userAccountId: Long = 0L
     var userRole: UserRole = UserRole.CUSTOMER
     var fcmToken: String? = null
 

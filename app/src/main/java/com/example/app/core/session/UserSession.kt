@@ -20,7 +20,7 @@ class UserSession @Inject constructor(
     // -------------------------
     val sessionFlow = prefs.userPrefsFlow
         .onEach { (id, role) ->
-            SessionManager.userId = id
+            SessionManager.userAccountId = id
             SessionManager.userRole = role
         }
         .stateIn(
@@ -32,9 +32,9 @@ class UserSession @Inject constructor(
     // -------------------------
     // Persisted FCM token
     // -------------------------
-    val tokenFlow = prefs.tokenFlow
-        .onEach { token ->
-            SessionManager.fcmToken = token
+    val fcmTokenFlow = prefs.fcmTokenFlow
+        .onEach { fcmToken  ->
+            SessionManager.fcmToken = fcmToken
         }
         .stateIn(
             scope = appScope,
@@ -52,7 +52,7 @@ class UserSession @Inject constructor(
         get() = sessionFlow.value.second
 
     val fcmToken: String?
-        get() = tokenFlow.value
+        get() = fcmTokenFlow.value
 
     // -------------------------
     // Derived session state

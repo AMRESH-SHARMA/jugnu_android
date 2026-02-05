@@ -105,10 +105,14 @@ fun LoginScreen(navController: NavController) {
             MyTextField(
                 value = mobileNumber,
                 onValueChange = {
-                    if (it.length <= 10 && it.all(Char::isDigit)) {
-                        mobileNumber = it
-                        if (mobileError) mobileError = false
+                    val digits = it.filter(Char::isDigit)
+                    mobileNumber = digits.takeLast(10)
+
+                    if (mobileNumber.length == 10) {
+                        keyboardController?.hide()
                     }
+
+                    if (mobileError) mobileError = false
                 },
                 labelVal = "Mobile number",
                 icon = R.drawable.ic_lockphone,

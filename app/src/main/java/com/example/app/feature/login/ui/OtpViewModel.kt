@@ -3,6 +3,7 @@ package com.example.app.feature.login.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.network.ApiResult
+import com.example.app.core.session.UserSession
 import com.example.app.feature.login.domain.usecase.RequestOtpUseCase
 import com.example.app.feature.login.domain.usecase.VerifyOtpUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -21,9 +22,9 @@ sealed class OtpUiState {
 @HiltViewModel
 class OtpViewModel @Inject constructor(
     private val requestOtpUseCase: RequestOtpUseCase,
-    private val verifyOtpUseCase: VerifyOtpUseCase
+    private val verifyOtpUseCase: VerifyOtpUseCase,
+    private val userSession: UserSession
 ) : ViewModel() {
-
     private val _otpRequestState = MutableStateFlow<OtpUiState>(OtpUiState.Idle)
     val otpRequestState: StateFlow<OtpUiState> = _otpRequestState
 
@@ -49,7 +50,8 @@ class OtpViewModel @Inject constructor(
     fun verifyOtp(phone: String, otp: String) {
         viewModelScope.launch {
             _otpVerifyState.value = OtpUiState.Loading
-            when(val result = verifyOtpUseCase(phone, otp)) {
+            val fcmToken = userSession.fcmToken
+            when (val result = verifyOtpUseCase(phone, otp, fcmToken)) {
                 is ApiResult.Success -> _otpVerifyState.value = OtpUiState.Success(result.data)
                 is ApiResult.Error -> _otpVerifyState.value =
                     OtpUiState.Error(result.message ?: "Invalid OTP")

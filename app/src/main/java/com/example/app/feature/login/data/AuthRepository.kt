@@ -23,9 +23,15 @@ class AuthRepository @Inject constructor(
     }
 
     // ------------------- Verify OTP -------------------
-    suspend fun verifyOtp(phone: String, otp: String): ApiResult<VerifyOtpResult> =
+    suspend fun verifyOtp(
+        phone: String,
+        otp: String,
+        fcmToken: String?
+    ): ApiResult<VerifyOtpResult> =
         safeApiCall {
-            val res = api.verifyOtp(VerifyOtpRequestDto(phone, otp))
+            val res = api.verifyOtp(
+                VerifyOtpRequestDto(phone, otp, fcmToken)
+            )
             if (!res.success) throw Exception(res.message)
             res.data?.toDomain()
                 ?: throw IllegalArgumentException("Verify OTP response data is null")

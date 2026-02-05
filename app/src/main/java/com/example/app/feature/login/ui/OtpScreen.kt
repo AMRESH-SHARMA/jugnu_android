@@ -144,7 +144,13 @@ fun OtpVerificationScreen(
             ) {
                 OutlinedButton(
                     modifier = Modifier.weight(1f),
-                    onClick = { navController.popBackStack() }
+                    onClick = {
+                        keyboardController?.hide()
+                        navController.popBackStack(
+                            route = Routes.Screen.Auth.LOGIN,
+                            inclusive = false
+                        )
+                    }
                 ) {
                     Text(text="Cancel", color = Color.White,
                         fontSize = 18.sp)
@@ -206,12 +212,27 @@ private fun OtpInput(
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Box(contentAlignment = Alignment.Center) {
+
+        // 👇 Auto hide keyboard when OTP becomes complete (handles autofill)
+        LaunchedEffect(otp) {
+            if (otp.length == OTP_LENGTH) {
+                keyboardController?.hide()
+            }
+        }
+
         // Hidden textfield for input
         BasicTextField(
             value = otp,
             onValueChange = { value ->
-                if (value.length <= OTP_LENGTH && value.all(Char::isDigit)) {
-                    onOtpChange(value)
+                val digits = value.filter(Char::isDigit)
+
+                if (digits.length <= OTP_LENGTH) {
+                    onOtpChange(digits)
+
+                    // 👇 Hide keyboard immediately when autofill/paste completes OTP
+                    if (digits.length == OTP_LENGTH) {
+                        keyboardController?.hide()
+                    }
                 }
             },
             modifier = Modifier
@@ -233,8 +254,10 @@ private fun OtpInput(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Calculate box size dynamically
-            val boxSize = ((LocalContext.current.resources.displayMetrics.widthPixels / LocalContext.current.resources.displayMetrics.density) - 48 /*padding*/ - 8 * (OTP_LENGTH - 1)) / OTP_LENGTH
+            val boxSize =
+                ((LocalContext.current.resources.displayMetrics.widthPixels /
+                        LocalContext.current.resources.displayMetrics.density)
+                        - 48 - 8 * (OTP_LENGTH - 1)) / OTP_LENGTH
 
             repeat(OTP_LENGTH) { index ->
                 AnimatedOtpBox(
@@ -246,7 +269,6 @@ private fun OtpInput(
         }
     }
 }
-
 @Composable
 private fun AnimatedOtpBox(value: String, isFocused: Boolean, size: Dp) {
     val borderColor by animateColorAsState(
@@ -277,7 +299,3 @@ private fun AnimatedOtpBox(value: String, isFocused: Boolean, size: Dp) {
         )
     }
 }
-
-
-
-//@Composable fun OtpInputRow( otpLength: Int = 5, onOtpComplete: (String) -> Unit ) { val otp = remember { mutableStateListOf(*Array(otpLength) { "" }) } val focusRequesters = remember { List(otpLength) { FocusRequester() } } Row( horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically ) { otp.forEachIndexed { index, value -> OtpDigitField( value = value, onValueChange = { newValue -> otp[index] = newValue if (newValue.isNotEmpty() && index < otpLength - 1) { focusRequesters[index + 1].requestFocus() } if (newValue.isEmpty() && index > 0) { focusRequesters[index - 1].requestFocus() } if (otp.all { it.isNotEmpty() }) { onOtpComplete(otp.joinToString("")) } }, focusRequester = focusRequesters[index], isLast = index == otpLength - 1 ) } } LaunchedEffect(Unit) { focusRequesters.first().requestFocus() } } @Composable private fun OtpDigitField( value: String, onValueChange: (String) -> Unit, focusRequester: FocusRequester, isLast: Boolean ) { OutlinedTextField( value = value, onValueChange = { input -> if (input.isEmpty()) { onValueChange("") } else if (input.last().isDigit()) { onValueChange(input.last().toString()) } }, modifier = Modifier .width(56.dp) .height(56.dp) .focusRequester(focusRequester), singleLine = true, textStyle = MaterialTheme.typography.titleLarge.copy( textAlign = TextAlign.Center ), keyboardOptions = KeyboardOptions( keyboardType = KeyboardType.NumberPassword ), colors = TextFieldDefaults.colors( unfocusedIndicatorColor = MaterialTheme.colorScheme.primary, focusedIndicatorColor = Color.White, unfocusedContainerColor = Color.Transparent, focusedContainerColor = Color.Transparent, cursorColor = Color.White ) ) } @Composable fun ResendOtpTimer( totalTime: Int = 60, onResend: () -> Unit ) { var timeLeft by remember { mutableStateOf(totalTime) } LaunchedEffect(timeLeft) { if (timeLeft > 0) { delay(1000) timeLeft-- } } if (timeLeft > 0) { Text( text = "Resend OTP in $timeLeft sec", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f) ) } else { TextButton(onClick = { timeLeft = totalTime onResend() }) { Text("Resend OTP") } } } @Composable fun OtpVerificationScreen( navController: NavController, mobile: String ) { val maskedMobile = remember(mobile) { "*******${mobile.takeLast(2)}" } var isOtpComplete by remember { mutableStateOf(false) } var otpValue by remember { mutableStateOf("") } Surface( modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background ) { Column( modifier = Modifier .fillMaxSize() .padding(horizontal = 24.dp) ) { // 🔹 Top content Column( horizontalAlignment = Alignment.CenterHorizontally ) { Spacer(modifier = Modifier.height(32.dp)) ImageComponent(image = R.drawable.ic_sweet_franky) Spacer(modifier = Modifier.height(24.dp)) HeadingTextComponent(heading = "Verification Code") Spacer(modifier = Modifier.height(8.dp)) Text( text = "Enter the 5-digit code we've sent to $maskedMobile", style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f) ) Spacer(modifier = Modifier.height(24.dp)) OtpInputRow( otpLength = 5, onOtpComplete = { otpValue = it isOtpComplete = true } ) Spacer(modifier = Modifier.height(16.dp)) ResendOtpTimer { // call resend OTP API } } Spacer(modifier = Modifier.weight(1f)) // 🔹 Bottom buttons Row( modifier = Modifier .fillMaxWidth() .padding(bottom = 20.dp), horizontalArrangement = Arrangement.spacedBy(12.dp) ) { OutlinedButton( modifier = Modifier.weight(1f), onClick = { navController.popBackStack() } ) { Text("Cancel", color = Color.Gray,) } Button( modifier = Modifier.weight(1f), colors = ButtonDefaults.buttonColors( containerColor = MaterialTheme.colorScheme.primary ), enabled = isOtpComplete, onClick = { // verify OTP using otpValue } ) { Text("Verify", color = Color.White,) } } } } }

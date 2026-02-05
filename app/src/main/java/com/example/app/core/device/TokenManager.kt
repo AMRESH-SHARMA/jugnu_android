@@ -1,6 +1,6 @@
 package com.example.app.core.device
 
-import com.example.app.core.device.domain.SendDeviceTokenUseCase
+import com.example.app.core.device.domain.SendFcmTokenUseCase
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.session.UserSession
 import kotlinx.coroutines.CoroutineScope
@@ -13,7 +13,7 @@ import javax.inject.Singleton
 @Singleton
 class TokenManager @Inject constructor(
     private val session: UserSession,
-    private val sendTokenUseCase: SendDeviceTokenUseCase,
+    private val SendFcmTokenUseCase: SendFcmTokenUseCase,
     @ApplicationScope private val appScope: CoroutineScope
 ) {
     // To make it Idempotent
@@ -26,12 +26,12 @@ class TokenManager @Inject constructor(
         appScope.launch(Dispatchers.IO) {
             combine(
                 session.sessionFlow,
-                session.tokenFlow
-            ) { sessionData, token ->
-                Pair(sessionData.first, token)
-            }.collect { (accountId, token) ->
-                if (accountId > 0 && !token.isNullOrBlank()) {
-                    sendTokenUseCase(accountId, token)
+                session.fcmTokenFlow
+            ) { sessionData, fcmToken  ->
+                Pair(sessionData.first, fcmToken )
+            }.collect { (accountId, fcmToken ) ->
+                if (accountId > 0 && !fcmToken .isNullOrBlank()) {
+                    SendFcmTokenUseCase(accountId, fcmToken )
                 }
             }
         }
