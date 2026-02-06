@@ -6,14 +6,14 @@ import com.example.app.feature.login.domain.VerifyOtpResult
 
 fun RequestOtpResponseDto.toDomain(): RequestOtpResult {
     return RequestOtpResult(
-        success = this.success,
         message = this.message
     )
 }
 
 fun VerifyOtpResponseDto.toDomain(): VerifyOtpResult {
     return VerifyOtpResult(
-        token = this.token,
+        accessToken = this.accessToken,
+        accountId = this.accountId,
         isNewUser = this.is_new_user
     )
 }

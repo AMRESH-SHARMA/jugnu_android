@@ -28,7 +28,7 @@ class ListenerDashboardViewModel @Inject constructor(
 
     fun load() = viewModelScope.launch {
 
-        val listenerId = SessionManager.userId
+        val listenerId = SessionManager.userAccountId
 
         when (val res = getListenerStats(listenerId, fromDate, toDate)) {
             is ApiResult.Success -> stats.value = UiState.Success(res.data)

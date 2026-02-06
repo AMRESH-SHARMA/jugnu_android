@@ -7,13 +7,13 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Parcelize
 data class RequestOtpResult(
-    val success: Boolean,
     val message: String
 ) : Parcelable
 
 @Serializable
 @Parcelize
 data class VerifyOtpResult(
-    val token: String,
+    val accessToken: String,
+    val accountId: Long,
     val isNewUser: Boolean
 ) : Parcelable
