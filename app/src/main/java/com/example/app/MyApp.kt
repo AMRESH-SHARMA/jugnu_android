@@ -77,21 +77,18 @@ class MyApp : Application() {
 
         // 2️⃣ Now it’s safe to start the rest
         tokenManager.start()
-        restoreAccessToken()
+        restoreSessionId()
         observeUserSession()
         eventObserver.toString()
     }
 
     //Restore from DATA Store and put in SessionManager
-    private fun restoreAccessToken() {
+    private fun restoreSessionId() {
         appScope.launch(Dispatchers.IO) {
-            userSession.accessTokenFlow.collect { token ->
-                if (!token.isNullOrBlank()) {
-                    SessionManager.accessToken = token
-                }
-            }
+            SessionManager.sessionId = userSession.sessionId
         }
     }
+
 
     private fun observeUserSession() {
         appScope.launch(Dispatchers.IO) {

@@ -13,7 +13,7 @@ data class RequestOtpResult(
 @Serializable
 @Parcelize
 data class VerifyOtpResult(
-    val accessToken: String,
+    val sessionId: String,
     val accountId: Long,
     val isNewUser: Boolean
 ) : Parcelable

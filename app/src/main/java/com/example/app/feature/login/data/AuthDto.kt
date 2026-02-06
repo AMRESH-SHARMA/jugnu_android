@@ -7,8 +7,8 @@ data class VerifyOtpRequestDto(
 )
 
 data class VerifyOtpResponseDto(
-    val accessToken: String,
     val accountId: Long,
+    val sessionId: String,
     val is_new_user: Boolean
 )
 

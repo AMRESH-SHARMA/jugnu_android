@@ -12,7 +12,7 @@ fun RequestOtpResponseDto.toDomain(): RequestOtpResult {
 
 fun VerifyOtpResponseDto.toDomain(): VerifyOtpResult {
     return VerifyOtpResult(
-        accessToken = this.accessToken,
+        sessionId = this.sessionId,
         accountId = this.accountId,
         isNewUser = this.is_new_user
     )

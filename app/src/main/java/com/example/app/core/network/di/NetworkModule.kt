@@ -8,6 +8,7 @@ import com.example.app.core.network.data.CallNotificationApi
 import com.example.app.core.network.data.RtmAuthApi
 import com.example.app.core.network.interceptor.DynamicBaseUrlInterceptor
 import com.example.app.core.network.interceptor.ForceUpdateInterceptor
+import com.example.app.core.network.interceptor.SessionInterceptor
 import com.example.app.core.remoteconfig.RemoteConfig
 import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listenerDashboard.data.ListenerDashBoardApi
@@ -54,11 +55,13 @@ object NetworkModule {
     @Singleton
     fun provideOkHttpClient(
         versionInterceptor: Interceptor,
+        sessionInterceptor: SessionInterceptor,
         forceUpdateInterceptor: ForceUpdateInterceptor,
         dynamicBaseUrlInterceptor: DynamicBaseUrlInterceptor
     ): OkHttpClient =
         OkHttpClient.Builder()
             .addInterceptor(versionInterceptor)
+            .addInterceptor(sessionInterceptor)
             .addInterceptor(forceUpdateInterceptor)
             .addInterceptor(dynamicBaseUrlInterceptor)
             .build()

@@ -61,8 +61,8 @@ class OtpViewModel @Inject constructor(
                     val data = result.data
 
                     if (data != null) {
-                        SessionManager.accessToken = data.accessToken
-                        userPreferencesRepository.saveAccessToken(data.accessToken)
+                        SessionManager.sessionId = data.sessionId
+                        userPreferencesRepository.saveSessionId(data.sessionId)
                         userPreferencesRepository.saveUserPrefs(
                             id = data.accountId,
                             role = UserRole.CUSTOMER
