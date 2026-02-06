@@ -121,7 +121,7 @@ fun ListenerListScreen(
                 pendingCall?.let { (listener, callType, calleeAccountId) ->
                     callVm.startCall(
                         callType = callType,
-                        callerAccountId = SessionManager.userId,
+                        callerAccountId = SessionManager.userAccountId,
                         calleeAccountId = calleeAccountId,
                         calleeName = listener.name,
                         calleeAvatar = listener.avatar
@@ -159,7 +159,7 @@ fun ListenerListScreen(
             if (allGranted) {
                 callVm.startCall(
                     callType = callType,
-                    callerAccountId = SessionManager.userId,
+                    callerAccountId = SessionManager.userAccountId,
                     calleeAccountId = calleeAccountId,
                     calleeName = listener.name,
                     calleeAvatar = listener.avatar

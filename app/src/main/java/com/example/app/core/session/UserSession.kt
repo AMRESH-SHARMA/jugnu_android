@@ -20,7 +20,7 @@ class UserSession @Inject constructor(
     // -------------------------
     val sessionFlow = prefs.userPrefsFlow
         .onEach { (id, role) ->
-            SessionManager.userId = id
+            SessionManager.userAccountId = id
             SessionManager.userRole = role
         }
         .stateIn(
@@ -32,15 +32,29 @@ class UserSession @Inject constructor(
     // -------------------------
     // Persisted FCM token
     // -------------------------
-    val tokenFlow = prefs.tokenFlow
-        .onEach { token ->
-            SessionManager.fcmToken = token
+    val fcmTokenFlow = prefs.fcmTokenFlow
+        .onEach { fcmToken  ->
+            SessionManager.fcmToken = fcmToken
         }
         .stateIn(
             scope = appScope,
             started = SharingStarted.Eagerly,
             initialValue = null
         )
+
+    // -------------------------
+    // Persisted SessionId
+    // -------------------------
+    val sessionIdFlow = prefs.sessionIdFlow
+        .onEach { sid ->
+            SessionManager.sessionId = sid
+        }
+        .stateIn(
+            scope = appScope,
+            started = SharingStarted.Eagerly,
+            initialValue = ""
+        )
+
 
     // -------------------------
     // Simple getters (sync)
@@ -52,10 +66,15 @@ class UserSession @Inject constructor(
         get() = sessionFlow.value.second
 
     val fcmToken: String?
-        get() = tokenFlow.value
+        get() = fcmTokenFlow.value
+
+    val sessionId: String
+        get() = sessionIdFlow.value
 
     // -------------------------
     // Derived session state
     // -------------------------
-    fun isLoggedIn(): Boolean = accountId > 0
+    fun isLoggedIn(): Boolean =
+        accountId > 0 && !sessionId.isNullOrBlank()
+
 }

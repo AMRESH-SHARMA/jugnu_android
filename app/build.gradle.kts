@@ -35,8 +35,8 @@ android {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
-        versionName = "7.0"
+        versionCode = 11
+        versionName = "11.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 

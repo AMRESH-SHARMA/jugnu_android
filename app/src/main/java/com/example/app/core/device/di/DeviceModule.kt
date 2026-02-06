@@ -2,7 +2,7 @@ package com.example.app.core.device.di
 
 import com.example.app.core.device.data.DeviceApi
 import com.example.app.core.device.data.DeviceRepository
-import com.example.app.core.device.domain.SendDeviceTokenUseCase
+import com.example.app.core.device.domain.SendFcmTokenUseCase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -27,5 +27,5 @@ object DeviceModule {
     @Provides
     @Singleton
     fun provideSendDeviceTokenUseCase(repo: DeviceRepository) =
-        SendDeviceTokenUseCase(repo)
+        SendFcmTokenUseCase(repo)
 }
