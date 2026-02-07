@@ -33,8 +33,12 @@ class AppConfigViewModel @Inject constructor(
 
     private fun load() {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
+            
             // Check network connectivity first
             if (!isNetworkAvailable()) {
+                // Ensure minimum 3 seconds display
+                ensureMinimumDisplayTime(startTime)
                 _appConfig.value = AppConfigState(
                     isLoading = false,
                     errorType = ErrorType.NO_INTERNET
@@ -42,13 +46,29 @@ class AppConfigViewModel @Inject constructor(
                 return@launch
             }
 
+            // Launch timeout handler
+            val timeoutJob = launch {
+                kotlinx.coroutines.delay(10000) // 10 second timeout
+                if (_appConfig.value.isLoading) {
+                    ensureMinimumDisplayTime(startTime)
+                    _appConfig.value = AppConfigState(
+                        isLoading = false,
+                        errorType = ErrorType.TIMEOUT
+                    )
+                }
+            }
+
             when (val result = repo.fetchConfig()) {
 
                 is ApiResult.Success -> {
+                    timeoutJob.cancel()
                     val cfg = result.data
 
                     val forceUpdate =
                         BuildConfig.VERSION_CODE < cfg.min_supported_version
+
+                    // Ensure minimum 3 seconds display
+                    ensureMinimumDisplayTime(startTime)
 
                     _appConfig.value = AppConfigState(
                         isLoading = false,
@@ -57,6 +77,8 @@ class AppConfigViewModel @Inject constructor(
                 }
 
                 is ApiResult.Error -> {
+                    timeoutJob.cancel()
+                    
                     // Determine error type based on exception
                     val errorType = when (result.exception) {
                         is UnknownHostException,
@@ -64,12 +86,23 @@ class AppConfigViewModel @Inject constructor(
                         else -> ErrorType.SERVER_UNREACHABLE
                     }
 
+                    // Ensure minimum 3 seconds display
+                    ensureMinimumDisplayTime(startTime)
+
                     _appConfig.value = AppConfigState(
                         isLoading = false,
                         errorType = errorType
                     )
                 }
             }
+        }
+    }
+
+    private suspend fun ensureMinimumDisplayTime(startTime: Long) {
+        val elapsed = System.currentTimeMillis() - startTime
+        val remaining = 3000 - elapsed // 3 seconds minimum
+        if (remaining > 0) {
+            kotlinx.coroutines.delay(remaining)
         }
     }
 

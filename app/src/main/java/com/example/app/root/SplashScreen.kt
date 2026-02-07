@@ -11,6 +11,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import kotlin.math.cos
@@ -39,7 +41,15 @@ data class Firefly(
 )
 
 @Composable
-fun SplashScreen() {
+fun SplashScreen(
+    onTimeout: () -> Unit = {}
+) {
+    // Track if timeout occurred
+    LaunchedEffect(Unit) {
+        delay(10000) // 10 second timeout
+        onTimeout()
+    }
+
     // Netflix-style black background
     Box(
         modifier = Modifier
@@ -51,14 +61,27 @@ fun SplashScreen() {
         // Fireflies animation in background
         FirefliesBackground()
         
-        // Jugnu text (Netflix-style)
-        Text(
-            text = "Jugnu",
-            fontSize = 56.sp,
-            fontWeight = FontWeight.Bold,
-            color = Color(0xFFFBBF24), // Golden/amber color for firefly theme
-            letterSpacing = 2.sp
-        )
+        // Content column
+        androidx.compose.foundation.layout.Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(32.dp)
+        ) {
+            // Jugnu text (Netflix-style)
+            Text(
+                text = "Jugnu",
+                fontSize = 56.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFFFBBF24), // Golden/amber color for firefly theme
+                letterSpacing = 2.sp
+            )
+            
+            // Loading indicator
+            androidx.compose.material3.CircularProgressIndicator(
+                color = Color(0xFFFBBF24),
+                strokeWidth = 3.dp,
+                modifier = Modifier.size(32.dp)
+            )
+        }
     }
 }
 
