@@ -161,4 +161,7 @@ dependencies {
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+
+    //cryptic user pref
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
