@@ -6,7 +6,7 @@ import javax.inject.Inject
 class SendFcmTokenUseCase @Inject constructor(
     private val repo: DeviceRepository
 ) {
-    suspend operator fun invoke(accountId: Long, token: String) {
-        repo.sendFCMToken(accountId, token)
+    suspend operator fun invoke(sessionId: String, fcmToken: String) {
+        repo.sendFCMToken(sessionId, fcmToken)
     }
 }

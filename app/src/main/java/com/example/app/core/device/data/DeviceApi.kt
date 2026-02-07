@@ -4,8 +4,8 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 
 data class DeviceTokenRequest(
-    val accountId: Long,
-    val deviceToken: String
+    val sessionId: String,
+    val FCMToken: String
 )
 
 interface DeviceApi {
