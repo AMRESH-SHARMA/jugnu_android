@@ -14,6 +14,7 @@ fun VerifyOtpResponseDto.toDomain(): VerifyOtpResult {
     return VerifyOtpResult(
         sessionId = this.sessionId,
         accountId = this.accountId,
-        isNewUser = this.is_new_user
+        isNewUser = this.is_new_user,
+        userRole = this.userRole,
     )
 }

@@ -21,7 +21,8 @@ plugins {
     alias(libs.plugins.hiltAndroid)
     id("kotlin-parcelize")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
-    id("com.google.gms.google-services")
+    // Temporarily disabled - google-services.json missing
+    // id("com.google.gms.google-services")
 
 }
 

@@ -58,23 +58,29 @@ fun AppNavGraph() {
                     CallStatus.OUTGOING_RINGING,
                     CallStatus.CONNECTING,
                     CallStatus.CONNECTED -> {
-                        navController.navigate(Routes.Screen.Call.ONGOING)
+                        navController.navigate(Routes.Screen.Call.ONGOING) {
+                            launchSingleTop = true
+                        }
                     }
 
                     CallStatus.ENDED, null -> {
-                        Log.d("RTM", "NAVIAGTE TO END")
+                        Log.d("RTM", "NAVIGATE TO END")
                         when (SessionManager.userRole) {
                             UserRole.LISTENER -> {
                                 navController.navigate(Routes.Graph.LISTENER) {
                                     popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             }
 
                             UserRole.CUSTOMER -> {
                                 navController.navigate(Routes.Graph.HOME) {
                                     popUpTo(Routes.Graph.CALL) { inclusive = true }
+                                    launchSingleTop = true
                                 }
                             }
+
+                            null -> TODO()
                         }
                     }
 
@@ -89,12 +95,9 @@ fun AppNavGraph() {
         // ---------------------------------------------------------
         NavHost(
             navController = navController,
-//            startDestination = Routes.Graph.SELECT_USER_ROLE
-            //TODO
             startDestination = Routes.Graph.AUTH
         ) {
             authNavGraph(navController)
-//            selectUserRoleNavGraph(navController)
             homeNavGraph(navController)
             listenerNavGraph(navController)
             walletNavGraph(navController)

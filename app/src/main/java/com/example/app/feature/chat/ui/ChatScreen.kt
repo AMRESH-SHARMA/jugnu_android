@@ -35,8 +35,9 @@ fun ChatScreen(
     val data = remember { listenerModel }
 
     if (data == null) return
+    
     // -------------------------------
-    // TODO: Replace this with ViewModel call
+    // TODO: Replace with ViewModel
     // val viewModel = hiltViewModel<ChatViewModel>()
     // val messages = viewModel.messages.collectAsState()
     // -------------------------------
@@ -62,10 +63,14 @@ fun ChatScreen(
             ChatHeader(
                 listenerModel = data,
                 onVoiceCall = {
-                    // navController.navigate("incoming_call/$chatId")
+                    // TODO: Initiate voice call via ViewModel
+                    // viewModel.initiateVoiceCall(data.id)
+                    // Navigation to call screen happens via CallStore observer
                 },
                 onVideoCall = {
-                    // navController.navigate("incoming_video_call/$chatId")
+                    // TODO: Initiate video call via ViewModel
+                    // viewModel.initiateVideoCall(data.id)
+                    // Navigation to call screen happens via CallStore observer
                 },
                 onBack = onBack,
                 scrollBehavior = scrollBehavior

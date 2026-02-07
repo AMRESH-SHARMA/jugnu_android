@@ -12,14 +12,32 @@ fun NavGraphBuilder.listenerNavGraph(navController: NavHostController) {
 
     navigation(
         route = Routes.Graph.LISTENER,
-        startDestination = Routes.Screen.Listener.ListenerDashboard
+        startDestination = Routes.Screen.Listener.DASHBOARD
     ) {
-        composable(Routes.Screen.Listener.ListenerDashboard) {
-            ListenerDashboardScreen(navController)
+        // Listener Dashboard (Main screen)
+        composable(Routes.Screen.Listener.DASHBOARD) {
+            ListenerDashboardScreen(
+                navController = navController,
+                onWalletClick = {
+                    navController.navigate(Routes.Graph.WALLET) {
+                        launchSingleTop = true
+                    }
+                }
+                // Future: onCustomerListClick = { ... }
+            )
         }
 
-        // Add more listener screens later, e.g.:
-        // composable(Routes.Screen.Listener.Earnings) { ... }
-        // composable(Routes.Screen.Listener.Calls) { ... }
+        // Future screens:
+        // composable(Routes.Screen.Listener.CUSTOMER_LIST) {
+        //     CustomerListScreen(
+        //         navController = navController,
+        //         onCustomerClick = { customer ->
+        //             // Initiate call to customer
+        //         }
+        //     )
+        // }
     }
+
+    // Wallet graph (shared with customer but different features)
+    walletNavGraph(navController)
 }

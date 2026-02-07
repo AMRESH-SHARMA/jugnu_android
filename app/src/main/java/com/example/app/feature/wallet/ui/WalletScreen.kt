@@ -218,10 +218,10 @@ fun QuickActionButtons(
                 icon = Icons.Filled.AddCircle,
                 onClick = {
                     navController.navigate(
-                        enterAmount(
-                            AmountFlowType.ADD.name
-                        )
-                    )
+                        Routes.Screen.Wallet.enterAmountRoute(AmountFlowType.ADD.name)
+                    ) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -232,10 +232,10 @@ fun QuickActionButtons(
                 icon = Icons.Filled.ArrowDownward,
                 onClick = {
                     navController.navigate(
-                        enterAmount(
-                            AmountFlowType.WITHDRAW.name
-                        )
-                    )
+                        Routes.Screen.Wallet.enterAmountRoute(AmountFlowType.WITHDRAW.name)
+                    ) {
+                        launchSingleTop = true
+                    }
                 }
             )
         }
@@ -321,8 +321,4 @@ fun TransactionItem(title: String, amount: String, time: String) {
             color = if (amount.startsWith("-")) Color.Red else Color(0xFF2ECC71)
         )
     }
-}
-
-fun enterAmount(type: String): String {
-    return "${Routes.Screen.Wallet.ENTER_AMOUNT}/$type"
 }
