@@ -67,11 +67,15 @@ class MyApp : Application() {
             if (AppConstants.USE_DEFAULT_URL) {
                 RemoteConfig.updateApi(AppConstants.DEFAULT_BASE_URL)
             } else {
-                // 1️⃣ load cached value (fast)
-                val cached = remoteConfigRepo.loadApiBaseUrl()
-                if (cached != null) RemoteConfig.updateApi(cached)
-                // 2️⃣ fetch GitHub config (background)
-                ConfigLoader.refresh(remoteConfigRepo)
+                // Load cached config immediately
+                val (cachedApi, cachedWs) = remoteConfigRepo.loadCachedConfig()
+                if (cachedApi != null) RemoteConfig.updateApi(cachedApi)
+                if (cachedWs != null) RemoteConfig.updateWs(cachedWs)
+
+                // Refresh only if TTL expired
+                if (remoteConfigRepo.shouldRefreshConfig()) {
+                    ConfigLoader.refresh(remoteConfigRepo)
+                }
             }
         }
 

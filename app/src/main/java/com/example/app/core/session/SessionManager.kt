@@ -11,14 +11,4 @@ object SessionManager {
 
     // Runtime-only values (not persisted)
     var sessionId: String = ""
-    //    var rtmToken: String = ""
-    //    var rtcToken: String = ""
-    //    var currentCallId: String = ""
-    //    var isInCall: Boolean = false
-
-    //    fun clearCallSession() {
-    //        rtcToken = ""
-    //        currentCallId = ""
-    //        isInCall = false
-    //    }
 }

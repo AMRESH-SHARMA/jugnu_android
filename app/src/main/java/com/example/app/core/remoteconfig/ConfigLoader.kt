@@ -44,8 +44,10 @@ object ConfigLoader {
 
                 Log.d("RTM CONFIG", "RemoteConfig updated → offer=${config.offer}")
                 // persist
-                repo.saveApiBaseUrl(config.apiBaseUrl)
-                repo.saveWsBaseUrl(config.wsBaseUrl)
+                repo.saveConfig(
+                    apiBaseUrl = config.apiBaseUrl,
+                    wsBaseUrl = config.wsBaseUrl
+                )
             }
         } catch (e: Exception) {
             Log.e("RTM CONFIG", "❌ ConfigLoader.refresh FAILED", e)
