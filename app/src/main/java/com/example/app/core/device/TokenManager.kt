@@ -5,7 +5,9 @@ import com.example.app.core.di.ApplicationScope
 import com.example.app.core.session.UserSession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -25,15 +27,21 @@ class TokenManager @Inject constructor(
 
         appScope.launch(Dispatchers.IO) {
             combine(
-                session.sessionFlow,
+                session.sessionIdFlow,
                 session.fcmTokenFlow
-            ) { sessionData, fcmToken  ->
-                Pair(sessionData.first, fcmToken )
-            }.collect { (accountId, fcmToken ) ->
-                if (accountId > 0 && !fcmToken .isNullOrBlank()) {
-                    SendFcmTokenUseCase(accountId, fcmToken )
+            ) { sessionId, fcmToken ->
+                Pair(sessionId, fcmToken)
+            }
+            .distinctUntilChanged()
+            .collectLatest { (sessionId, fcmToken) ->
+                if (sessionId.isNotBlank() && !fcmToken.isNullOrBlank()) {
+                    SendFcmTokenUseCase(
+                        sessionId = sessionId,
+                        fcmToken = fcmToken
+                    )
                 }
             }
         }
+
     }
 }
