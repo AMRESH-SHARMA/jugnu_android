@@ -9,6 +9,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.app.BuildConfig
 import com.example.app.core.network.ApiResult
 import com.example.app.core.network.appconfig.AppConfigRepository
+import com.example.app.core.session.SessionManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,22 +23,38 @@ import javax.inject.Inject
 class AppConfigViewModel @Inject constructor(
     private val repo: AppConfigRepository,
     private val sessionInitializer: com.example.app.core.session.SessionInitializer,
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val savedStateHandle: androidx.lifecycle.SavedStateHandle
 ) : ViewModel() {
 
-    private val _appConfig = MutableStateFlow(AppConfigState(isLoading = true))
+    companion object {
+        private const val KEY_IS_INITIALIZED = "is_initialized"
+    }
+
+    private val _appConfig = MutableStateFlow(
+        if (savedStateHandle.get<Boolean>(KEY_IS_INITIALIZED) == true) {
+            AppConfigState(isLoading = false)
+        } else {
+            AppConfigState(isLoading = true)
+        }
+    )
     val appConfig: StateFlow<AppConfigState> = _appConfig
 
     init {
-        loadSessionAndConfig()
+        if (savedStateHandle.get<Boolean>(KEY_IS_INITIALIZED) != true) {
+            loadSessionAndConfig()
+        }
     }
 
     private fun loadSessionAndConfig() {
         viewModelScope.launch {
-            // Load session data first
-            sessionInitializer.loadSession()
+            // Only load session if not already loaded
+            if (SessionManager.userAccountId == 0L) {
+                sessionInitializer.loadSession()
+            }
             // Then load app config
             load()
+            savedStateHandle[KEY_IS_INITIALIZED] = true
         }
     }
 
