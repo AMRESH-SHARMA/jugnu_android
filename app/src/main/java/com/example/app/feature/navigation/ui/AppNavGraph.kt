@@ -37,6 +37,16 @@ fun AppNavGraph() {
     // Observe call state for UI overlays
     val callState by CallStore.call.collectAsState(initial = null)
 
+    // Disable back button during incoming or ongoing calls
+    androidx.activity.compose.BackHandler(
+        enabled = callState?.status == CallStatus.INCOMING_RINGING ||
+                  callState?.status == CallStatus.OUTGOING_RINGING ||
+                  callState?.status == CallStatus.CONNECTING ||
+                  callState?.status == CallStatus.CONNECTED
+    ) {
+        // Do nothing - prevent back navigation during calls
+    }
+
     LaunchedEffect(Unit) {
         UiEventBus.events.collect { event ->
             if (event is UiEvent.ShowSnackbar) {
@@ -89,13 +99,24 @@ fun AppNavGraph() {
             }
     }
 
+    // Determine start destination based on login state
+    val startDestination = if (SessionManager.userAccountId != 0L && SessionManager.userRole != null) {
+        when (SessionManager.userRole) {
+            UserRole.LISTENER -> Routes.Graph.LISTENER
+            UserRole.CUSTOMER -> Routes.Graph.HOME
+            else -> Routes.Graph.AUTH
+        }
+    } else {
+        Routes.Graph.AUTH
+    }
+
     Box(Modifier.fillMaxSize()) {
         // ---------------------------------------------------------
         // 🧭 Main NavHost
         // ---------------------------------------------------------
         NavHost(
             navController = navController,
-            startDestination = Routes.Graph.AUTH
+            startDestination = startDestination
         ) {
             authNavGraph(navController)
             homeNavGraph(navController)
