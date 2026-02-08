@@ -7,10 +7,10 @@ import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallManager
 import com.example.app.core.call.notification.IncomingCallNotificationManager
-import com.example.app.core.call.notification.IncomingCallRingingService
 import com.example.app.core.call.notification.MissedCallNotificationManager
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.rtc.CallRtcController
+import com.example.app.core.session.SessionManager
 import com.example.app.core.websocket.PresenceEvent
 import com.example.app.core.websocket.PresenceEventBus
 import com.example.app.core.websocket.PresenceManager
@@ -63,22 +63,25 @@ class EventObserver @Inject constructor(
                     is CallEvent.Connected -> callManager.onConnected()
 
                     is CallEvent.Rejected -> {
+                        /** callee rejects call without picking */
+                        incomingCallNotificationManager.dismiss()
                         callManager.onRejected()
                         presenceManager.onCallEnded()
                     }
 
-
                     is CallEvent.Ended -> {
+                        /** after picking call is ended */
+                        incomingCallNotificationManager.dismiss()
                         callManager.onEnded()
                         presenceManager.onCallEnded()
                     }
 
                     is CallEvent.Cancelled -> {
-                        // 🔕 Stop ringing/Dismiss incoming call notification
-                        IncomingCallRingingService.stop(appContext)
-                        incomingCallNotificationManager.dismiss(event.callId)
-                        // ✅ Show missed call
-                        missedCallNotificationManager.showMissedCall(event.callId)
+                        /** Dismiss incoming call notification/ show missed call */
+                        incomingCallNotificationManager.dismiss()
+                        if (SessionManager.userId == event.calleeAccountId) {
+                            missedCallNotificationManager.showMissedCall()
+                        }
                         callManager.onEnded()
                         presenceManager.onCallEnded()
                     }

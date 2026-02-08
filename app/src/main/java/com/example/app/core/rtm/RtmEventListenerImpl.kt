@@ -1,9 +1,9 @@
 package com.example.app.core.rtm
 
 import android.util.Log
+import com.example.app.AppConstants
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
-import com.example.app.utils.AppConstants
 import io.agora.rtm.MessageEvent
 import io.agora.rtm.RtmEventListener
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +31,7 @@ class RtmEventListenerImpl(
         val raw = rtmMessage.toString()
         Log.d(
             "RTM",
-            "onMessageEvent Event Received $raw"
+            "ON RTM Event Received $raw"
         )
 
         // 🔥 Extract JSON between "message: " and ", data:"
@@ -43,10 +43,10 @@ class RtmEventListenerImpl(
             val signal = json.decodeFromString<CallSignalPayload>(jsonPayload)
 
             scope.launch {
-                Log.d(
-                    "RTM",
-                    "RtmEventListenerImpl $signal"
-                )
+//                Log.d(
+//                    "RTM",
+//                    "RtmEventListenerImpl $signal"
+//                )
                 when (signal.event) {
                     AppConstants.EVENT_INCOMING_CALL -> {
                         CallEventBus.emit(
@@ -86,7 +86,7 @@ class RtmEventListenerImpl(
 
                     AppConstants.EVENT_CALL_CANCELLED -> {
                         CallEventBus.emit(
-                            CallEvent.Cancelled(signal.callId)
+                            CallEvent.Cancelled(signal.callId, signal.calleeAccountId)
                         )
                     }
 

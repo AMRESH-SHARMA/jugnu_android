@@ -36,8 +36,8 @@ android {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 11
-        versionName = "11.0"
+        versionCode = 10
+        versionName = "10.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -162,7 +162,4 @@ dependencies {
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
-
-    //cryptic user pref
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }
