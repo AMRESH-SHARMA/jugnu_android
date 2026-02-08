@@ -23,14 +23,14 @@ fun NavGraphBuilder.walletNavGraph(navController: NavController) {
         }
 
         composable(
-            route = "${Routes.Screen.Wallet.ENTER_AMOUNT}/{type}"
+            route = Routes.Screen.Wallet.ENTER_AMOUNT
         ) { backStackEntry ->
 
-            val type = backStackEntry.arguments
-                ?.getString("type")
+            val flowTypeString = backStackEntry.arguments
+                ?.getString("flowType")
                 ?.uppercase()
 
-            val flowType = AmountFlowType.valueOf(type!!)
+            val flowType = AmountFlowType.valueOf(flowTypeString!!)
 
             EnterAmountScreen(
                 navController = navController,

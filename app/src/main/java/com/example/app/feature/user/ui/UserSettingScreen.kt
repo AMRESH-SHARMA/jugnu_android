@@ -76,6 +76,7 @@ fun UserSettingScreen(
     val viewModel: UserViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
     val interestedIn by viewModel.interestedIn.collectAsState()
+    val userRole by viewModel.userRole.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showInterestedInDialog by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -123,7 +124,7 @@ fun UserSettingScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp)
             ) {
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // Modern Profile Header
                 ModernProfileHeader()
@@ -168,14 +169,17 @@ fun UserSettingScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                ModernMenuItem(
-                    title = "Interested In",
-                    subtitle = interestedIn.replaceFirstChar { it.uppercase() },
-                    icon = Icons.Default.Person,
-                    onClick = { showInterestedInDialog = true }
-                )
+                // Only show "Interested In" for CUSTOMER role
+                if (userRole == com.example.app.core.preferences.user.domain.UserRole.CUSTOMER) {
+                    ModernMenuItem(
+                        title = "Interested In",
+                        subtitle = interestedIn.replaceFirstChar { it.uppercase() },
+                        icon = Icons.Default.Person,
+                        onClick = { showInterestedInDialog = true }
+                    )
 
-                Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
 
                 ModernMenuItem(
                     title = "Transaction History",
@@ -267,9 +271,9 @@ fun ModernProfileHeader() {
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
@@ -411,8 +415,8 @@ fun ModernMenuItem(
                     .background(
                         brush = Brush.linearGradient(
                             colors = listOf(
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
-                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.15f)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f),
+                                MaterialTheme.colorScheme.tertiary.copy(alpha = 0.2f)
                             )
                         )
                     ),
@@ -421,7 +425,7 @@ fun ModernMenuItem(
                 Icon(
                     imageVector = icon,
                     contentDescription = title,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = Color.White,
                     modifier = Modifier.size(26.dp)
                 )
             }

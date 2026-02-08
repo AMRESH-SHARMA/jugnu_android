@@ -194,7 +194,11 @@ fun MyTextField(
             unfocusedIndicatorColor = if (isError) Color.Red else Color.White,
             focusedTextColor = Color.White,
             unfocusedTextColor = Color.White,
-            cursorColor = Color.White
+            cursorColor = Color.White,
+            focusedContainerColor = Color.Transparent,
+            unfocusedContainerColor = Color.Transparent,
+            disabledContainerColor = Color.Transparent,
+            errorContainerColor = Color.Transparent
         ),
         placeholder = {
             Text(text = labelVal, color = Color.Gray)

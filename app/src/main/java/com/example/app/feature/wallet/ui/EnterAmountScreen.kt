@@ -1,7 +1,11 @@
 package com.example.app.feature.wallet.ui
 
 import androidx.activity.ComponentActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -11,16 +15,22 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
-import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -30,8 +40,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
@@ -42,7 +55,6 @@ import com.example.app.feature.wallet.domain.AmountFlowType
 fun EnterAmountScreen(
     navController: NavController,
     flowType: AmountFlowType,
-//    viewModel: EnterAmountViewModel = hiltViewModel()
 ) {
     val activity = LocalContext.current as ComponentActivity
     val viewModel: EnterAmountViewModel = viewModel(
@@ -55,18 +67,6 @@ fun EnterAmountScreen(
     val canContinue by viewModel.canContinue.collectAsState()
     val balance by viewModel.currentBalance.collectAsState()
 
-
-//    val context = LocalContext.current
-//
-//    // ✅ FIX: Collect UPI event in SAME ViewModel scope
-//    LaunchedEffect(Unit) {
-//        viewModel.upiEvent.collect { amount ->
-//            Log.d("RTM", "UPI_DEBUG Compose received UPI event: amount=$amount")
-//            (context as MainActivity).launchUpi(amount)
-//        }
-//    }
-
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
         topBar = {
             TopAppBar(
@@ -75,43 +75,62 @@ fun EnterAmountScreen(
                         if (flowType == AmountFlowType.ADD)
                             "Add Money"
                         else
-                            "Withdraw Money"
+                            "Withdraw Money",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 },
-                scrollBehavior = scrollBehavior,
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    titleContentColor = MaterialTheme.colorScheme.onTertiary
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
                 actions = {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
+                    Card(
+                        shape = RoundedCornerShape(20.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+                        ),
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AccountBalanceWallet,
-                            contentDescription = "Wallet",
-                            tint = MaterialTheme.colorScheme.onTertiary,
-
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AccountBalanceWallet,
+                                contentDescription = "Wallet",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
                             )
-                        Spacer(modifier = Modifier.width(10.dp))
-                        Text(
-                            text = "🪙 %,d".format(balance),
-                            color = MaterialTheme.colorScheme.onTertiary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "🪙 %,d".format(balance ?: 0),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 }
-
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Column(
             modifier = Modifier
                 .padding(padding)
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(20.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
 
@@ -124,19 +143,32 @@ fun EnterAmountScreen(
             )
 
             Button(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
                 enabled = canContinue && !loading,
                 onClick = {
                     viewModel.onContinue(flowType)
-                }
+                },
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
             ) {
                 if (loading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
+                        modifier = Modifier.size(24.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.White
                     )
                 } else {
-                    Text("Recharge", color = MaterialTheme.colorScheme.onTertiary)
+                    Text(
+                        if (flowType == AmountFlowType.ADD) "Proceed to Pay" else "Withdraw",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = Color.White
+                    )
                 }
             }
         }
@@ -153,34 +185,87 @@ fun EnterAmountContent(
 ) {
 
     Column {
-
-        Text(
-            text = "Enter Amount",
-            style = MaterialTheme.typography.titleMedium
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = amount,
-            onValueChange = onAmountChange,
-            leadingIcon = {
-                Text("₹", style = MaterialTheme.typography.titleLarge)
-            },
-            keyboardOptions = KeyboardOptions(
-                keyboardType = KeyboardType.Number
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surface
             ),
-            singleLine = true,
-            textStyle = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.fillMaxWidth()
-        )
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+            ) {
+                Text(
+                    text = "Enter Amount",
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
 
-        if (error != null) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.height(20.dp))
+
+                OutlinedTextField(
+                    value = amount,
+                    onValueChange = onAmountChange,
+                    prefix = {
+                        Text(
+                            "₹",
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    },
+                    placeholder = {
+                        Text(
+                            "0",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                        )
+                    },
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    ),
+                    singleLine = true,
+                    textStyle = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Start
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
+
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
         }
 
         Spacer(modifier = Modifier.height(24.dp))
+
+        Text(
+            text = "Quick Select",
+            style = MaterialTheme.typography.titleSmall.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
 
         QuickAmountRow(
             onQuickAmountClick = onQuickAmountClick
@@ -194,12 +279,47 @@ fun QuickAmountRow(
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        listOf(1, 10, 1000).forEach { amount ->
-            AssistChip(
+        listOf(100, 500, 1000).forEach { amount ->
+            QuickAmountChip(
+                amount = amount,
                 onClick = { onQuickAmountClick(amount) },
-                label = { Text("₹$amount") }
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun QuickAmountChip(
+    amount: Int,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(56.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = Color.White.copy(alpha = 0.2f)
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "₹$amount",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Color.White
             )
         }
     }

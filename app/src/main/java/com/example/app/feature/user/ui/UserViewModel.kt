@@ -37,6 +37,11 @@ class UserViewModel @Inject constructor(
             initialValue = "MALE"
         )
 
+    private val _userRole = MutableStateFlow<com.example.app.core.preferences.user.domain.UserRole?>(
+        com.example.app.core.session.SessionManager.userRole
+    )
+    val userRole: StateFlow<com.example.app.core.preferences.user.domain.UserRole?> = _userRole
+
     fun logout() {
         viewModelScope.launch {
             try {

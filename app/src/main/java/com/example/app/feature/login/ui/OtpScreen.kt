@@ -123,90 +123,174 @@ fun OtpVerificationScreen(
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
         ) {
-            Spacer(modifier = Modifier.height(32.dp))
-
-            HeadingTextComponent("Verification Code")
-            Spacer(modifier = Modifier.height(8.dp))
-
-            Text(
-                text = "Enter the 6-digit code sent to $maskedMobile",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
-
-            OtpInput(
-                otp = otp,
-                onOtpChange = {
-                    otp = it
-                    viewModel.clearOtpError() // 👈 IMPORTANT
-                    if (it.length == OTP_LENGTH) keyboardController?.hide()
-                },
-                focusRequester = focusRequester
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OtpErrorMessage(
-                otpUiState = otpVerifyState
-            )
-
-            Spacer(modifier = Modifier.height(20.dp))
-
-            // ---------------- Resend Timer ----------------
-            if (resendTime > 0) {
-                Text(
-                    text = "Resend OTP in $resendTime sec",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
-                )
-            } else {
-                TextButton(onClick = { viewModel.resendOtp(mobile) }) {
-                    Text("Resend OTP")
-                }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // ---------------- Buttons ----------------
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 50.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                OutlinedButton(
-                    modifier = Modifier.weight(1f),
-                    onClick = {
-                        keyboardController?.hide()
-                        navController.popBackStack(
-                            route = Routes.Screen.Auth.LOGIN,
-                            inclusive = false
-                        )
-                    }
+                // Title
+                Text(
+                    text = "Verification Code",
+                    style = MaterialTheme.typography.headlineMedium.copy(
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onBackground
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Subtitle
+                Text(
+                    text = "Enter the 6-digit code sent to",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(4.dp))
+                
+                Text(
+                    text = maskedMobile,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // OTP Input
+                OtpInput(
+                    otp = otp,
+                    onOtpChange = {
+                        otp = it
+                        viewModel.clearOtpError()
+                        if (it.length == OTP_LENGTH) keyboardController?.hide()
+                    },
+                    focusRequester = focusRequester
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Error Message
+                OtpErrorMessage(
+                    otpUiState = otpVerifyState
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Resend Section
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
                 ) {
-                    Text(text="Cancel", color = Color.White,
-                        fontSize = 18.sp)
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Didn't receive code?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                        )
+                        
+                        if (resendTime > 0) {
+                            Text(
+                                text = "Resend in ${resendTime}s",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                                ),
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
+                            )
+                        } else {
+                            TextButton(
+                                onClick = { viewModel.resendOtp(mobile) },
+                                colors = ButtonDefaults.textButtonColors(
+                                    contentColor = MaterialTheme.colorScheme.primary
+                                )
+                            ) {
+                                Text(
+                                    "Resend",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
 
-                Button(
-                    modifier = Modifier.weight(1f),
-                    enabled = isOtpComplete && otpVerifyState !is OtpUiState.Loading,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary
-                    ),
-                    onClick = { viewModel.verifyOtp(mobile, otp) }
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Text(text = "Verify",
-                        color = Color.White,
-                        fontSize = 18.sp)
+                    OutlinedButton(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        onClick = {
+                            keyboardController?.hide()
+                            navController.popBackStack(
+                                route = Routes.Screen.Auth.LOGIN,
+                                inclusive = false
+                            )
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text(
+                            text = "Cancel",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            )
+                        )
+                    }
+
+                    Button(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(56.dp),
+                        enabled = isOtpComplete && otpVerifyState !is OtpUiState.Loading,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(16.dp),
+                        onClick = { viewModel.verifyOtp(mobile, otp) }
+                    ) {
+                        if (otpVerifyState is OtpUiState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Verify",
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                ),
+                                color = Color.White
+                            )
+                        }
+                    }
                 }
             }
         }

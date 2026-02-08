@@ -2,7 +2,7 @@ package com.example.app.feature.home.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -65,10 +65,10 @@ fun HomeBottomTabBar(
         NavigationBarItem(
             selected = selected == HomeTab.USER,
             onClick = { onTabSelected(HomeTab.USER) },
-            icon = { Icon(Icons.Default.VerifiedUser, contentDescription = "UserInfo") },
+            icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
             label = {
                 Text(
-                    "User",
+                    "Settings",
                     style = MaterialTheme.typography.labelLarge
                 )
             },
