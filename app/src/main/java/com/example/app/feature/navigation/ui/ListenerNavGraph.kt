@@ -27,6 +27,13 @@ fun NavGraphBuilder.listenerNavGraph(navController: NavHostController) {
             )
         }
 
+        // Usage Statistics
+        composable(Routes.Screen.Usage.STATISTICS) {
+            com.example.app.feature.usage.ui.UsageStatisticsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
         // Future screens:
         // composable(Routes.Screen.Listener.CUSTOMER_LIST) {
         //     CustomerListScreen(

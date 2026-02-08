@@ -66,6 +66,15 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
             )
         }
 
+        // ---------------------------------------------------------
+        // 📊 USAGE STATISTICS
+        // ---------------------------------------------------------
+        composable(Routes.Screen.Usage.STATISTICS) {
+            com.example.app.feature.usage.ui.UsageStatisticsScreen(
+                onBackClick = { navController.popBackStack() }
+            )
+        }
+
     }
 
     // Chat graph (separate from HOME)

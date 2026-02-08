@@ -17,6 +17,8 @@ class ListenerDashboardViewModel @Inject constructor(
     private val getListenerStats: GetListenerStatsUseCase
 ) : ViewModel() {
     val stats = MutableStateFlow<UiState<ListenerStats>>(UiState.Loading)
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing = _isRefreshing
 
     var fromDate: String? = null
     var toDate: String? = null
@@ -27,7 +29,6 @@ class ListenerDashboardViewModel @Inject constructor(
     }
 
     fun load() = viewModelScope.launch {
-
         val listenerId = SessionManager.userAccountId
 
         when (val res = getListenerStats(listenerId, fromDate, toDate)) {
@@ -35,40 +36,15 @@ class ListenerDashboardViewModel @Inject constructor(
             is ApiResult.Error -> stats.value = UiState.Error(res.message)
         }
     }
-//    fun load() = viewModelScope.launch {
-//        stats.value = UiState.Loading
-//
-//        val listenerId = SessionManager.userId
-//
-//        stats.value = when (
-//            val res = getListenerStats(listenerId, fromDate, toDate)
-//        ) {
-//            is ApiResult.Success -> UiState.Success(res.data)
-//            is ApiResult.Error -> UiState.Error(res.message)
-//        }
-//    }
-}
 
+    fun refresh() = viewModelScope.launch {
+        _isRefreshing.value = true
+        val listenerId = SessionManager.userAccountId
 
-/*
-@HiltViewModel
-class ListenerDashboardViewModel @Inject constructor(
-    private val getListenerStats: GetListenerStatsUseCase,
-) : ViewModel() {
-
-    val stats = MutableStateFlow<UiState<ListenerStats>>(UiState.Loading)
-
-    fun load() = viewModelScope.launch {
-        stats.value = UiState.Loading
-
-        val listenerId = SessionManager.userId
-
-        stats.value = when (val res = getListenerStats(listenerId)) {
-            is ApiResult.Success -> UiState.Success(res.data)
-            is ApiResult.Error -> UiState.Error(res.message)
+        when (val res = getListenerStats(listenerId, fromDate, toDate)) {
+            is ApiResult.Success -> stats.value = UiState.Success(res.data)
+            is ApiResult.Error -> stats.value = UiState.Error(res.message)
         }
+        _isRefreshing.value = false
     }
 }
-
- */
-

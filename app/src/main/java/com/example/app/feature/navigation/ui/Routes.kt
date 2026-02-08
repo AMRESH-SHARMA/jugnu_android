@@ -53,5 +53,10 @@ object Routes {
             const val INCOMING = "incoming_call"
             const val ONGOING = "ongoing_call"
         }
+
+        // 📊 USAGE
+        object Usage {
+            const val STATISTICS = "usage_statistics"
+        }
     }
 }
