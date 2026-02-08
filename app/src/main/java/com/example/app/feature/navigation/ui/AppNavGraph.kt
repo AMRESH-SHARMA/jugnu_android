@@ -37,6 +37,16 @@ fun AppNavGraph() {
     // Observe call state for UI overlays
     val callState by CallStore.call.collectAsState(initial = null)
 
+    // Disable back button during incoming or ongoing calls
+    androidx.activity.compose.BackHandler(
+        enabled = callState?.status == CallStatus.INCOMING_RINGING ||
+                  callState?.status == CallStatus.OUTGOING_RINGING ||
+                  callState?.status == CallStatus.CONNECTING ||
+                  callState?.status == CallStatus.CONNECTED
+    ) {
+        // Do nothing - prevent back navigation during calls
+    }
+
     LaunchedEffect(Unit) {
         UiEventBus.events.collect { event ->
             if (event is UiEvent.ShowSnackbar) {

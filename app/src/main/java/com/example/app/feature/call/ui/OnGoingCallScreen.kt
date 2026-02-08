@@ -1,6 +1,7 @@
 package com.example.app.feature.call.ui
 
 import android.view.SurfaceView
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,11 @@ import kotlin.math.roundToInt
 fun OnGoingCallScreen(
     vm: CallViewModel
 ) {
+    // Disable back button during call
+    BackHandler(enabled = true) {
+        // Do nothing - prevent back navigation during call
+    }
+
     val call by vm.callModel.collectAsState()
     if (call == null) return
 
