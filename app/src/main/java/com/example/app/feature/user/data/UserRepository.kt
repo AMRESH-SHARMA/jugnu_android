@@ -22,4 +22,11 @@ class UserRepository @Inject constructor(
         if (!res.success) throw Exception(res.message)
         res.data.toDomain()
     }
+
+    suspend fun updateProfile(nickname: String, interestedIn: String): ApiResult<Unit> = safeApiCall {
+        val res = api.updateProfile(
+            UpdateProfileDto(nickname, interestedIn)
+        )
+        if (!res.success) throw Exception(res.message)
+    }
 }

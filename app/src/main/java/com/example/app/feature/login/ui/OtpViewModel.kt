@@ -60,6 +60,9 @@ class OtpViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     val data = result.data
 
+                    android.util.Log.d("OtpViewModel", "Verify OTP Success - Raw data: $data")
+                    android.util.Log.d("OtpViewModel", "isNewUser: ${data?.isNewUser}, userRole: ${data?.userRole}")
+
                     if (data != null) {
                         // Parse role from backend response
                         val userRole = when (data.userRole.uppercase()) {
@@ -67,6 +70,8 @@ class OtpViewModel @Inject constructor(
                             "CUSTOMER" -> UserRole.CUSTOMER
                             else -> UserRole.CUSTOMER // Default fallback
                         }
+                        
+                        android.util.Log.d("OtpViewModel", "Parsed userRole: $userRole")
                         
                         // Save session data
                         SessionManager.sessionId = data.sessionId

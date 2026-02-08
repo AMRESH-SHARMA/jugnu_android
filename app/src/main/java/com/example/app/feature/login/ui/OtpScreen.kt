@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.app.feature.components.HeadingTextComponent
-import com.example.app.feature.components.ImageComponent
 import com.example.app.R
 
 
@@ -65,23 +64,48 @@ fun OtpVerificationScreen(
             is OtpUiState.Success -> {
                 val data = (otpVerifyState as OtpUiState.Success).data as? com.example.app.feature.login.domain.VerifyOtpResult
                 
+                // Debug logging
+                android.util.Log.d("OtpScreen", "OTP Success - Data: $data")
+                android.util.Log.d("OtpScreen", "UserRole: ${data?.userRole}, IsNewUser: ${data?.isNewUser}")
+                
                 Toast.makeText(context, "✓ Login successful!", Toast.LENGTH_SHORT).show()
                 
-                // Route based on user role from backend
+                // Route based on user role and new user status
                 val destination = if (data != null) {
-                    when (data.userRole.uppercase()) {
-                        "LISTENER" -> Routes.Graph.LISTENER
-                        "CUSTOMER" -> Routes.Graph.HOME
-                        else -> Routes.Graph.HOME
+                    when {
+                        // New CUSTOMER users need to complete profile setup
+                        data.userRole.uppercase() == "CUSTOMER" && data.isNewUser -> {
+                            android.util.Log.d("OtpScreen", "Navigating to PROFILE_SETUP")
+                            Routes.Screen.Auth.PROFILE_SETUP
+                        }
+                        // Existing users or LISTENER role go to their respective home
+                        data.userRole.uppercase() == "LISTENER" -> {
+                            android.util.Log.d("OtpScreen", "Navigating to LISTENER")
+                            Routes.Graph.LISTENER
+                        }
+                        else -> {
+                            android.util.Log.d("OtpScreen", "Navigating to HOME")
+                            Routes.Graph.HOME
+                        }
                     }
                 } else {
+                    android.util.Log.d("OtpScreen", "Data is null, navigating to HOME")
                     Routes.Graph.HOME // Fallback
                 }
                 
-                // Navigate and clear auth stack
-                navController.navigate(destination) {
-                    popUpTo(Routes.Graph.AUTH) { inclusive = true }
-                    launchSingleTop = true
+                android.util.Log.d("OtpScreen", "Final destination: $destination")
+                
+                // Navigate - clear auth stack only if not going to profile setup
+                if (destination == Routes.Screen.Auth.PROFILE_SETUP) {
+                    navController.navigate(destination) {
+                        popUpTo(Routes.Screen.Auth.LOGIN) { inclusive = false }
+                        launchSingleTop = true
+                    }
+                } else {
+                    navController.navigate(destination) {
+                        popUpTo(Routes.Graph.AUTH) { inclusive = true }
+                        launchSingleTop = true
+                    }
                 }
             }
 
@@ -105,9 +129,6 @@ fun OtpVerificationScreen(
                 .padding(horizontal = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(32.dp))
-
-            ImageComponent(image = R.drawable.ic_sweet_franky)
-            Spacer(modifier = Modifier.height(24.dp))
 
             HeadingTextComponent("Verification Code")
             Spacer(modifier = Modifier.height(8.dp))

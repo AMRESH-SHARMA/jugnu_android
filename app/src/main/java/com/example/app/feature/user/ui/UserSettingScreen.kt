@@ -39,6 +39,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -74,7 +75,9 @@ fun UserSettingScreen(
 ) {
     val viewModel: UserViewModel = hiltViewModel()
     val uiState by viewModel.uiState.collectAsState()
+    val interestedIn by viewModel.interestedIn.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
+    var showInterestedInDialog by remember { mutableStateOf(false) }
 
     // Handle logout success
     LaunchedEffect(uiState) {
@@ -158,6 +161,15 @@ fun UserSettingScreen(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 ModernMenuItem(
+                    title = "Interested In",
+                    subtitle = interestedIn.replaceFirstChar { it.uppercase() },
+                    icon = Icons.Default.Person,
+                    onClick = { showInterestedInDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                ModernMenuItem(
                     title = "Transaction History",
                     subtitle = "View all transactions",
                     icon = Icons.Default.History,
@@ -195,6 +207,18 @@ fun UserSettingScreen(
                 viewModel.logout()
             },
             isLoading = uiState is UserUiState.LoggingOut
+        )
+    }
+
+    // Interested In Dialog
+    if (showInterestedInDialog) {
+        InterestedInDialog(
+            currentSelection = interestedIn,
+            onDismiss = { showInterestedInDialog = false },
+            onConfirm = { newValue ->
+                viewModel.updateInterestedIn(newValue)
+                showInterestedInDialog = false
+            }
         )
     }
 }
@@ -521,4 +545,128 @@ fun ModernLogoutDialog(
             }
         }
     )
+}
+
+@Composable
+fun InterestedInDialog(
+    currentSelection: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var selectedGender by remember { mutableStateOf(currentSelection) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = MaterialTheme.colorScheme.surface,
+        tonalElevation = 8.dp,
+        shape = RoundedCornerShape(28.dp),
+        title = {
+            Text(
+                text = "Interested In",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    text = "Select your preference",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Male Option
+                GenderDialogOption(
+                    text = "Male",
+                    selected = selectedGender == "MALE",
+                    onClick = { selectedGender = "MALE" }
+                )
+
+                // Female Option
+                GenderDialogOption(
+                    text = "Female",
+                    selected = selectedGender == "FEMALE",
+                    onClick = { selectedGender = "FEMALE" }
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { onConfirm(selectedGender) },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                ),
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(
+                    text = "Save",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.height(48.dp)
+            ) {
+                Text(
+                    text = "Cancel",
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+        }
+    )
+}
+
+@Composable
+private fun GenderDialogOption(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = if (selected)
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+        else
+            MaterialTheme.colorScheme.surface,
+        border = if (selected)
+            androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+        else
+            androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            RadioButton(
+                selected = selected,
+                onClick = null
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+            )
+        }
+    }
 }
