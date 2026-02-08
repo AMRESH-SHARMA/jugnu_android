@@ -21,7 +21,7 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_FCM_TOKEN = stringPreferencesKey("fcm_token")
         val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
         val KEY_SESSION_ID = stringPreferencesKey("session_id")
-
+        val KEY_INTERESTED_IN = stringPreferencesKey("interested_in")
 
         // 🆕 Offer tracking (single offer, content-based)
         val KEY_LAST_OFFER_DATE = stringPreferencesKey("last_offer_date")
@@ -43,6 +43,10 @@ class UserPreferencesRepository @Inject constructor(
         prefs[KEY_SESSION_ID] ?: ""
     }
 
+    val interestedInFlow = dataStore.data.map { prefs ->
+        prefs[KEY_INTERESTED_IN] ?: "MALE"
+    }
+
     suspend fun saveUserPrefs(id: Long, role: UserRole) {
         dataStore.edit { prefs ->
             prefs[KEY_ACCOUNT_ID] = id.toString()
@@ -59,6 +63,12 @@ class UserPreferencesRepository @Inject constructor(
     suspend fun saveSessionId(sessionId: String) {
         dataStore.edit { prefs ->
             prefs[KEY_SESSION_ID] = sessionId
+        }
+    }
+
+    suspend fun saveInterestedIn(interestedIn: String) {
+        dataStore.edit { prefs ->
+            prefs[KEY_INTERESTED_IN] = interestedIn
         }
     }
 

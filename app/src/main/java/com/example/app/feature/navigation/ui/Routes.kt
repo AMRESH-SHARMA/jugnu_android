@@ -15,6 +15,7 @@ object Routes {
         object Auth {
             const val LOGIN = "login"
             const val OTP = "otp/{mobile}"
+            const val PROFILE_SETUP = "profile_setup"
 
             fun otpRoute(mobile: String) = "otp/$mobile"
         }

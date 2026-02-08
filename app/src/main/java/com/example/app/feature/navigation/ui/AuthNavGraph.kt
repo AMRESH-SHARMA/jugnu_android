@@ -9,6 +9,7 @@ import androidx.navigation.navArgument
 import androidx.navigation.navigation
 import com.example.app.feature.login.ui.LoginScreen
 import com.example.app.feature.login.ui.OtpVerificationScreen
+import com.example.app.feature.login.ui.ProfileSetupScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
     navigation(
@@ -35,6 +36,10 @@ fun NavGraphBuilder.authNavGraph(navController: NavController) {
                 navController = navController,
                 mobile = mobile
             )
+        }
+
+        composable(Routes.Screen.Auth.PROFILE_SETUP) {
+            ProfileSetupScreen(navController = navController)
         }
     }
 }

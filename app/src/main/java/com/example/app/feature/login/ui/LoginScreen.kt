@@ -44,9 +44,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.app.R
 import com.example.app.feature.components.HeadingTextComponent
-import com.example.app.feature.components.ImageComponent
+import com.example.app.R
 import kotlinx.coroutines.launch
 
 @Composable
@@ -97,8 +96,6 @@ fun LoginScreen(navController: NavController) {
             verticalArrangement = Arrangement.Center
         ) {
 
-            ImageComponent(image = R.drawable.ic_sweet_franky)
-            Spacer(modifier = Modifier.height(40.dp))
             HeadingTextComponent(heading = "Login")
             Spacer(modifier = Modifier.height(40.dp))
 

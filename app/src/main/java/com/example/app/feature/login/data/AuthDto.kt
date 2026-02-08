@@ -1,5 +1,7 @@
 package com.example.app.feature.login.data
 
+import com.google.gson.annotations.SerializedName
+
 data class VerifyOtpRequestDto(
     val phone: String,
     val otp: String,
@@ -10,6 +12,7 @@ data class VerifyOtpResponseDto(
     val accountId: Long,
     val sessionId: String,
     val userRole: String,
+    @SerializedName("is_new_user", alternate = ["isNewUser"])
     val is_new_user: Boolean
 )
 
