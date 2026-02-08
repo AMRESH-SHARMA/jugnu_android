@@ -1,5 +1,6 @@
 package com.example.app.feature.wallet.ui
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -29,9 +30,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.app.feature.wallet.domain.AmountFlowType
 
@@ -40,14 +42,29 @@ import com.example.app.feature.wallet.domain.AmountFlowType
 fun EnterAmountScreen(
     navController: NavController,
     flowType: AmountFlowType,
-    viewModel: EnterAmountViewModel = hiltViewModel()
+//    viewModel: EnterAmountViewModel = hiltViewModel()
 ) {
+    val activity = LocalContext.current as ComponentActivity
+    val viewModel: EnterAmountViewModel = viewModel(
+        viewModelStoreOwner = activity
+    )
     val amount by viewModel.amount.collectAsState()
     val error by viewModel.error.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val success by viewModel.success.collectAsState()
     val canContinue by viewModel.canContinue.collectAsState()
     val balance by viewModel.currentBalance.collectAsState()
+
+
+//    val context = LocalContext.current
+//
+//    // ✅ FIX: Collect UPI event in SAME ViewModel scope
+//    LaunchedEffect(Unit) {
+//        viewModel.upiEvent.collect { amount ->
+//            Log.d("RTM", "UPI_DEBUG Compose received UPI event: amount=$amount")
+//            (context as MainActivity).launchUpi(amount)
+//        }
+//    }
 
     val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
     Scaffold(
@@ -119,7 +136,7 @@ fun EnterAmountScreen(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Continue", color = MaterialTheme.colorScheme.onTertiary)
+                    Text("Recharge", color = MaterialTheme.colorScheme.onTertiary)
                 }
             }
         }
@@ -179,7 +196,7 @@ fun QuickAmountRow(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        listOf(100, 500, 1000).forEach { amount ->
+        listOf(1, 10, 1000).forEach { amount ->
             AssistChip(
                 onClick = { onQuickAmountClick(amount) },
                 label = { Text("₹$amount") }

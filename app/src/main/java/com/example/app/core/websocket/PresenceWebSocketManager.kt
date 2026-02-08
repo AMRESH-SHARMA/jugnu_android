@@ -1,10 +1,10 @@
 package com.example.app.core.websocket
 
 import android.util.Log
+import com.example.app.AppConstants
 import com.example.app.core.di.ApplicationScope
 import com.example.app.core.remoteconfig.RemoteConfig
 import com.example.app.core.session.UserSession
-import com.example.app.utils.AppConstants
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay

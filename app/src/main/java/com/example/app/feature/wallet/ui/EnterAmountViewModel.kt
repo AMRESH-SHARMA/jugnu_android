@@ -1,5 +1,6 @@
 package com.example.app.feature.wallet.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.network.ApiResult
@@ -9,8 +10,10 @@ import com.example.app.feature.wallet.domain.usecase.AddMoneyUseCase
 import com.example.app.feature.wallet.domain.usecase.GetWalletBalanceUseCase
 import com.example.app.feature.wallet.domain.usecase.WithdrawMoneyUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
@@ -43,6 +46,9 @@ class EnterAmountViewModel @Inject constructor(
 
     private val _currentBalance = MutableStateFlow<Long?>(null)
     val currentBalance = _currentBalance.asStateFlow()
+
+    private val _upiEvent = MutableSharedFlow<Long>()
+    val upiEvent = _upiEvent.asSharedFlow()
 
     init {
         fetchBalance()
@@ -83,7 +89,7 @@ class EnterAmountViewModel @Inject constructor(
     // -----------------------------
 
     private companion object {
-        const val MIN_AMOUNT = 50L
+        const val MIN_AMOUNT = 1L
         const val MAX_AMOUNT = 50_000L
     }
 
@@ -113,8 +119,16 @@ class EnterAmountViewModel @Inject constructor(
     }
 
     fun onContinue(flowType: AmountFlowType) {
+        Log.d(
+            "UPI_DEBUG",
+            " UPI_DEBUG onContinue called, flowType=$flowType, amount=${amount.value}"
+        )
         val amountValue = amount.value.toLongOrNull()
         val userId = userSession.accountId
+
+        if (flowType == AmountFlowType.ADD) {
+            Log.d("UPI_DEBUG", "UPI_DEBUG Emitting UPI event for amount=$amountValue")
+        }
 
         if (userId == 0L || amountValue == null || amountValue <= 0) {
             _error.value = "Invalid amount"
@@ -135,13 +149,18 @@ class EnterAmountViewModel @Inject constructor(
             _loading.value = true
 
             val result = when (flowType) {
+//                AmountFlowType.ADD -> {
+//                    addMoneyUseCase(
+//                        userId = userId,
+//                        amount = amountValue,
+//                        currency = "INR",
+//                        description = "Wallet top-up"
+//                    )
+//                }
                 AmountFlowType.ADD -> {
-                    addMoneyUseCase(
-                        userId = userId,
-                        amount = amountValue,
-                        currency = "INR",
-                        description = "Wallet top-up"
-                    )
+                    _upiEvent.emit(amountValue!!)
+                    Log.d("UPI_DEBUG", " UPI_DEBUG UPI event emitted")
+                    return@launch
                 }
 
                 AmountFlowType.WITHDRAW -> {
@@ -165,5 +184,15 @@ class EnterAmountViewModel @Inject constructor(
             }
         }
     }
+
+    fun onUpiFlowFinished() {
+        _loading.value = false
+    }
+
+    fun onUpiCancelled() {
+        _loading.value = false
+        _error.value = null
+    }
+
 }
 

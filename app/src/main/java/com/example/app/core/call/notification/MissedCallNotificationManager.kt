@@ -21,22 +21,30 @@ class MissedCallNotificationManager @Inject constructor(
     companion object {
         private const val CHANNEL_ID = "missed_call_channel"
         private const val CHANNEL_NAME = "Missed Calls"
+
+        // ✅ SINGLE notification ID (critical)
+        private const val MISSED_CALL_NOTIFICATION_ID = 1001
     }
+
+    // Track missed call count (process-local, acceptable for UX)
+    private var missedCount = 0
 
     // ------------------------------------------------------------
     // PUBLIC API
     // ------------------------------------------------------------
 
     /**
-     * Call this when a call is missed (CANCELLED)
-     * One missed call = one notification
+     * Call this ONLY when:
+     * - current user is callee
+     * - call was not answered
      */
-    fun showMissedCall(callId: String) {
-
+    fun showMissedCall() {
         val manager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
         createChannelIfNeeded(manager)
+
+        missedCount++
 
         val openAppIntent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -44,22 +52,30 @@ class MissedCallNotificationManager @Inject constructor(
 
         val contentIntent = PendingIntent.getActivity(
             context,
-            callId.hashCode(), // unique per missed call
+            0, // ✅ fixed requestCode (important when reusing notification)
             openAppIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val contentText = if (missedCount == 1) {
+            "Missed call"
+        } else {
+            "$missedCount missed calls"
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_lockphone)
             .setContentTitle("Missed call")
-            .setContentText("Tap to view")
+            .setContentText(contentText)
             .setCategory(NotificationCompat.CATEGORY_CALL)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
             .setAutoCancel(true)
+            .setOnlyAlertOnce(false)
             .setContentIntent(contentIntent)
             .build()
 
-        manager.notify(callId.hashCode(), notification)
+        // ✅ UPDATE existing notification (do NOT stack)
+        manager.notify(MISSED_CALL_NOTIFICATION_ID, notification)
     }
 
     // ------------------------------------------------------------
@@ -78,6 +94,7 @@ class MissedCallNotificationManager @Inject constructor(
             description = "Missed call notifications"
             setSound(null, null)
         }
+
         manager.createNotificationChannel(channel)
     }
 }
