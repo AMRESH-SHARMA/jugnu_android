@@ -25,7 +25,7 @@ import com.example.app.feature.home.ui.components.HomeBottomTabBar
 import com.example.app.feature.home.ui.components.HomeTopBar
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.list.ListenerListScreen
-import com.example.app.feature.user.ui.UserInfoScreen
+import com.example.app.feature.user.ui.UserSettingScreen
 
 enum class HomeTab { LISTENERS, CHATS, USER }
 
@@ -99,7 +99,7 @@ fun HomeScreen(
                             }
                         )
 
-                        HomeTab.USER -> UserInfoScreen(
+                        HomeTab.USER -> UserSettingScreen(
                             onWalletClick = { 
                                 navController.navigate(Routes.Graph.WALLET) {
                                     launchSingleTop = true

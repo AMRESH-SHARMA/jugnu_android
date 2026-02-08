@@ -220,7 +220,7 @@ fun ListenerDashboardScreen(
                 }
 
                 ListenerTab.SETTINGS -> {
-                    com.example.app.feature.user.ui.UserInfoScreen(
+                    com.example.app.feature.user.ui.UserSettingScreen(
                         onWalletClick = {
                             navController.navigate(Routes.Graph.WALLET) {
                                 launchSingleTop = true
