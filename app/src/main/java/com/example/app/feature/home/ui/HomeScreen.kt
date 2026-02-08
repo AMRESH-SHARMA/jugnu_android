@@ -105,6 +105,11 @@ fun HomeScreen(
                                     launchSingleTop = true
                                 }
                             },
+                            onUsageClick = {
+                                navController.navigate(Routes.Screen.Usage.STATISTICS) {
+                                    launchSingleTop = true
+                                }
+                            },
                             onLogout = {
                                 navController.navigate(Routes.Graph.AUTH) {
                                     popUpTo(0) { inclusive = true }

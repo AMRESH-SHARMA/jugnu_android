@@ -15,12 +15,15 @@ sealed class UserUiState {
     object Idle : UserUiState()
     object LoggingOut : UserUiState()
     object LoggedOut : UserUiState()
+    object UpdatingProfile : UserUiState()
+    object ProfileUpdated : UserUiState()
     data class Error(val message: String) : UserUiState()
 }
 
 @HiltViewModel
 class UserViewModel @Inject constructor(
     private val logoutUseCase: LogoutUseCase,
+    private val userRepository: com.example.app.feature.user.data.UserRepository,
     private val userPreferencesRepository: com.example.app.core.preferences.user.data.UserPreferencesRepository
 ) : ViewModel() {
 
@@ -48,7 +51,40 @@ class UserViewModel @Inject constructor(
 
     fun updateInterestedIn(value: String) {
         viewModelScope.launch {
-            userPreferencesRepository.saveInterestedIn(value)
+            // Check if value has changed
+            val currentValue = interestedIn.value
+            if (currentValue == value) {
+                _uiState.value = UserUiState.ProfileUpdated
+                kotlinx.coroutines.delay(500)
+                _uiState.value = UserUiState.Idle
+                return@launch
+            }
+            
+            try {
+                _uiState.value = UserUiState.UpdatingProfile
+                val result = userRepository.updateProfile(
+                    nickname = "Anonymous",
+                    interestedIn = value
+                )
+                
+                when (result) {
+                    is com.example.app.core.network.ApiResult.Success -> {
+                        userPreferencesRepository.saveInterestedIn(value)
+                        _uiState.value = UserUiState.ProfileUpdated
+                        kotlinx.coroutines.delay(1000)
+                        _uiState.value = UserUiState.Idle
+                    }
+                    is com.example.app.core.network.ApiResult.Error -> {
+                        _uiState.value = UserUiState.Error(result.message ?: "Failed to update")
+                        kotlinx.coroutines.delay(2000)
+                        _uiState.value = UserUiState.Idle
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = UserUiState.Error(e.message ?: "Failed to update preference")
+                kotlinx.coroutines.delay(2000)
+                _uiState.value = UserUiState.Idle
+            }
         }
     }
 }

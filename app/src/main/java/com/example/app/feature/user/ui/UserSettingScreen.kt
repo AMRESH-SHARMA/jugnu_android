@@ -78,11 +78,19 @@ fun UserSettingScreen(
     val interestedIn by viewModel.interestedIn.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showInterestedInDialog by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     // Handle logout success
     LaunchedEffect(uiState) {
-        if (uiState is UserUiState.LoggedOut) {
-            onLogout()
+        when (uiState) {
+            is UserUiState.LoggedOut -> onLogout()
+            is UserUiState.Error -> {
+                errorMessage = (uiState as UserUiState.Error).message
+            }
+            is UserUiState.ProfileUpdated -> {
+                showInterestedInDialog = false
+            }
+            else -> {}
         }
     }
 
@@ -217,9 +225,39 @@ fun UserSettingScreen(
             onDismiss = { showInterestedInDialog = false },
             onConfirm = { newValue ->
                 viewModel.updateInterestedIn(newValue)
-                showInterestedInDialog = false
-            }
+            },
+            isLoading = uiState is UserUiState.UpdatingProfile
         )
+    }
+
+    // Error Snackbar
+    errorMessage?.let { message ->
+        LaunchedEffect(message) {
+            kotlinx.coroutines.delay(3000)
+            errorMessage = null
+        }
+        
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomCenter
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.errorContainer
+                )
+            ) {
+                Text(
+                    text = message,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        }
     }
 }
 
@@ -551,12 +589,13 @@ fun ModernLogoutDialog(
 fun InterestedInDialog(
     currentSelection: String,
     onDismiss: () -> Unit,
-    onConfirm: (String) -> Unit
+    onConfirm: (String) -> Unit,
+    isLoading: Boolean = false
 ) {
     var selectedGender by remember { mutableStateOf(currentSelection) }
 
     AlertDialog(
-        onDismissRequest = onDismiss,
+        onDismissRequest = { if (!isLoading) onDismiss() },
         containerColor = MaterialTheme.colorScheme.surface,
         tonalElevation = 8.dp,
         shape = RoundedCornerShape(28.dp),
@@ -585,37 +624,47 @@ fun InterestedInDialog(
                 GenderDialogOption(
                     text = "Male",
                     selected = selectedGender == "MALE",
-                    onClick = { selectedGender = "MALE" }
+                    onClick = { if (!isLoading) selectedGender = "MALE" }
                 )
 
                 // Female Option
                 GenderDialogOption(
                     text = "Female",
                     selected = selectedGender == "FEMALE",
-                    onClick = { selectedGender = "FEMALE" }
+                    onClick = { if (!isLoading) selectedGender = "FEMALE" }
                 )
             }
         },
         confirmButton = {
             Button(
                 onClick = { onConfirm(selectedGender) },
+                enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 ),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.height(48.dp)
             ) {
-                Text(
-                    text = "Save",
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontWeight = FontWeight.SemiBold
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        strokeWidth = 2.dp
                     )
-                )
+                } else {
+                    Text(
+                        text = "Save",
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    )
+                }
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
+                enabled = !isLoading,
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.height(48.dp)
             ) {

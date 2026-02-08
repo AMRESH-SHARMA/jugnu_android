@@ -2,8 +2,12 @@ package com.example.app.feature.listenerDashboard.ui
 
 import android.graphics.Paint
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,20 +19,37 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.CallMissed
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,13 +61,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -58,36 +84,17 @@ import com.example.app.feature.listenerDashboard.ui.components.ListenerBottomTab
 import com.example.app.feature.listenerDashboard.ui.components.ListenerTab
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 /* ---------------------------------------------------
    DATA + RANGE
 --------------------------------------------------- */
 
-enum class RevenueRange { DAYS_5, MONTH_1, YEAR_1 }
-
-private val revenueDataMap = mapOf(
-    RevenueRange.DAYS_5 to listOf(20f, 40f, 30f, 50f, 60f),
-    RevenueRange.MONTH_1 to listOf(
-        10f, 15f, 20f, 18f, 25f, 30f, 28f,
-        35f, 40f, 38f, 45f, 50f
-    ),
-    RevenueRange.YEAR_1 to listOf(
-        100f, 120f, 110f, 140f, 160f, 180f,
-        200f, 220f, 210f, 240f, 260f, 300f
-    )
-)
-
-private val labelsMap = mapOf(
-    RevenueRange.DAYS_5 to listOf("Mon", "Tue", "Wed", "Thu", "Fri"),
-    RevenueRange.MONTH_1 to listOf("W1", "W2", "W3", "W4"),
-    RevenueRange.YEAR_1 to listOf(
-        "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
-    )
-)
-
 enum class StatsFilter { ALL_TIME, DAYS_30, CUSTOM }
+
+enum class RevenueTrendFilter { DAYS_7, DAYS_30, DAYS_90 }
 
 /* ---------------------------------------------------
    SCREEN
@@ -100,22 +107,47 @@ fun ListenerDashboardScreen(
     vm: ListenerDashboardViewModel = hiltViewModel()
 ) {
     val uiState by vm.stats.collectAsState()
+    val isRefreshing by vm.isRefreshing.collectAsState()
 
     LaunchedEffect(Unit) { vm.load() }
 
     var selectedTab by remember { mutableStateOf(ListenerTab.DASHBOARD) }
-
     var showPicker by remember { mutableStateOf(false) }
+    var datePickerType by remember { mutableStateOf(DatePickerType.FROM) }
     val pickerState = rememberDateRangePickerState()
-
     var activeFilter by remember { mutableStateOf(StatsFilter.ALL_TIME) }
-
+    var customFromDate by remember { mutableStateOf<LocalDate?>(null) }
+    var customToDate by remember { mutableStateOf<LocalDate?>(null) }
+    var revenueTrendFilter by remember { mutableStateOf(RevenueTrendFilter.DAYS_7) }
     Scaffold(
         bottomBar = {
             ListenerBottomTabBar(
                 selected = selectedTab,
                 onTabSelected = { selectedTab = it }
             )
+        },
+        floatingActionButton = {
+            if (selectedTab == ListenerTab.DASHBOARD && uiState is UiState.Success) {
+                FloatingActionButton(
+                    onClick = { vm.refresh() },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
+                ) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Color.White
+                        )
+                    }
+                }
+            }
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { innerPadding ->
@@ -134,84 +166,105 @@ fun ListenerDashboardScreen(
                             Column(
                                 modifier = Modifier
                                     .fillMaxSize()
+                                    .verticalScroll(rememberScrollState())
                                     .padding(16.dp)
                             ) {
-                                HeaderSection(username = stats.name, avatarUrl = stats.avatar)
+                                ImprovedHeaderSection(
+                                    username = stats.name,
+                                    avatarUrl = stats.avatar
+                                )
 
                                 Spacer(Modifier.height(20.dp))
 
-                                // ---------- FILTER ROW ----------
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    // ALL TIME
-                                    FilterChip(
-                                        selected = activeFilter == StatsFilter.ALL_TIME,
-                                        onClick = {
-                                            if (activeFilter != StatsFilter.ALL_TIME) {   // 👈 only if changed
-                                                activeFilter = StatsFilter.ALL_TIME
-                                                vm.setDateRange(null, null)
-                                                vm.load()
+                                // Filter Section
+                                FilterSection(
+                                    activeFilter = activeFilter,
+                                    customFromDate = customFromDate,
+                                    customToDate = customToDate,
+                                    onCustomDateClick = { type ->
+                                        datePickerType = type
+                                        showPicker = true
+                                    },
+                                    onFilterChange = { filter ->
+                                        if (activeFilter != filter) {
+                                            activeFilter = filter
+                                            when (filter) {
+                                                StatsFilter.ALL_TIME -> {
+                                                    customFromDate = null
+                                                    customToDate = null
+                                                    vm.setDateRange(null, null)
+                                                    vm.load()
+                                                }
+                                                StatsFilter.DAYS_30 -> {
+                                                    customFromDate = null
+                                                    customToDate = null
+                                                    val today = LocalDate.now()
+                                                    val from = today.minusDays(30).toString()
+                                                    val to = today.toString()
+                                                    vm.setDateRange(from, to)
+                                                    vm.load()
+                                                }
+                                                StatsFilter.CUSTOM -> {
+                                                    // Just switch to custom, don't load until dates are selected
+                                                }
                                             }
-                                        },
-                                        label = {
-                                            Text(
-                                                "All time",
-                                                color = MaterialTheme.colorScheme.onTertiary
-                                            )
                                         }
-                                    )
-
-                                    // LAST 30 DAYS
-                                    FilterChip(
-                                        selected = activeFilter == StatsFilter.DAYS_30,
-                                        onClick = {
-                                            if (activeFilter != StatsFilter.DAYS_30) {   // 👈 only if changed
-                                                activeFilter = StatsFilter.DAYS_30
-
-                                                val today = LocalDate.now()
-                                                val from = today.minusDays(30).toString()
-                                                val to = today.toString()
-
-                                                vm.setDateRange(from, to)
-                                                vm.load()
-                                            }
-                                        },
-                                        label = {
-                                            Text(
-                                                "Last 30 days",
-                                                color = MaterialTheme.colorScheme.onTertiary
-                                            )
-                                        }
-                                    )
-
-                                    // TODO
-                                    // CUSTOM
-//                            FilterChip(
-//                                selected = activeFilter == StatsFilter.CUSTOM,
-//                                onClick = { showPicker = true },
-//                                label = { Text("Custom") }
-//                            )
-                                }
+                                    }
+                                )
 
                                 Spacer(Modifier.height(20.dp))
 
-                                OverviewCards(stats)
+                                ImprovedOverviewCards(stats)
+                                
                                 Spacer(Modifier.height(20.dp))
-                                //TODO
-//                        RevenueChartCard()
-//                        Spacer(Modifier.height(20.dp))
-
-                                TasksCard()
+                                
+                                RevenueChartCard(
+                                    stats = stats,
+                                    selectedFilter = revenueTrendFilter,
+                                    onFilterChange = { revenueTrendFilter = it }
+                                )
+                                
                                 Spacer(Modifier.height(20.dp))
 
-                                StatRows(stats)
+                                ImprovedTasksCard(stats)
+                                
+                                Spacer(Modifier.height(20.dp))
+
+                                ImprovedStatRows(stats)
+                                
+                                Spacer(Modifier.height(80.dp))
                             }
                         }
 
-                        is UiState.Error -> Unit
-                        else -> {}
+                        is UiState.Loading -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
+                        }
+
+                        is UiState.Error -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Text(
+                                        text = "Failed to load data",
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodyLarge
+                                    )
+                                    TextButton(onClick = { vm.load() }) {
+                                        Text("Retry")
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -226,6 +279,11 @@ fun ListenerDashboardScreen(
                                 launchSingleTop = true
                             }
                         },
+                        onUsageClick = {
+                            navController.navigate(Routes.Screen.Usage.STATISTICS) {
+                                launchSingleTop = true
+                            }
+                        },
                         onLogout = {
                             navController.navigate(Routes.Graph.AUTH) {
                                 popUpTo(0) { inclusive = true }
@@ -236,59 +294,30 @@ fun ListenerDashboardScreen(
                 }
             }
 
-            // ---------- DATE RANGE PICKER ----------
+            // ---------- DATE PICKER ----------
             if (showPicker) {
-                DatePickerDialog(
-                    onDismissRequest = { showPicker = false },
-                    confirmButton = {
-                        TextButton(
-                            onClick = {
-                                val start = pickerState.selectedStartDateMillis
-                                val end = pickerState.selectedEndDateMillis
-
-                                if (start != null && end != null) {
-
-                                    fun Long.toDate(): String =
-                                        Instant.ofEpochMilli(this)
-                                            .atZone(ZoneId.systemDefault())
-                                            .toLocalDate()
-                                            .toString()
-
-                                    vm.setDateRange(
-                                        start.toDate(),
-                                        end.toDate()
-                                    )
-
-                                    activeFilter = StatsFilter.CUSTOM
+                CustomDatePickerDialog(
+                    onDismiss = { showPicker = false },
+                    onDateSelected = { date ->
+                        when (datePickerType) {
+                            DatePickerType.FROM -> {
+                                customFromDate = date
+                                if (customToDate != null) {
+                                    vm.setDateRange(date.toString(), customToDate.toString())
                                     vm.load()
-                                    showPicker = false
                                 }
                             }
-                        ) {
-                            Text(
-                                "Apply",
-                                Modifier.background(MaterialTheme.colorScheme.primaryContainer),
-                                color = MaterialTheme.colorScheme.onTertiary
-                            )
+                            DatePickerType.TO -> {
+                                customToDate = date
+                                if (customFromDate != null) {
+                                    vm.setDateRange(customFromDate.toString(), date.toString())
+                                    vm.load()
+                                }
+                            }
                         }
+                        showPicker = false
                     }
-                ) {
-                    DateRangePicker(
-                        state = pickerState,
-                        title = {},          // 👈 hides "Select dates heading"
-                        colors = DatePickerDefaults.colors(
-                            containerColor = MaterialTheme.colorScheme.primaryContainer,
-                            selectedDayContainerColor = Color(0xFF00C853),      // green circle
-                            selectedDayContentColor = Color.White,              // white text
-                            dayInSelectionRangeContainerColor = Color(0x3300C853), // light green range fill
-                            dayInSelectionRangeContentColor = Color.White,
-
-                            // 👇 TODAY styling
-                            todayContentColor = Color.White,                 // today's number
-                            todayDateBorderColor = Color(0xFF00C853)         // green circle ring
-                        ),
-                    )
-                }
+                )
             }
 
         }
@@ -296,71 +325,291 @@ fun ListenerDashboardScreen(
 }
 
 /* ---------------------------------------------------
-   HEADER
+   IMPROVED HEADER
 --------------------------------------------------- */
-
 @Composable
-fun HeaderSection(username: String, avatarUrl: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Text(
-            "Hello, $username",
-            color = Color.White,
-            fontSize = 22.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        AsyncImage(
-            model = avatarUrl,
-            contentDescription = "Caller Avatar",
-            modifier = Modifier
-                .size(44.dp)
-                .clip(CircleShape)
-        )
+fun ImprovedHeaderSection(username: String, avatarUrl: String) {
+    val currentHour = LocalTime.now().hour
+    val greeting = when (currentHour) {
+        in 0..11 -> "Good Morning"
+        in 12..16 -> "Good Afternoon"
+        else -> "Good Evening"
     }
-}
 
-/* ---------------------------------------------------
-   RANGE SELECTOR
---------------------------------------------------- */
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = greeting,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = username,
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
-@Composable
-fun RevenueRangeSelector(
-    selected: RevenueRange,
-    onSelect: (RevenueRange) -> Unit
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        RevenueRange.entries.forEach { range ->
-            FilterChip(
-                selected = selected == range,
-                onClick = { onSelect(range) },
-                label = {
-                    Text(
-                        when (range) {
-                            RevenueRange.DAYS_5 -> "5D"
-                            RevenueRange.MONTH_1 -> "1M"
-                            RevenueRange.YEAR_1 -> "1Y"
-                        }
-                    )
-                }
-            )
+            Box {
+                // Gradient ring
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            brush = Brush.linearGradient(
+                                colors = listOf(
+                                    MaterialTheme.colorScheme.primary,
+                                    MaterialTheme.colorScheme.tertiary
+                                )
+                            ),
+                            shape = CircleShape
+                        )
+                )
+                AsyncImage(
+                    model = avatarUrl,
+                    contentDescription = "Avatar",
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(CircleShape)
+                        .align(Alignment.Center)
+                )
+            }
         }
     }
 }
 
 /* ---------------------------------------------------
-   CHART CARD
+   FILTER SECTION
 --------------------------------------------------- */
+@Composable
+fun FilterSection(
+    activeFilter: StatsFilter,
+    onFilterChange: (StatsFilter) -> Unit,
+    customFromDate: LocalDate?,
+    customToDate: LocalDate?,
+    onCustomDateClick: (DatePickerType) -> Unit
+) {
+    Column {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            FilterChip(
+                selected = activeFilter == StatsFilter.ALL_TIME,
+                onClick = { onFilterChange(StatsFilter.ALL_TIME) },
+                label = { Text("All Time") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = Color.White
+                )
+            )
+
+            FilterChip(
+                selected = activeFilter == StatsFilter.DAYS_30,
+                onClick = { onFilterChange(StatsFilter.DAYS_30) },
+                label = { Text("Last 30 Days") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = Color.White
+                )
+            )
+
+            FilterChip(
+                selected = activeFilter == StatsFilter.CUSTOM,
+                onClick = { onFilterChange(StatsFilter.CUSTOM) },
+                label = { Text("Custom") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = Color.White
+                )
+            )
+        }
+
+        if (activeFilter == StatsFilter.CUSTOM) {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                DateSelector(
+                    label = "From",
+                    date = customFromDate,
+                    onClick = { onCustomDateClick(DatePickerType.FROM) },
+                    modifier = Modifier.weight(1f)
+                )
+                DateSelector(
+                    label = "To",
+                    date = customToDate,
+                    onClick = { onCustomDateClick(DatePickerType.TO) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
 
 @Composable
-fun RevenueChartCard() {
-    var selectedRange by remember { mutableStateOf(RevenueRange.DAYS_5) }
+fun DateSelector(
+    label: String,
+    date: LocalDate?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .height(56.dp)
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.dp,
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+                Text(
+                    text = date?.format(DateTimeFormatter.ofPattern("dd MMM yyyy"))
+                        ?: "Select date",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.CalendarToday,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(20.dp)
+            )
+        }
+    }
+}
 
-    val rawData = revenueDataMap[selectedRange]!!
+enum class DatePickerType {
+    FROM, TO
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CustomDatePickerDialog(
+    onDismiss: () -> Unit,
+    onDateSelected: (LocalDate) -> Unit
+) {
+    val datePickerState = rememberDatePickerState()
+
+    DatePickerDialog(
+        onDismissRequest = onDismiss,
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    datePickerState.selectedDateMillis?.let { millis ->
+                        val date = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneId.systemDefault())
+                            .toLocalDate()
+                        onDateSelected(date)
+                    }
+                }
+            ) {
+                Text(
+                    text = "OK",
+                    color = Color.White,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    text = "Cancel",
+                    color = Color.White,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        colors = DatePickerDefaults.colors(
+            containerColor = MaterialTheme.colorScheme.surface
+        )
+    ) {
+        DatePicker(
+            state = datePickerState,
+            colors = DatePickerDefaults.colors(
+                containerColor = MaterialTheme.colorScheme.surface,
+                selectedDayContainerColor = Color(0xFF4CAF50).copy(alpha = 0.3f),
+                selectedDayContentColor = Color.White,
+                todayContentColor = Color.White,
+                todayDateBorderColor = Color.Transparent
+            )
+        )
+    }
+}
+
+/* ---------------------------------------------------
+   REVENUE CHART CARD
+--------------------------------------------------- */
+@Composable
+fun RevenueChartCard(
+    stats: ListenerStats,
+    selectedFilter: RevenueTrendFilter,
+    onFilterChange: (RevenueTrendFilter) -> Unit
+) {
+    val today = LocalDate.now()
+    
+    // Generate data based on selected filter
+    val (revenueData, periodLabel) = remember(stats, selectedFilter) {
+        val days = when (selectedFilter) {
+            RevenueTrendFilter.DAYS_7 -> 7
+            RevenueTrendFilter.DAYS_30 -> 30
+            RevenueTrendFilter.DAYS_90 -> 90
+        }
+        
+        val data = List(days) { index ->
+            val date = today.minusDays((days - 1 - index).toLong())
+            Pair(date, (stats.netEarnings / 30 + (0..20).random()).toFloat())
+        }
+        
+        val label = when (selectedFilter) {
+            RevenueTrendFilter.DAYS_7 -> "Last 7 days"
+            RevenueTrendFilter.DAYS_30 -> "Last 30 days"
+            RevenueTrendFilter.DAYS_90 -> "Last 90 days"
+        }
+        
+        Pair(data, label)
+    }
+    
     val animatedProgress by animateFloatAsState(
         targetValue = 1f,
+        animationSpec = tween(durationMillis = 1000),
         label = "chart_anim"
     )
 
@@ -369,74 +618,221 @@ fun RevenueChartCard() {
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
             ) {
-                Text("Revenue", color = Color.White)
-                Text("↗ 2%", color = Color.Green)
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Revenue Trend",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = periodLabel,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = "₹${stats.netEarnings}",
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color(0xFF4CAF50)
+                        )
+                    }
+                }
+                
+                // Segmented Button Filter
+                SegmentedButton(
+                    selectedFilter = selectedFilter,
+                    onFilterChange = onFilterChange
+                )
             }
-
-            Spacer(Modifier.height(12.dp))
-
-            RevenueRangeSelector(
-                selected = selectedRange,
-                onSelect = { selectedRange = it }
-            )
 
             Spacer(Modifier.height(16.dp))
 
-            RevenueLineChartCurvy(
-                data = rawData,
-                labels = labelsMap[selectedRange]!!,
+            ImprovedRevenueLineChart(
+                data = revenueData,
                 animationProgress = animatedProgress,
+                selectedFilter = selectedFilter,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(200.dp)
+                    .height(220.dp)
             )
         }
     }
 }
 
-/* ---------------------------------------------------
-   CURVY CANVAS CHART + AXIS
---------------------------------------------------- */
+@Composable
+fun SegmentedButton(
+    selectedFilter: RevenueTrendFilter,
+    onFilterChange: (RevenueTrendFilter) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .background(
+                color = MaterialTheme.colorScheme.background,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .padding(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        SegmentedButtonItem(
+            text = "7D",
+            selected = selectedFilter == RevenueTrendFilter.DAYS_7,
+            onClick = { onFilterChange(RevenueTrendFilter.DAYS_7) }
+        )
+        SegmentedButtonItem(
+            text = "30D",
+            selected = selectedFilter == RevenueTrendFilter.DAYS_30,
+            onClick = { onFilterChange(RevenueTrendFilter.DAYS_30) }
+        )
+        SegmentedButtonItem(
+            text = "90D",
+            selected = selectedFilter == RevenueTrendFilter.DAYS_90,
+            onClick = { onFilterChange(RevenueTrendFilter.DAYS_90) }
+        )
+    }
+}
 
 @Composable
-fun RevenueLineChartCurvy(
-    data: List<Float>,
-    labels: List<String>,
+fun SegmentedButtonItem(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.95f,
+        animationSpec = tween(durationMillis = 150),
+        label = "scale"
+    )
+
+    Box(
+        modifier = Modifier
+            .scale(scale)
+            .background(
+                color = if (selected)
+                    MaterialTheme.colorScheme.primary
+                else
+                    Color.Transparent,
+                shape = RoundedCornerShape(8.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium.copy(
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            ),
+            color = if (selected)
+                Color.White
+            else
+                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+        )
+    }
+}
+
+@Composable
+fun ImprovedRevenueLineChart(
+    data: List<Pair<LocalDate, Float>>,
     animationProgress: Float,
+    selectedFilter: RevenueTrendFilter,
     modifier: Modifier = Modifier
 ) {
-    val maxValue = data.maxOrNull() ?: 1f
+    val maxValue = data.maxOfOrNull { it.second } ?: 1f
+    val chartColor = Color(0xFF4CAF50)
+    val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
 
-    Canvas(
-        modifier = modifier
-            .background(
-                MaterialTheme.colorScheme.primaryContainer,
-                RoundedCornerShape(12.dp)
-            )
-            .padding(16.dp)
-    ) {
-
+    Canvas(modifier = modifier.padding(vertical = 8.dp)) {
         val width = size.width
-        val height = size.height * 0.8f
-        val stepX = width / (data.size - 1)
+        val height = size.height
+        val padding = 50f
+        val chartWidth = width - padding * 2
+        val chartHeight = height - padding * 2
 
-        val points = data.mapIndexed { index, value ->
-            Offset(
-                x = index * stepX,
-                y = height - (value / maxValue) * height * animationProgress
+        // Draw horizontal grid lines and Y-axis labels
+        val gridLines = 5
+        for (i in 0..gridLines) {
+            val y = padding + (chartHeight * i / gridLines)
+            
+            // Grid line
+            drawLine(
+                color = gridColor,
+                start = Offset(padding, y),
+                end = Offset(width - padding, y),
+                strokeWidth = 1f
+            )
+
+            // Y-axis label
+            val value = (maxValue * (gridLines - i) / gridLines).toInt()
+            drawContext.canvas.nativeCanvas.drawText(
+                "₹$value",
+                padding - 35f,
+                y + 5f,
+                Paint().apply {
+                    color = android.graphics.Color.GRAY
+                    textSize = 24f
+                    textAlign = Paint.Align.RIGHT
+                }
             )
         }
 
-        // CURVE
-        val path = Path().apply {
+        val stepX = chartWidth / (data.size - 1).coerceAtLeast(1)
+
+        val points = data.mapIndexed { index, (_, value) ->
+            Offset(
+                x = padding + (index * stepX),
+                y = padding + chartHeight - (value / maxValue) * chartHeight * animationProgress
+            )
+        }
+
+        // Draw gradient fill
+        val gradientPath = Path().apply {
+            moveTo(points.first().x, padding + chartHeight)
+            points.forEach { lineTo(it.x, it.y) }
+            lineTo(points.last().x, padding + chartHeight)
+            close()
+        }
+
+        drawPath(
+            path = gradientPath,
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    chartColor.copy(alpha = 0.3f),
+                    Color.Transparent
+                )
+            )
+        )
+
+        // Draw line
+        val linePath = Path().apply {
             moveTo(points.first().x, points.first().y)
             for (i in 0 until points.lastIndex) {
                 val current = points[i]
@@ -451,133 +847,351 @@ fun RevenueLineChartCurvy(
         }
 
         drawPath(
-            path = path,
-            color = Color.Green,
+            path = linePath,
+            color = chartColor,
             style = Stroke(width = 6f, cap = StrokeCap.Round)
         )
 
-        // POINTS
-        points.forEach {
-            drawCircle(Color.Green, radius = 5f, center = it)
+        // Draw points
+        points.forEach { point ->
+            drawCircle(
+                color = chartColor,
+                radius = 8f,
+                center = point
+            )
+            drawCircle(
+                color = Color.White,
+                radius = 4f,
+                center = point
+            )
         }
 
-        // X-AXIS LABELS
-        labels.forEachIndexed { index, label ->
-            val x = index * (width / (labels.size - 1))
-            drawContext.canvas.nativeCanvas.drawText(
-                label,
-                x,
-                size.height + 30,
-                Paint().apply {
-                    color = android.graphics.Color.GRAY
-                    textSize = 28f
-                    textAlign = Paint.Align.CENTER
+        // Draw X-axis labels (dates) - show fewer labels for larger ranges
+        val labelInterval = when (selectedFilter) {
+            RevenueTrendFilter.DAYS_7 -> 1  // Show all dates
+            RevenueTrendFilter.DAYS_30 -> 5  // Show every 5th date
+            RevenueTrendFilter.DAYS_90 -> 15 // Show every 15th date
+        }
+        
+        data.forEachIndexed { index, (date, _) ->
+            if (index % labelInterval == 0 || index == data.size - 1) {
+                val x = padding + (index * stepX)
+                val dateText = date.format(DateTimeFormatter.ofPattern("dd/MM"))
+                drawContext.canvas.nativeCanvas.drawText(
+                    dateText,
+                    x,
+                    size.height - 5f,
+                    Paint().apply {
+                        color = android.graphics.Color.GRAY
+                        textSize = 24f
+                        textAlign = Paint.Align.CENTER
+                    }
+                )
+            }
+        }
+    }
+}
+
+/* ---------------------------------------------------
+   IMPROVED OVERVIEW CARDS
+--------------------------------------------------- */
+@Composable
+fun ImprovedOverviewCards(stats: ListenerStats) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ImprovedOverviewCard(
+                title = "Total Callers",
+                value = stats.uniqueCallers.toString(),
+                icon = Icons.Default.People,
+                color = Color(0xFF2196F3),
+                modifier = Modifier.weight(1f)
+            )
+            ImprovedOverviewCard(
+                title = "Net Earnings",
+                value = "₹${stats.netEarnings}",
+                icon = Icons.Default.AccountBalanceWallet,
+                color = Color(0xFF4CAF50),
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            ImprovedOverviewCard(
+                title = "Answered",
+                value = stats.totalAnsweredCalls.toString(),
+                icon = Icons.Default.Call,
+                color = Color(0xFF00BCD4),
+                modifier = Modifier.weight(1f)
+            )
+            ImprovedOverviewCard(
+                title = "Missed",
+                value = stats.totalMissedCalls.toString(),
+                icon = Icons.Default.CallMissed,
+                color = Color(0xFFFF5722),
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+fun ImprovedOverviewCard(
+    title: String,
+    value: String,
+    icon: ImageVector,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(color.copy(alpha = 0.2f), CircleShape),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
+            }
+            
+            Spacer(Modifier.height(12.dp))
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+            
+            Spacer(Modifier.height(4.dp))
+            
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
 }
 
-/* ---------------------------------------------------
-   OVERVIEW CARDS
---------------------------------------------------- */
-@Composable
-fun OverviewCards(stats: ListenerStats) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        OverviewCard("Total Callers", stats.uniqueCallers.toString(), "+1.5%")
-        OverviewCard("Net Earnings", "₹${stats.netEarnings}", "+0.3%")
-        //TODO
-//        OverviewCard("Ratings", stats.totalRatings.toString(), "")
-//        OverviewCard("Reviews", stats.totalReviews.toString(), "")
-    }
-}
-
-@Composable
-fun OverviewCard(title: String, value: String, change: String) {
-    Card(
-        modifier = Modifier.padding(4.dp),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiary
-        )
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(title, color = MaterialTheme.colorScheme.onTertiary)
-            Text(value, color = MaterialTheme.colorScheme.onTertiary)
-            Text(change, color = Color.Green, fontSize = 12.sp)
-        }
-    }
-}
-
 
 /* ---------------------------------------------------
-   TASK CARDS
+   IMPROVED TASK CARDS
 --------------------------------------------------- */
 @Composable
-fun TasksCard() {
+fun ImprovedTasksCard(stats: ListenerStats) {
+    val totalCalls = stats.totalAnsweredCalls + stats.totalMissedCalls
+    val answerRate = if (totalCalls > 0) {
+        (stats.totalAnsweredCalls.toFloat() / totalCalls.toFloat())
+    } else 0f
+    
+    val talkTimeHours = stats.totalTalkSeconds / 3600
+    val talkTimeMinutes = (stats.totalTalkSeconds % 3600) / 60
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiary
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text("Tasks Done", color = MaterialTheme.colorScheme.onTertiary)
-            Spacer(Modifier.height(8.dp))
-
-            LinearProgressIndicator(
-                progress = 0.6f,
-                color = Color(0xFFFF8000)
+            Text(
+                text = "Performance Metrics",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
             )
+            
+            Spacer(Modifier.height(16.dp))
+
+            // Answer Rate
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Answer Rate",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    Text(
+                        text = "${(answerRate * 100).toInt()}%",
+                        style = MaterialTheme.typography.bodyMedium.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = answerRate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = when {
+                        answerRate >= 0.8f -> Color(0xFF4CAF50)
+                        answerRate >= 0.5f -> Color(0xFFFFC107)
+                        else -> Color(0xFFFF5722)
+                    },
+                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            // Total Talk Time
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Total Talk Time",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                Text(
+                    text = "${talkTimeHours}h ${talkTimeMinutes}m",
+                    style = MaterialTheme.typography.bodyMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
 
 /* ---------------------------------------------------
-   OVERVIEW CARDS
+   IMPROVED STAT ROWS
 --------------------------------------------------- */
 @Composable
-fun StatRows(stats: ListenerStats) {
-    Column {
-//        Text("Stats", color = Color.White, fontSize = 16.sp)
-//        Spacer(Modifier.height(12.dp))
-        StatCard("Answered Calls", stats.totalAnsweredCalls.toString())
-        StatCard("Missed Calls", stats.totalMissedCalls.toString())
-        StatCard("Ratings", stats.totalRatings.toString())
-        StatCard("Reviews", stats.totalReviews.toString())
+fun ImprovedStatRows(stats: ListenerStats) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Detailed Statistics",
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontWeight = FontWeight.SemiBold
+            ),
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        
+        Spacer(Modifier.height(8.dp))
+        
+        ImprovedStatCard(
+            name = "Gross Earnings",
+            value = "₹${stats.grossEarnings}",
+            icon = Icons.Default.TrendingUp,
+            color = Color(0xFF4CAF50)
+        )
+        ImprovedStatCard(
+            name = "Platform Fee (${stats.platformPercent}%)",
+            value = "₹${stats.platformFeeTotal}",
+            icon = Icons.Default.AccountBalanceWallet,
+            color = Color(0xFFFF9800)
+        )
+        ImprovedStatCard(
+            name = "Total Ratings",
+            value = stats.totalRatings.toString(),
+            icon = Icons.Default.Star,
+            color = Color(0xFFFFC107)
+        )
+        ImprovedStatCard(
+            name = "Total Reviews",
+            value = stats.totalReviews.toString(),
+            icon = Icons.Default.Star,
+            color = Color(0xFF9C27B0)
+        )
     }
 }
 
 @Composable
-fun StatCard(name: String, value: String) {
+fun ImprovedStatCard(
+    name: String,
+    value: String,
+    icon: ImageVector,
+    color: Color
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.background
-        )
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Row(
-            modifier = Modifier.padding(6.dp),
-            verticalAlignment = Alignment.CenterVertically
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Box(
-                modifier = Modifier
-                    .size(25.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color.DarkGray)
-            )
-            Spacer(Modifier.width(12.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(name, color = Color.White, fontWeight = FontWeight.Medium)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(color.copy(alpha = 0.2f), RoundedCornerShape(8.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                )
             }
-            Text(value, color = Color.Green, fontSize = 12.sp)
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = color,
+                textAlign = TextAlign.End
+            )
         }
     }
 }
