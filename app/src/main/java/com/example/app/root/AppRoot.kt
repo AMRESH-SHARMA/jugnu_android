@@ -30,6 +30,10 @@ fun AppRoot() {
             onRetry = { vm.retry() }
         )
 
+        state.errorType == ErrorType.TIMEOUT -> TimeoutScreen(
+            onRetry = { vm.retry() }
+        )
+
         state.forceUpdate -> ForceUpdateScreen(
             message = state.forceMessage,
             playStoreUrl = state.playStoreUrl

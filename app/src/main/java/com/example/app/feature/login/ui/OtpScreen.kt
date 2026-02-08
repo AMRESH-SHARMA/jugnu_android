@@ -63,12 +63,24 @@ fun OtpVerificationScreen(
     LaunchedEffect(otpVerifyState) {
         when (otpVerifyState) {
             is OtpUiState.Success -> {
-                Toast.makeText(context, "OTP Verified!", Toast.LENGTH_SHORT).show()
-
-                navController.navigate(Routes.Graph.HOME) {
-                    popUpTo(Routes.Graph.AUTH) {
-                        inclusive = true
+                val data = (otpVerifyState as OtpUiState.Success).data as? com.example.app.feature.login.domain.VerifyOtpResult
+                
+                Toast.makeText(context, "✓ Login successful!", Toast.LENGTH_SHORT).show()
+                
+                // Route based on user role from backend
+                val destination = if (data != null) {
+                    when (data.userRole.uppercase()) {
+                        "LISTENER" -> Routes.Graph.LISTENER
+                        "CUSTOMER" -> Routes.Graph.HOME
+                        else -> Routes.Graph.HOME
                     }
+                } else {
+                    Routes.Graph.HOME // Fallback
+                }
+                
+                // Navigate and clear auth stack
+                navController.navigate(destination) {
+                    popUpTo(Routes.Graph.AUTH) { inclusive = true }
                     launchSingleTop = true
                 }
             }

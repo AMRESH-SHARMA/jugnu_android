@@ -96,6 +96,7 @@ enum class StatsFilter { ALL_TIME, DAYS_30, CUSTOM }
 @Composable
 fun ListenerDashboardScreen(
     navController: NavHostController,
+    onWalletClick: () -> Unit = {},
     vm: ListenerDashboardViewModel = hiltViewModel()
 ) {
     val uiState by vm.stats.collectAsState()

@@ -15,5 +15,6 @@ data class RequestOtpResult(
 data class VerifyOtpResult(
     val sessionId: String,
     val accountId: Long,
-    val isNewUser: Boolean
+    val isNewUser: Boolean,
+    val userRole: String  // "CUSTOMER" or "LISTENER" from backend
 ) : Parcelable

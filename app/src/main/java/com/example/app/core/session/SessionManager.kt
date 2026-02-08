@@ -6,7 +6,7 @@ object SessionManager {
 
     // From DataStore (persisted)
     var userAccountId: Long = 0L
-    var userRole: UserRole = UserRole.CUSTOMER
+    var userRole: UserRole? = null  // Null until set after OTP verification
     var fcmToken: String? = null
 
     // Runtime-only values (not persisted)

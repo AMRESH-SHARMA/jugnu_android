@@ -32,9 +32,9 @@ enum class HomeTab { LISTENERS, CHATS, USER }
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    navController: NavController,                            // required param
-    initialTab: HomeTab = HomeTab.LISTENERS,                 // default param
-    onContactClick: (HomeTab, ListenerModel) -> Unit = { _, _ -> }, // lambda
+    navController: NavController,
+    initialTab: HomeTab = HomeTab.LISTENERS,
+    onListenerClick: (ListenerModel) -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -52,7 +52,11 @@ fun HomeScreen(
                 },
                 showWalletSection = currentTab != HomeTab.USER,
                 balance = "🪙 $balance",
-                onWalletClick = { navController.navigate(Routes.Graph.WALLET) }
+                onWalletClick = { 
+                    navController.navigate(Routes.Graph.WALLET) {
+                        launchSingleTop = true
+                    }
+                }
             )
 //            HorizontalDivider()
         },
@@ -91,13 +95,16 @@ fun HomeScreen(
                             modifier = Modifier.fillMaxSize(),
                             navController = navController,
                             onOpenListener = { listener ->
-                                onContactClick(HomeTab.CHATS, listener)
+                                onListenerClick(listener)
                             }
                         )
 
                         HomeTab.USER -> UserInfoScreen(
-//                            modifier = Modifier.fillMaxSize()
-                            onWalletClick = { navController.navigate(Routes.Graph.WALLET) }
+                            onWalletClick = { 
+                                navController.navigate(Routes.Graph.WALLET) {
+                                    launchSingleTop = true
+                                }
+                            }
                         )
                     }
                 }

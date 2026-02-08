@@ -9,6 +9,7 @@ data class VerifyOtpRequestDto(
 data class VerifyOtpResponseDto(
     val accountId: Long,
     val sessionId: String,
+    val userRole: String,
     val is_new_user: Boolean
 )
 

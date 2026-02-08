@@ -61,11 +61,23 @@ class OtpViewModel @Inject constructor(
                     val data = result.data
 
                     if (data != null) {
+                        // Parse role from backend response
+                        val userRole = when (data.userRole.uppercase()) {
+                            "LISTENER" -> UserRole.LISTENER
+                            "CUSTOMER" -> UserRole.CUSTOMER
+                            else -> UserRole.CUSTOMER // Default fallback
+                        }
+                        
+                        // Save session data
                         SessionManager.sessionId = data.sessionId
+                        SessionManager.userRole = userRole
+                        SessionManager.userAccountId = data.accountId
+                        
+                        // Persist to DataStore
                         userPreferencesRepository.saveSessionId(data.sessionId)
                         userPreferencesRepository.saveUserPrefs(
                             id = data.accountId,
-                            role = UserRole.CUSTOMER
+                            role = userRole
                         )
                     }
 

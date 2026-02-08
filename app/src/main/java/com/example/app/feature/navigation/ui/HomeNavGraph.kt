@@ -29,18 +29,20 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
 
             LaunchedEffect(Unit) {
                 viewModel.showOfferEvent.collect {
-                    navController.navigate(Routes.Screen.Home.OFFER_MODAL)
+                    navController.navigate(Routes.Screen.Home.OFFER_MODAL) {
+                        launchSingleTop = true
+                    }
                 }
             }
 
             HomeScreen(
-                navController,
-                onContactClick = { tab, listener ->
-                    if (tab == HomeTab.CHATS) {
-                        navController.openChat(listener)
+                navController = navController,
+                onListenerClick = { listener ->
+                    // Navigate to chat with listener
+                    navController.navigate(Routes.Screen.Chat.chatRoute(listener.accountId)) {
+                        launchSingleTop = true
                     }
                 }
-
             )
         }
 
@@ -66,10 +68,13 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
 
     }
 
+    // Chat graph (separate from HOME)
     chatNavGraph(
         navController = navController,
         onBack = { navController.popBackStack() }
     )
+    
+    // Wallet graph (separate from HOME)
     walletNavGraph(
         navController = navController,
     )
