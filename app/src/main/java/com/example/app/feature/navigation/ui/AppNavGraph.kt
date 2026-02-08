@@ -89,13 +89,24 @@ fun AppNavGraph() {
             }
     }
 
+    // Determine start destination based on login state
+    val startDestination = if (SessionManager.userAccountId != 0L && SessionManager.userRole != null) {
+        when (SessionManager.userRole) {
+            UserRole.LISTENER -> Routes.Graph.LISTENER
+            UserRole.CUSTOMER -> Routes.Graph.HOME
+            else -> Routes.Graph.AUTH
+        }
+    } else {
+        Routes.Graph.AUTH
+    }
+
     Box(Modifier.fillMaxSize()) {
         // ---------------------------------------------------------
         // 🧭 Main NavHost
         // ---------------------------------------------------------
         NavHost(
             navController = navController,
-            startDestination = Routes.Graph.AUTH
+            startDestination = startDestination
         ) {
             authNavGraph(navController)
             homeNavGraph(navController)

@@ -21,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AppConfigViewModel @Inject constructor(
     private val repo: AppConfigRepository,
+    private val sessionInitializer: com.example.app.core.session.SessionInitializer,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -28,7 +29,16 @@ class AppConfigViewModel @Inject constructor(
     val appConfig: StateFlow<AppConfigState> = _appConfig
 
     init {
-        load()
+        loadSessionAndConfig()
+    }
+
+    private fun loadSessionAndConfig() {
+        viewModelScope.launch {
+            // Load session data first
+            sessionInitializer.loadSession()
+            // Then load app config
+            load()
+        }
     }
 
     private fun load() {
@@ -37,7 +47,7 @@ class AppConfigViewModel @Inject constructor(
             
             // Check network connectivity first
             if (!isNetworkAvailable()) {
-                // Ensure minimum 3 seconds display
+                // Ensure minimum 1 seconds display
                 ensureMinimumDisplayTime(startTime)
                 _appConfig.value = AppConfigState(
                     isLoading = false,
@@ -67,7 +77,7 @@ class AppConfigViewModel @Inject constructor(
                     val forceUpdate =
                         BuildConfig.VERSION_CODE < cfg.min_supported_version
 
-                    // Ensure minimum 3 seconds display
+                    // Ensure minimum 1 seconds display
                     ensureMinimumDisplayTime(startTime)
 
                     _appConfig.value = AppConfigState(
@@ -86,7 +96,7 @@ class AppConfigViewModel @Inject constructor(
                         else -> ErrorType.SERVER_UNREACHABLE
                     }
 
-                    // Ensure minimum 3 seconds display
+                    // Ensure minimum 1 seconds display
                     ensureMinimumDisplayTime(startTime)
 
                     _appConfig.value = AppConfigState(
@@ -100,7 +110,7 @@ class AppConfigViewModel @Inject constructor(
 
     private suspend fun ensureMinimumDisplayTime(startTime: Long) {
         val elapsed = System.currentTimeMillis() - startTime
-        val remaining = 3000 - elapsed // 3 seconds minimum
+        val remaining = 1000 - elapsed // 1 seconds minimum
         if (remaining > 0) {
             kotlinx.coroutines.delay(remaining)
         }
