@@ -21,9 +21,8 @@ plugins {
     alias(libs.plugins.hiltAndroid)
     id("kotlin-parcelize")
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
-    // Temporarily disabled - google-services.json missing
-    // id("com.google.gms.google-services")
-
+    // To Temporarily disabled - google-services.json missing
+     id("com.google.gms.google-services")
 }
 
 android {
@@ -36,8 +35,8 @@ android {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 10
-        versionName = "10.0"
+        versionCode = 11
+        versionName = "11.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -154,7 +153,7 @@ dependencies {
     implementation("io.agora.rtc:full-sdk:4.6.1")
 
     //    implementation("io.agora.rtc:full-sdk:4.2.6")
-//    implementation("io.agora.rtm:rtm-sdk:2.2.6")
+    //    implementation("io.agora.rtm:rtm-sdk:2.2.6")
     implementation("androidx.datastore:datastore-preferences:1.2.0")
 
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
@@ -162,4 +161,7 @@ dependencies {
     // Paging 3
     implementation(libs.androidx.paging.runtime)
     implementation(libs.androidx.paging.compose)
+
+    //cryptic data store for user pref
+    implementation("androidx.security:security-crypto:1.1.0-alpha06")
 }

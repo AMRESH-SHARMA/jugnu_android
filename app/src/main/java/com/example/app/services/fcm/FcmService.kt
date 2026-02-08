@@ -121,7 +121,7 @@ class FcmService : FirebaseMessagingService() {
                     CallEvent.Incoming(
                         callId = payload.callId,
                         callerAccountId = payload.callerAccountId!!,
-                        calleeAccountId = SessionManager.userId,
+                        calleeAccountId = SessionManager.userAccountId,
                         callType = payload.callType ?: CallType.VOICE,
                         channel = payload.channel // optional
                     )

@@ -79,7 +79,7 @@ class EventObserver @Inject constructor(
                     is CallEvent.Cancelled -> {
                         /** Dismiss incoming call notification/ show missed call */
                         incomingCallNotificationManager.dismiss()
-                        if (SessionManager.userId == event.calleeAccountId) {
+                        if (SessionManager.userAccountId == event.calleeAccountId) {
                             missedCallNotificationManager.showMissedCall()
                         }
                         callManager.onEnded()
