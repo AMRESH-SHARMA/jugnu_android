@@ -82,7 +82,7 @@ class CallViewModel @Inject constructor(
                 }
 
                 // outgoing -> use local cached callee info
-                if (SessionManager.userId == call.callerAccountId &&
+                if (SessionManager.userAccountId == call.callerAccountId &&
                     call.calleeName != null
                 ) {
                     _headerUiState.value = CallHeaderUiState(

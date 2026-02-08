@@ -22,6 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import com.example.app.core.session.SessionManager
 
 @HiltAndroidApp
 class MyApp : Application() {
@@ -62,25 +63,35 @@ class MyApp : Application() {
             .addObserver(appForegroundTracker)
 
         appScope.launch(Dispatchers.IO) {
-
             if (AppConstants.USE_DEFAULT_URL) {
-                // 👉 Force default URL
                 RemoteConfig.updateApi(AppConstants.DEFAULT_BASE_URL)
             } else {
-                // 1️⃣ load cached value (fast)
-                val cached = remoteConfigRepo.loadApiBaseUrl()
-                if (cached != null) RemoteConfig.updateApi(cached)
+                // Load cached config immediately
+                val (cachedApi, cachedWs) = remoteConfigRepo.loadCachedConfig()
+                if (cachedApi != null) RemoteConfig.updateApi(cachedApi)
+                if (cachedWs != null) RemoteConfig.updateWs(cachedWs)
 
-                // 2️⃣ fetch GitHub config (background)
-                ConfigLoader.refresh(remoteConfigRepo)
+                // Refresh only if TTL expired
+                if (remoteConfigRepo.shouldRefreshConfig()) {
+                    ConfigLoader.refresh(remoteConfigRepo)
+                }
             }
         }
 
         // 2️⃣ Now it’s safe to start the rest
         tokenManager.start()
+        restoreSessionId()
         observeUserSession()
         eventObserver.toString()
     }
+
+    //Restore from DATA Store and put in SessionManager
+    private fun restoreSessionId() {
+        appScope.launch(Dispatchers.IO) {
+            SessionManager.sessionId = userSession.sessionId
+        }
+    }
+
 
     private fun observeUserSession() {
         appScope.launch(Dispatchers.IO) {

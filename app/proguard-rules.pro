@@ -20,6 +20,11 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Remove all logs in release version.
+-assumenosideeffects class android.util.Log {
+    public static *** *(...);
+}
+
 #Prevent code obfuscation
 # -----------------------------
 # Project-specific ProGuard rules

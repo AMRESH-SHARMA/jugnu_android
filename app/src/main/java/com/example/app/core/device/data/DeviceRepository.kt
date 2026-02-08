@@ -7,7 +7,7 @@ import javax.inject.Inject
 class DeviceRepository @Inject constructor(
     private val api: DeviceApi
 ) {
-    suspend fun sendDeviceToken(accountId: Long, token: String): ApiResult<Unit> = safeApiCall {
-        api.sendDeviceToken(DeviceTokenRequest(accountId, token))
+    suspend fun sendFCMToken(sessionId: String, token: String): ApiResult<Unit> = safeApiCall {
+        api.sendFCMToken(DeviceTokenRequest(sessionId, token))
     }
 }

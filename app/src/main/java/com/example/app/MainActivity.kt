@@ -168,7 +168,7 @@ class MainActivity : ComponentActivity() {
                     callId = pending.callId,
                     callType = pending.callType,
                     callerAccountId = pending.callerAccountId,
-                    calleeAccountId = SessionManager.userId,
+                    calleeAccountId = SessionManager.userAccountId,
                     channel = null
                 )
             )

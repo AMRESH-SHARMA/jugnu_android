@@ -22,6 +22,14 @@ fun AppRoot() {
     when {
         state.isLoading -> SplashScreen()
 
+        state.errorType == ErrorType.NO_INTERNET -> NoInternetScreen(
+            onRetry = { vm.retry() }
+        )
+
+        state.errorType == ErrorType.SERVER_UNREACHABLE -> ServerUnreachableScreen(
+            onRetry = { vm.retry() }
+        )
+
         state.forceUpdate -> ForceUpdateScreen(
             message = state.forceMessage,
             playStoreUrl = state.playStoreUrl
