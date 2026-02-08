@@ -4,6 +4,7 @@ import Routes
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,13 +23,16 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -42,14 +46,18 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.app.core.preferences.user.domain.UserRole
 import com.example.app.feature.wallet.domain.AmountFlowType
 import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,13 +73,13 @@ fun WalletScreen(
     val balance by walletVM.balance.collectAsState()
     val items by historyVM.items.collectAsState()
     val listState = rememberLazyListState()
-    // ⭐ TopAppBar
-    val scrollBehavior = TopAppBarDefaults.pinnedScrollBehavior()
+
     LaunchedEffect(Unit) {
         walletVM.refreshBalance()
         historyVM.loadNextPage()
     }
-    // 🔥 Pagination trigger
+    
+    // Pagination trigger
     LaunchedEffect(listState) {
         snapshotFlow { listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index }
             .collect { lastIndex ->
@@ -84,14 +92,28 @@ fun WalletScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("My Wallet") },
-                scrollBehavior = scrollBehavior,
+                title = { 
+                    Text(
+                        "My Wallet",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold
+                        )
+                    ) 
+                },
+                navigationIcon = {
+                    IconButton(onClick = { onBackClick?.invoke() }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.tertiary,
-                    titleContentColor = MaterialTheme.colorScheme.onTertiary
+                    containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Column(
@@ -102,68 +124,87 @@ fun WalletScreen(
                 .padding(16.dp)
         ) {
 
-            // ⭐ Animated Balance Card
-            WalletBalanceCard(
+            // Balance Card with Gradient
+            ImprovedBalanceCard(
                 balance = balance.toDouble(),
                 currency = "₹"
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
-            // ⭐ Quick Actions Row
+            // Quick Actions
             QuickActionButtons(
                 role = role,
                 navController = navController
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-            Divider(modifier = Modifier.padding(vertical = 12.dp))
 
-            // ⭐ Transaction History
+            // Transaction History Header
             Text(
                 "Recent Transactions",
-                style = MaterialTheme.typography.titleMedium
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+            
             if (items.isEmpty()) {
-                Text(
-                    "No transactions yet",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.Gray
-                )
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            "No transactions yet",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
+                        )
+                    }
+                }
             } else {
                 items.forEach { txn ->
-                    TransactionItem(
+                    ImprovedTransactionItem(
                         title = txn.reason,
                         amount = formatAmount(txn.amountCoins),
-                        time = formatTime(txn.time)
+                        time = formatTime(txn.time),
+                        isCredit = txn.amountCoins > 0
                     )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
             }
-
+            
+            Spacer(modifier = Modifier.height(80.dp))
         }
     }
 }
 
 private fun formatAmount(amount: Long): String {
     return if (amount < 0) {
-        "-₹${kotlin.math.abs(amount)}"
+        "₹${kotlin.math.abs(amount)}"
     } else {
-        "+₹$amount"
+        "₹$amount"
     }
 }
 
 private fun formatTime(timestamp: Instant): String {
-    // TEMP: replace later with proper formatter
-    return "Just now"
+    val formatter = DateTimeFormatter.ofPattern("dd MMM, hh:mm a")
+    return timestamp.atZone(ZoneId.systemDefault()).format(formatter)
 }
 
-// -------------------------------------------
-// ⭐ Balance Card With Animation
-// -------------------------------------------
+// Improved Balance Card with Gradient
 @Composable
-fun WalletBalanceCard(balance: Double, currency: String) {
+fun ImprovedBalanceCard(balance: Double, currency: String) {
 
     val animatedValue by animateFloatAsState(
         targetValue = balance.toFloat(),
@@ -174,48 +215,91 @@ fun WalletBalanceCard(balance: Double, currency: String) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp),
+            .height(180.dp),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiary
-        )
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+                .background(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.8f),
+                            MaterialTheme.colorScheme.tertiary.copy(alpha = 0.6f)
+                        )
+                    )
+                )
         ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Total Balance",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                    
+                    Box(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(Color.White.copy(alpha = 0.2f), CircleShape),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.TrendingUp,
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
 
-            Text(
-                text = "Total Coins",
-                style = MaterialTheme.typography.titleMedium.copy(color = Color.White)
-            )
-
-            Text(
-                //TODO: text = "🪙 ${"%,.2f".format(animatedValue)}",
-                text = "🪙 ${"%,d".format(animatedValue.toInt())}",
-                style = MaterialTheme.typography.headlineLarge.copy(color = Color.White)
-            )
+                Column {
+                    Text(
+                        text = "🪙 ${"%,d".format(animatedValue.toInt())}",
+                        style = MaterialTheme.typography.displaySmall.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Available to spend",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+                }
+            }
         }
     }
 }
 
 
-// -------------------------------------------
-// ⭐ Quick Action Buttons (Send / Receive / Add Money)
-// -------------------------------------------
+// Improved Quick Action Buttons
 @Composable
 fun QuickActionButtons(
     role: UserRole,
     navController: NavController
 ) {
     when (role) {
-
         UserRole.CUSTOMER -> {
-            HorizontalActionButton(
+            ImprovedActionButton(
                 title = "Add Money",
+                subtitle = "Top up your wallet",
                 icon = Icons.Filled.AddCircle,
+                color = Color(0xFF4CAF50),
                 onClick = {
                     navController.navigate(
                         Routes.Screen.Wallet.enterAmountRoute(AmountFlowType.ADD.name)
@@ -227,9 +311,11 @@ fun QuickActionButtons(
         }
 
         UserRole.LISTENER -> {
-            HorizontalActionButton(
+            ImprovedActionButton(
                 title = "Withdraw Money",
+                subtitle = "Transfer to bank account",
                 icon = Icons.Filled.ArrowDownward,
+                color = Color(0xFF2196F3),
                 onClick = {
                     navController.navigate(
                         Routes.Screen.Wallet.enterAmountRoute(AmountFlowType.WITHDRAW.name)
@@ -243,82 +329,131 @@ fun QuickActionButtons(
 }
 
 @Composable
-fun HorizontalActionButton(
+fun ImprovedActionButton(
     title: String,
+    subtitle: String,
     icon: ImageVector,
+    color: Color,
     onClick: () -> Unit
 ) {
-    Surface(
+    Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(56.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        tonalElevation = 4.dp,
-        color = MaterialTheme.colorScheme.primary
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp),
-
+                .fillMaxWidth()
+                .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            Box(
+                modifier = Modifier
+                    .size(56.dp)
+                    .background(color.copy(alpha = 0.2f), RoundedCornerShape(12.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = title,
+                    tint = color,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
 
-            // ⬅️ Left text
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onTertiary
-            )
+            Spacer(modifier = Modifier.width(16.dp))
 
-            Spacer(modifier = Modifier.weight(1f))
-
-            // ➡️ Right icon
-            Icon(
-                imageVector = icon,
-                contentDescription = title,
-                tint = MaterialTheme.colorScheme.onTertiary,
-            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }
 
-// -------------------------------------------
-// ⭐ Transaction Item
-// -------------------------------------------
+// Improved Transaction Item
 @Composable
-fun TransactionItem(title: String, amount: String, time: String) {
-
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp)
+fun ImprovedTransactionItem(
+    title: String, 
+    amount: String, 
+    time: String,
+    isCredit: Boolean
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
-
-        Surface(
-            shape = CircleShape,
-            tonalElevation = 2.dp,
-            modifier = Modifier.size(50.dp)
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(title.take(1), style = MaterialTheme.typography.titleMedium)
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        color = if (isCredit) 
+                            Color(0xFF4CAF50).copy(alpha = 0.2f) 
+                        else 
+                            Color(0xFFFF5722).copy(alpha = 0.2f),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = if (isCredit) Icons.Default.ArrowDownward else Icons.Default.ArrowUpward,
+                    contentDescription = null,
+                    tint = if (isCredit) Color(0xFF4CAF50) else Color(0xFFFF5722),
+                    modifier = Modifier.size(24.dp)
+                )
             }
+
+            Spacer(modifier = Modifier.width(16.dp))
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Medium
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = time,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+
+            Text(
+                text = "${if (isCredit) "+" else "-"}$amount",
+                style = MaterialTheme.typography.titleMedium.copy(
+                    fontWeight = FontWeight.Bold
+                ),
+                color = if (isCredit) Color(0xFF4CAF50) else Color(0xFFFF5722)
+            )
         }
-
-        Spacer(modifier = Modifier.width(16.dp))
-
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(time, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
-        }
-
-        Text(
-            amount,
-            style = MaterialTheme.typography.bodyLarge,
-            color = if (amount.startsWith("-")) Color.Red else Color(0xFF2ECC71)
-        )
     }
 }

@@ -1,6 +1,7 @@
 package com.example.app.feature.listenerDashboard.ui
 
 import android.graphics.Paint
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -108,10 +109,35 @@ fun ListenerDashboardScreen(
 ) {
     val uiState by vm.stats.collectAsState()
     val isRefreshing by vm.isRefreshing.collectAsState()
+    val showTimeoutMessage by vm.showTimeoutMessage.collectAsState()
 
     LaunchedEffect(Unit) { vm.load() }
+    
+    // Show timeout snackbar
+    LaunchedEffect(showTimeoutMessage) {
+        if (showTimeoutMessage) {
+            kotlinx.coroutines.delay(3000)
+            vm.clearTimeoutMessage()
+        }
+    }
 
-    var selectedTab by remember { mutableStateOf(ListenerTab.DASHBOARD) }
+    // Get the saved tab from navigation back stack entry
+    val navBackStackEntry = navController.currentBackStackEntry
+    val savedTab = navBackStackEntry?.savedStateHandle?.get<String>("selected_tab")
+    
+    var selectedTab by remember { 
+        mutableStateOf(
+            savedTab?.let { 
+                try { ListenerTab.valueOf(it) } catch (e: Exception) { ListenerTab.DASHBOARD }
+            } ?: ListenerTab.DASHBOARD
+        ) 
+    }
+    
+    // Save tab state when it changes
+    LaunchedEffect(selectedTab) {
+        navBackStackEntry?.savedStateHandle?.set("selected_tab", selectedTab.name)
+    }
+    
     var showPicker by remember { mutableStateOf(false) }
     var datePickerType by remember { mutableStateOf(DatePickerType.FROM) }
     val pickerState = rememberDateRangePickerState()
@@ -318,6 +344,60 @@ fun ListenerDashboardScreen(
                         showPicker = false
                     }
                 )
+            }
+            
+            // ---------- TIMEOUT SNACKBAR ----------
+            androidx.compose.animation.AnimatedVisibility(
+                visible = showTimeoutMessage,
+                enter = androidx.compose.animation.slideInVertically(
+                    initialOffsetY = { -it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + androidx.compose.animation.fadeIn(
+                    animationSpec = tween(durationMillis = 400)
+                ),
+                exit = androidx.compose.animation.slideOutVertically(
+                    targetOffsetY = { -it },
+                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
+                ) + androidx.compose.animation.fadeOut(
+                    animationSpec = tween(durationMillis = 400)
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.TopCenter)
+                    .padding(top = 16.dp)
+            ) {
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "Server Timeout - Please try again",
+                            style = MaterialTheme.typography.bodyMedium.copy(
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
             }
 
         }
