@@ -7,6 +7,6 @@ class SendFcmTokenUseCase @Inject constructor(
     private val repo: DeviceRepository
 ) {
     suspend operator fun invoke(sessionId: String, fcmToken: String) {
-        repo.sendFCMToken(sessionId, fcmToken)
+        repo.sendFcmToken(sessionId, fcmToken)
     }
 }
