@@ -16,5 +16,17 @@ interface UserApi {
     suspend fun updateProfile(
         @Body req: UpdateProfileDto
     ): BaseResponse<Unit>
-}
 
+    @PATCH("users/availability")
+    suspend fun updateAvailability(
+        @Body req: UpdateAvailabilityDto
+    ): BaseResponse<Unit>
+
+    @retrofit2.http.POST("users/report-abuse")
+    suspend fun reportAbuse(
+        @Body req: ReportAbuseDto
+    ): BaseResponse<Unit>
+
+    @GET("users/recents")
+    suspend fun getRecents(): BaseResponse<List<RecentInteractionDto>>
+}

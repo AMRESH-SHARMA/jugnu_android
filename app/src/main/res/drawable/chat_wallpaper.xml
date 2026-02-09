@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="200dp"
+    android:viewportWidth="200"
+    android:viewportHeight="200">
+    
+    <!-- WhatsApp-style doodle pattern -->
+    
+    <!-- Chat bubble 1 -->
+    <path
+        android:pathData="M30,40 Q30,30 40,30 L60,30 Q70,30 70,40 L70,55 Q70,65 60,65 L45,65 L40,70 L40,65 Q30,65 30,55 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.15" />
+    
+    <!-- Chat bubble 2 -->
+    <path
+        android:pathData="M130,80 Q130,70 140,70 L165,70 Q175,70 175,80 L175,95 Q175,105 165,105 L150,105 L145,110 L145,105 Q130,105 130,95 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.12" />
+    
+    <!-- Heart -->
+    <path
+        android:pathData="M100,50 C100,45 95,40 90,40 C85,40 82,43 80,46 C78,43 75,40 70,40 C65,40 60,45 60,50 C60,58 80,70 80,70 C80,70 100,58 100,50 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1" />
+    
+    <!-- Star -->
+    <path
+        android:pathData="M160,30 L163,38 L172,38 L165,43 L168,51 L160,46 L152,51 L155,43 L148,38 L157,38 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1" />
+    
+    <!-- Music note -->
+    <path
+        android:pathData="M40,120 L40,145 C40,150 35,155 30,155 C25,155 20,150 20,145 C20,140 25,135 30,135 L40,135 L40,115 L50,110 L50,130 L40,135 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.12" />
+    
+    <!-- Smiley face -->
+    <path
+        android:pathData="M120,140 m-15,0 a15,15 0 1,0 30,0 a15,15 0 1,0 -30,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.1" />
+    <path
+        android:pathData="M113,135 L113,137 M127,135 L127,137"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.1"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M113,145 Q120,150 127,145"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2"
+        android:strokeAlpha="0.1"
+        android:strokeLineCap="round" />
+    
+    <!-- Phone icon -->
+    <path
+        android:pathData="M170,130 Q165,125 160,130 L158,132 Q155,135 158,138 L160,140 Q165,145 170,140 L172,138 Q175,135 172,132 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.12" />
+    
+    <!-- Camera -->
+    <path
+        android:pathData="M80,170 L100,170 L100,190 L80,190 Z M85,165 L95,165 L90,170 Z"
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.1" />
+    <path
+        android:pathData="M90,180 m-5,0 a5,5 0 1,0 10,0 a5,5 0 1,0 -10,0"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="1.5"
+        android:strokeAlpha="0.1" />
+    
+    <!-- Dots pattern -->
+    <circle cx="50" cy="90" r="2" android:fillColor="#FFFFFF" android:fillAlpha="0.08" />
+    <circle cx="150" cy="160" r="2" android:fillColor="#FFFFFF" android:fillAlpha="0.08" />
+    <circle cx="180" cy="60" r="2" android:fillColor="#FFFFFF" android:fillAlpha="0.08" />
+    <circle cx="25" cy="180" r="2" android:fillColor="#FFFFFF" android:fillAlpha="0.08" />
+    
+    <!-- Small circles -->
+    <circle cx="140" cy="120" r="3" android:fillColor="#FFFFFF" android:fillAlpha="0.06" />
+    <circle cx="60" cy="160" r="3" android:fillColor="#FFFFFF" android:fillAlpha="0.06" />
+    <circle cx="190" cy="100" r="3" android:fillColor="#FFFFFF" android:fillAlpha="0.06" />
+    
+</vector>

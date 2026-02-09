@@ -20,20 +20,23 @@ suspend fun <T> safeApiCall(block: suspend () -> T): ApiResult<T> {
             null
         }
 
+        // Use centralized error handler
+        val userFriendlyMessage = ApiErrorHandler.getErrorMessage(e, backendMessage)
+
         ApiResult.Error(
-            message = backendMessage ?: e.message(),
+            message = userFriendlyMessage,
             code = e.code(),
             exception = e
         )
 
     } catch (e: IOException) {
         ApiResult.Error(
-            message = "Network error",
+            message = ApiErrorHandler.getErrorMessage(e),
             exception = e
         )
     } catch (e: Exception) {
         ApiResult.Error(
-            message = e.localizedMessage,
+            message = ApiErrorHandler.getErrorMessage(e),
             exception = e
         )
     }

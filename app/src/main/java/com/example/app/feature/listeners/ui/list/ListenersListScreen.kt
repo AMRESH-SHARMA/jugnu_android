@@ -1,5 +1,6 @@
 package com.example.app.feature.listeners.ui.list
 
+import Routes
 import android.Manifest
 import android.app.Activity
 import android.content.Context
@@ -34,6 +35,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.filled.VideoCall
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
@@ -136,6 +138,10 @@ fun ListenerListScreen(
         presenceMap = presenceMap,
         navController = navController,
         onOpenListener = onOpenListener,
+        onMessageClick = { listener ->
+            navController.currentBackStackEntry?.savedStateHandle?.set("listener", listener)
+            navController.navigate(Routes.Screen.Chat.chatRoute(listener.accountId ?: 0L))
+        },
         onCallClick = { listener, callType ->
 
             val calleeAccountId = listener.accountId ?: return@ListenerListContent
@@ -233,7 +239,8 @@ private fun ListenerListContent(
     presenceMap: Map<String, PresenceState>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
-    onCallClick: (ListenerModel, CallType) -> Unit
+    onCallClick: (ListenerModel, CallType) -> Unit,
+    onMessageClick: (ListenerModel) -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showImageDialog by remember { mutableStateOf(false) }
@@ -340,6 +347,7 @@ private fun ListenerListContent(
                     status = status,
                     onOpenListener = onOpenListener,
                     onCallClick = onCallClick,
+                    onMessageClick = onMessageClick,
                     onAvatarClick = {
                         selectedListener = listener
                         showImageDialog = true
@@ -498,7 +506,8 @@ private fun ListenerRow(
     status: PresenceState,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit,
-    onAvatarClick: () -> Unit
+    onAvatarClick: () -> Unit,
+    onMessageClick: (ListenerModel) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(20.dp),
@@ -544,13 +553,28 @@ private fun ListenerRow(
                 Text("Exp: ${listener.experience}", style = MaterialTheme.typography.bodySmall)
             }
 
-            IconButton(onClick = { onCallClick(listener, CallType.VOICE) }) {
-                Icon(imageVector = Icons.Default.Call, contentDescription = null)
+            IconButton(onClick = { onMessageClick(listener) }) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Default.Message,
+                    contentDescription = "Message",
+                    tint = Color.White
+                )
             }
 
+            IconButton(onClick = { onCallClick(listener, CallType.VOICE) }) {
+                Icon(
+                    imageVector = Icons.Default.Call,
+                    contentDescription = "Audio Call",
+                    tint = Color.White
+                )
+            }
 
             IconButton(onClick = { onCallClick(listener, CallType.VIDEO) }) {
-                Icon(imageVector = Icons.Default.VideoCall, contentDescription = null)
+                Icon(
+                    imageVector = Icons.Default.VideoCall,
+                    contentDescription = "Video Call",
+                    tint = Color.White
+                )
             }
         }
     }

@@ -1,6 +1,7 @@
 package com.example.app.feature.home.ui
 
 import Routes
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -32,18 +33,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.app.feature.chat.ui.ChatListScreen
 import com.example.app.feature.home.ui.components.HomeBottomTabBar
 import com.example.app.feature.home.ui.components.HomeTopBar
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.list.ListenerListScreen
 import com.example.app.feature.user.ui.UserSettingScreen
 
-enum class HomeTab { LISTENERS, CHATS, USER }
+enum class HomeTab { LISTENERS, RECENTS, USER }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -117,9 +120,8 @@ fun HomeScreen(
             ) {
                 Box(modifier = Modifier.fillMaxSize()) {   // NEW: ensures LazyColumn gets full height
                     when (currentTab) {
-                        HomeTab.CHATS -> ChatListScreen(
-                            modifier = Modifier.fillMaxSize(),
-                            onOpenChat = { }
+                        HomeTab.RECENTS -> com.example.app.feature.recents.ui.RecentsScreen(
+                            navController = navController
                         )
 
                         HomeTab.LISTENERS -> ListenerListScreen(
@@ -203,34 +205,63 @@ fun CustomerHeaderSection(
                 )
             }
 
-            // Wallet Balance
+            // Wallet Balance - Premium Design
             Card(
                 modifier = Modifier.clickable(onClick = onWalletClick),
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(24.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                )
+                    containerColor = Color(0xFFFFD700).copy(alpha = 0.15f) // Gold tint
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
+                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.AccountBalanceWallet,
-                        contentDescription = "Wallet",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text(
-                        text = "🪙 %,d".format(balance),
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.SemiBold
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
+                    // Coin icon with gradient background
+                    Box(
+                        modifier = Modifier
+                            .size(32.dp)
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors = listOf(
+                                        Color(0xFFFFD700),
+                                        Color(0xFFFFA500)
+                                    )
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "🪙",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontSize = 16.sp
+                        )
+                    }
+                    
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(0.dp)
+                    ) {
+                        Text(
+                            text = "Balance",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            fontSize = 10.sp
+                        )
+                        Text(
+                            text = "%,d".format(balance),
+                            style = MaterialTheme.typography.bodyLarge.copy(
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = Color(0xFFFFD700),
+                            fontSize = 16.sp
+                        )
+                    }
                 }
             }
+
         }
     }
 }

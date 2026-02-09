@@ -4,6 +4,7 @@ import android.graphics.Paint
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.with
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Call
 import androidx.compose.material.icons.filled.CallMissed
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Star
@@ -113,11 +115,10 @@ fun ListenerDashboardScreen(
 
     LaunchedEffect(Unit) { vm.load() }
     
-    // Show timeout snackbar
+    // Show timeout snackbar using global snackbar
     LaunchedEffect(showTimeoutMessage) {
         if (showTimeoutMessage) {
-            kotlinx.coroutines.delay(3000)
-            vm.clearTimeoutMessage()
+            com.example.app.core.ui.SnackbarManager.showError("Server Timeout - Please try again")
         }
     }
 
@@ -154,23 +155,48 @@ fun ListenerDashboardScreen(
         },
         floatingActionButton = {
             if (selectedTab == ListenerTab.DASHBOARD && uiState is UiState.Success) {
-                FloatingActionButton(
-                    onClick = { vm.refresh() },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = Color.White
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (isRefreshing) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
+                    // Test Snackbar Button
+                    FloatingActionButton(
+                        onClick = {
+                            when ((0..3).random()) {
+                                0 -> com.example.app.core.ui.SnackbarManager.showSuccess("Success! Operation completed")
+                                1 -> com.example.app.core.ui.SnackbarManager.showError("Error! Something went wrong")
+                                2 -> com.example.app.core.ui.SnackbarManager.showWarning("Warning! Please check this")
+                                3 -> com.example.app.core.ui.SnackbarManager.showInfo("Info: New update available")
+                            }
+                        },
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = Color.White
+                    ) {
                         Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = "Refresh",
+                            imageVector = Icons.Default.Notifications,
+                            contentDescription = "Test Snackbar",
                             tint = Color.White
                         )
+                    }
+                    
+                    // Refresh Button
+                    FloatingActionButton(
+                        onClick = { vm.refresh() },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = Color.White
+                    ) {
+                        if (isRefreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = Color.White
+                            )
+                        }
                     }
                 }
             }
@@ -198,6 +224,15 @@ fun ListenerDashboardScreen(
                                 ImprovedHeaderSection(
                                     username = stats.name,
                                     avatarUrl = stats.avatar
+                                )
+
+                                Spacer(Modifier.height(20.dp))
+
+                                // Availability Status Card
+                                AvailabilityStatusCard(
+                                    isAvailable = vm.isAvailable.collectAsState().value,
+                                    isUpdating = vm.isUpdatingAvailability.collectAsState().value,
+                                    onAvailabilityToggle = { vm.toggleAvailability() }
                                 )
 
                                 Spacer(Modifier.height(20.dp))
@@ -294,8 +329,16 @@ fun ListenerDashboardScreen(
                     }
                 }
 
-                ListenerTab.CALLS -> {
-                    // TODO
+                ListenerTab.RECENTS -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        // Header for Recents tab
+                        ListenerRecentsHeader()
+                        
+                        // Recents content
+                        com.example.app.feature.recents.ui.RecentsScreen(
+                            navController = navController
+                        )
+                    }
                 }
 
                 ListenerTab.SETTINGS -> {
@@ -345,61 +388,6 @@ fun ListenerDashboardScreen(
                     }
                 )
             }
-            
-            // ---------- TIMEOUT SNACKBAR ----------
-            androidx.compose.animation.AnimatedVisibility(
-                visible = showTimeoutMessage,
-                enter = androidx.compose.animation.slideInVertically(
-                    initialOffsetY = { -it },
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                ) + androidx.compose.animation.fadeIn(
-                    animationSpec = tween(durationMillis = 400)
-                ),
-                exit = androidx.compose.animation.slideOutVertically(
-                    targetOffsetY = { -it },
-                    animationSpec = tween(durationMillis = 400, easing = FastOutSlowInEasing)
-                ) + androidx.compose.animation.fadeOut(
-                    animationSpec = tween(durationMillis = 400)
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .padding(top = 16.dp)
-            ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Refresh,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = "Server Timeout - Please try again",
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontWeight = FontWeight.Medium
-                            ),
-                            color = MaterialTheme.colorScheme.onErrorContainer
-                        )
-                    }
-                }
-            }
-
         }
     }
 }
@@ -470,6 +458,73 @@ fun ImprovedHeaderSection(username: String, avatarUrl: String) {
                         .align(Alignment.Center)
                 )
             }
+        }
+    }
+}
+
+/* ---------------------------------------------------
+   AVAILABILITY STATUS CARD
+--------------------------------------------------- */
+@Composable
+fun AvailabilityStatusCard(
+    isAvailable: Boolean,
+    isUpdating: Boolean,
+    onAvailabilityToggle: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(
+                color = if (isAvailable)
+                    Color(0xFF4CAF50).copy(alpha = 0.2f)
+                else
+                    Color(0xFFFFC107).copy(alpha = 0.2f)
+            )
+            .clickable(enabled = !isUpdating) { onAvailabilityToggle() }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Status Icon
+            Icon(
+                imageVector = if (isAvailable) Icons.Default.Call else androidx.compose.material.icons.Icons.Default.CallMissed,
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = if (isAvailable) Color(0xFF4CAF50) else Color(0xFFFFC107)
+            )
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = if (isAvailable) "Available" else "Silent Mode",
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = if (isAvailable) 
+                        Color(0xFF4CAF50)
+                    else 
+                        Color(0xFFFFC107)
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = if (isAvailable) "Receiving calls" else "Not receiving calls",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
+            
+            // Tap hint
+            Text(
+                text = "Tap to change",
+                style = MaterialTheme.typography.bodySmall.copy(
+                    fontWeight = FontWeight.SemiBold
+                ),
+                color = Color.White
+            )
         }
     }
 }
@@ -973,55 +1028,47 @@ fun ImprovedRevenueLineChart(
 }
 
 /* ---------------------------------------------------
-   IMPROVED OVERVIEW CARDS
+   IMPROVED OVERVIEW CARDS - COMPACT & PREMIUM
 --------------------------------------------------- */
 @Composable
 fun ImprovedOverviewCards(stats: ListenerStats) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ImprovedOverviewCard(
-                title = "Total Callers",
-                value = stats.uniqueCallers.toString(),
-                icon = Icons.Default.People,
-                color = Color(0xFF2196F3),
-                modifier = Modifier.weight(1f)
-            )
-            ImprovedOverviewCard(
-                title = "Net Earnings",
-                value = "₹${stats.netEarnings}",
-                icon = Icons.Default.AccountBalanceWallet,
-                color = Color(0xFF4CAF50),
-                modifier = Modifier.weight(1f)
-            )
-        }
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            ImprovedOverviewCard(
-                title = "Answered",
-                value = stats.totalAnsweredCalls.toString(),
-                icon = Icons.Default.Call,
-                color = Color(0xFF00BCD4),
-                modifier = Modifier.weight(1f)
-            )
-            ImprovedOverviewCard(
-                title = "Missed",
-                value = stats.totalMissedCalls.toString(),
-                icon = Icons.Default.CallMissed,
-                color = Color(0xFFFF5722),
-                modifier = Modifier.weight(1f)
-            )
-        }
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        CompactOverviewCard(
+            title = "Callers",
+            value = stats.uniqueCallers.toString(),
+            icon = Icons.Default.People,
+            color = Color(0xFF2196F3),
+            modifier = Modifier.weight(1f)
+        )
+        CompactOverviewCard(
+            title = "Earnings",
+            value = "₹${stats.netEarnings}",
+            icon = Icons.Default.AccountBalanceWallet,
+            color = Color(0xFF4CAF50),
+            modifier = Modifier.weight(1f)
+        )
+        CompactOverviewCard(
+            title = "Answered",
+            value = stats.totalAnsweredCalls.toString(),
+            icon = Icons.Default.Call,
+            color = Color(0xFF00BCD4),
+            modifier = Modifier.weight(1f)
+        )
+        CompactOverviewCard(
+            title = "Missed",
+            value = stats.totalMissedCalls.toString(),
+            icon = Icons.Default.CallMissed,
+            color = Color(0xFFFF5722),
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 
 @Composable
-fun ImprovedOverviewCard(
+fun CompactOverviewCard(
     title: String,
     value: String,
     icon: ImageVector,
@@ -1030,7 +1077,7 @@ fun ImprovedOverviewCard(
 ) {
     Card(
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
@@ -1039,44 +1086,49 @@ fun ImprovedOverviewCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                color.copy(alpha = 0.3f),
+                                color.copy(alpha = 0.1f)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(color.copy(alpha = 0.2f), CircleShape),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier.size(24.dp)
-                    )
-                }
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = color,
+                    modifier = Modifier.size(20.dp)
+                )
             }
             
-            Spacer(Modifier.height(12.dp))
-            
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
             
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge.copy(
+                style = MaterialTheme.typography.titleMedium.copy(
                     fontWeight = FontWeight.Bold
                 ),
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
+            )
+            
+            Spacer(Modifier.height(2.dp))
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                maxLines = 1
             )
         }
     }
@@ -1271,6 +1323,54 @@ fun ImprovedStatCard(
                 ),
                 color = color,
                 textAlign = TextAlign.End
+            )
+        }
+    }
+}
+
+
+/* ---------------------------------------------------
+   RECENTS TAB HEADER
+--------------------------------------------------- */
+@Composable
+fun ListenerRecentsHeader() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = "Recent Interactions",
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = "Your call and message history",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+            }
+            
+            Icon(
+                imageVector = Icons.Default.People,
+                contentDescription = null,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
             )
         }
     }

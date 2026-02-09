@@ -78,10 +78,7 @@ fun NavGraphBuilder.homeNavGraph(navController: NavController) {
     }
 
     // Chat graph (separate from HOME)
-    chatNavGraph(
-        navController = navController,
-        onBack = { navController.popBackStack() }
-    )
+    chatNavGraph(navController = navController)
     
     // Wallet graph (separate from HOME)
     walletNavGraph(

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
@@ -127,7 +128,7 @@ fun LoginScreen(navController: NavController) {
             if (mobileError) {
                 Text(
                     text = "Please enter a valid 10-digit mobile number",
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 6.dp)
                 )
@@ -139,8 +140,13 @@ fun LoginScreen(navController: NavController) {
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.BottomStart
             ) {
-                SendOtpButton(mobileNumber) {
-                    if (mobileNumber.length == 10) {
+                SendOtpButton(
+                    mobile = mobileNumber,
+                    isLoading = otpState is LoginUiState.Loading
+                ) {
+                    if (mobileNumber.isEmpty()) {
+                        mobileError = true
+                    } else if (mobileNumber.length == 10) {
                         viewModel.requestOtp(mobileNumber)
                     } else {
                         triggerError()
@@ -151,6 +157,8 @@ fun LoginScreen(navController: NavController) {
                         is LoginUiState.Success -> {
                             Log.d("LoginScreen", "OTP request success, navigating to OTP screen")
                             navController.navigate(Routes.Screen.Auth.otpRoute(mobileNumber))
+                            // Reset state to prevent re-navigation when coming back
+                            viewModel.resetState()
                         }
 
                         is LoginUiState.Error -> {
@@ -225,11 +233,12 @@ fun MyTextField(
 @Composable
 fun SendOtpButton(
     mobile: String,
+    isLoading: Boolean,
     onClick: () -> Unit
 ) {
     Button(
         onClick = onClick,
-        enabled = mobile.length == 10,
+        enabled = !isLoading,
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 40.dp),
@@ -237,10 +246,18 @@ fun SendOtpButton(
             containerColor = MaterialTheme.colorScheme.primary
         )
     ) {
-        Text(
-            text = "Send OTP",
-            color = Color.White,
-            fontSize = 18.sp
-        )
+        if (isLoading) {
+            androidx.compose.material3.CircularProgressIndicator(
+                modifier = Modifier.size(24.dp),
+                color = Color.White,
+                strokeWidth = 2.dp
+            )
+        } else {
+            Text(
+                text = "Send OTP",
+                color = Color.White,
+                fontSize = 18.sp
+            )
+        }
     }
 }

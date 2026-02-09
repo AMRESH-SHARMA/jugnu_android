@@ -13,12 +13,21 @@ val GREEN700 = Color(0xFF00574B)
 
 val DARK_GREEN200 = Color(0xFF232D36)
 
-//light blue
-//val DARK_GREEN300 = Color(0xFF101D25)
+// Background color options (uncomment one to use):
+// Light blue dark mode
+// val DARK_GREEN300 = Color(0xFF101D25)
 
-//whats app like
+// Material dark theme (default Android)
+// val DARK_GREEN300 = Color(0xFF121212)
 
-val DARK_GREEN300 = Color(0xFF12171B)
+// Custom dark green
+// val DARK_GREEN300 = Color(0xFF12171B)
+
+// Lighter dark (previous)
+// val DARK_GREEN300 = Color(0xFF0B141A)
+
+// WhatsApp dark mode (currently active) - exact match
+val DARK_GREEN300 = Color(0xFF0B141B)
 
 val White100 = Color(0xFFFFFFFF)
 val WHITE200 = Color(0xFFFDFDFD)

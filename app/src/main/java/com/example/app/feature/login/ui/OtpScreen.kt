@@ -49,6 +49,7 @@ fun OtpVerificationScreen(
     val focusRequester = remember { FocusRequester() }
 
     var otp by remember { mutableStateOf("") }
+    var showValidationError by remember { mutableStateOf(false) }
     val isOtpComplete = otp.length == OTP_LENGTH
 
     val maskedMobile = remember(mobile) {
@@ -171,6 +172,7 @@ fun OtpVerificationScreen(
                     onOtpChange = {
                         otp = it
                         viewModel.clearOtpError()
+                        if (showValidationError) showValidationError = false
                         if (it.length == OTP_LENGTH) keyboardController?.hide()
                     },
                     focusRequester = focusRequester
@@ -178,7 +180,18 @@ fun OtpVerificationScreen(
 
                 Spacer(modifier = Modifier.height(12.dp))
 
-                // Error Message
+                // Validation Error (empty OTP)
+                if (showValidationError) {
+                    Text(
+                        text = "Please enter the complete 6-digit OTP",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Error Message (from API)
                 OtpErrorMessage(
                     otpUiState = otpVerifyState
                 )
@@ -245,10 +258,10 @@ fun OtpVerificationScreen(
                             .height(56.dp),
                         onClick = {
                             keyboardController?.hide()
-                            navController.popBackStack(
-                                route = Routes.Screen.Auth.LOGIN,
-                                inclusive = false
-                            )
+                            navController.navigate(Routes.Screen.Auth.LOGIN) {
+                                popUpTo(Routes.Screen.Auth.LOGIN) { inclusive = false }
+                                launchSingleTop = true
+                            }
                         },
                         shape = RoundedCornerShape(16.dp),
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -256,7 +269,7 @@ fun OtpVerificationScreen(
                         )
                     ) {
                         Text(
-                            text = "Cancel",
+                            text = "Back",
                             style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
                             )
@@ -267,13 +280,19 @@ fun OtpVerificationScreen(
                         modifier = Modifier
                             .weight(1f)
                             .height(56.dp),
-                        enabled = isOtpComplete && otpVerifyState !is OtpUiState.Loading,
+                        enabled = otpVerifyState !is OtpUiState.Loading,
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.3f)
                         ),
                         shape = RoundedCornerShape(16.dp),
-                        onClick = { viewModel.verifyOtp(mobile, otp) }
+                        onClick = {
+                            if (isOtpComplete) {
+                                viewModel.verifyOtp(mobile, otp)
+                            } else {
+                                showValidationError = true
+                            }
+                        }
                     ) {
                         if (otpVerifyState is OtpUiState.Loading) {
                             CircularProgressIndicator(

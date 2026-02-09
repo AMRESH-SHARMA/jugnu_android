@@ -37,7 +37,7 @@ fun SplashScreen(
 ) {
     // Track if timeout occurred
     LaunchedEffect(Unit) {
-        delay(10000) // 10 second timeout
+        delay(com.example.app.AppConstants.SPLASH_SCREEN_DURATION)
         onTimeout()
     }
 

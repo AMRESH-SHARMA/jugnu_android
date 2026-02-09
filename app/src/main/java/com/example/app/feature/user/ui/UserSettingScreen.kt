@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Report
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -79,17 +80,25 @@ fun UserSettingScreen(
     val userRole by viewModel.userRole.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
     var showInterestedInDialog by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showReportAbuseDialog by remember { mutableStateOf(false) }
 
     // Handle logout success
     LaunchedEffect(uiState) {
         when (uiState) {
             is UserUiState.LoggedOut -> onLogout()
             is UserUiState.Error -> {
-                errorMessage = (uiState as UserUiState.Error).message
+                com.example.app.core.ui.SnackbarManager.showError(
+                    (uiState as UserUiState.Error).message
+                )
             }
             is UserUiState.ProfileUpdated -> {
                 showInterestedInDialog = false
+            }
+            is UserUiState.AbuseReported -> {
+                showReportAbuseDialog = false
+                com.example.app.core.ui.SnackbarManager.showSuccess(
+                    "Report submitted successfully"
+                )
             }
             else -> {}
         }
@@ -190,6 +199,26 @@ fun UserSettingScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
 
+                // Support Section
+                Text(
+                    text = "SUPPORT",
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        letterSpacing = 1.2.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
+                    modifier = Modifier.padding(start = 4.dp, bottom = 16.dp)
+                )
+
+                ModernMenuItem(
+                    title = "Report Abuse",
+                    subtitle = "Report inappropriate behavior",
+                    icon = Icons.Default.Report,
+                    onClick = { showReportAbuseDialog = true }
+                )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
                 // Logout Section
                 Text(
                     text = "SESSION",
@@ -234,34 +263,15 @@ fun UserSettingScreen(
         )
     }
 
-    // Error Snackbar
-    errorMessage?.let { message ->
-        LaunchedEffect(message) {
-            kotlinx.coroutines.delay(3000)
-            errorMessage = null
-        }
-        
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
-            ) {
-                Text(
-                    text = message,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
-        }
+    // Report Abuse Dialog
+    if (showReportAbuseDialog) {
+        ReportAbuseDialog(
+            onDismiss = { showReportAbuseDialog = false },
+            onSubmit = { description ->
+                viewModel.reportAbuse(description)
+            },
+            isLoading = uiState is UserUiState.ReportingAbuse
+        )
     }
 }
 
@@ -722,4 +732,86 @@ private fun GenderDialogOption(
             )
         }
     }
+}
+
+
+@Composable
+fun ReportAbuseDialog(
+    onDismiss: () -> Unit,
+    onSubmit: (String) -> Unit,
+    isLoading: Boolean
+) {
+    var reportText by remember { mutableStateOf("") }
+    
+    AlertDialog(
+        onDismissRequest = { if (!isLoading) onDismiss() },
+        title = {
+            Text(
+                text = "Report Abuse",
+                style = MaterialTheme.typography.headlineSmall.copy(
+                    fontWeight = FontWeight.Bold
+                )
+            )
+        },
+        text = {
+            Column {
+                Text(
+                    text = "Please describe the incident in detail. Your report will be reviewed by our team.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                )
+                
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                androidx.compose.material3.OutlinedTextField(
+                    value = reportText,
+                    onValueChange = { reportText = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    placeholder = { Text("Describe the incident...") },
+                    maxLines = 6,
+                    enabled = !isLoading,
+                    colors = androidx.compose.material3.TextFieldDefaults.colors(
+                        focusedContainerColor = Color.Transparent,
+                        unfocusedContainerColor = Color.Transparent,
+                        disabledContainerColor = Color.Transparent
+                    )
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { 
+                    if (reportText.isNotBlank()) {
+                        onSubmit(reportText)
+                    }
+                },
+                enabled = !isLoading && reportText.isNotBlank(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary
+                )
+            ) {
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text("Submit Report")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss,
+                enabled = !isLoading
+            ) {
+                Text("Cancel")
+            }
+        },
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surface
+    )
 }

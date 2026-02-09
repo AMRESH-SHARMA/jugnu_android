@@ -12,6 +12,19 @@ object AppConstants {
     const val WS_PRESENCE_PATH = "ws/presence"
 
     // =========================
+    //        API TIMEOUTS
+    // =========================
+
+    const val API_CONNECT_TIMEOUT = 10L      // Connection timeout in seconds
+    const val API_READ_TIMEOUT = 30L         // Read timeout in seconds
+    const val API_WRITE_TIMEOUT = 30L        // Write timeout in seconds
+
+    // =========================
+    //        UI TIMEOUTS
+    // =========================
+    const val SNACKBAR_DURATION = 3000L  // 3 seconds
+
+    // =========================
     //        CALL EVENTS
     // =========================
 

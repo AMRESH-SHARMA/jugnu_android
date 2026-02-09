@@ -64,6 +64,9 @@ object NetworkModule {
             .addInterceptor(sessionInterceptor)
             .addInterceptor(forceUpdateInterceptor)
             .addInterceptor(dynamicBaseUrlInterceptor)
+            .connectTimeout(com.example.app.AppConstants.API_CONNECT_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS)
+            .readTimeout(com.example.app.AppConstants.API_READ_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS)
+            .writeTimeout(com.example.app.AppConstants.API_WRITE_TIMEOUT, java.util.concurrent.TimeUnit.SECONDS)
             .build()
 
     // -----------------------------

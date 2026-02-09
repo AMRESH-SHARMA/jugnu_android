@@ -1,0 +1,78 @@
+To honour the JVM settings for this build a single-use Daemon process will be forked. For more on this, please refer to https://docs.gradle.org/8.13/userguide/gradle_daemon.html#sec:disabling_the_daemon in the Gradle documentation.
+Daemon will be stopped at the end of the build 
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:generateDebugBuildConfig UP-TO-DATE
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:processDebugGoogleServices UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+
+> Task :app:processDebugMainManifest
+[io.agora:agora-rtm-lite:2.2.2] /Users/ashishkushwaha/.gradle/caches/8.13/transforms/ab6acae6aebdd8ac8a9a63b49688e3c4/transformed/agora-rtm-lite-2.2.2/AndroidManifest.xml Warning:
+	Namespace 'io.agora.rtc' is used in multiple modules and/or libraries: io.agora:agora-rtm-lite:2.2.2, io.agora.rtc:full-sdk:4.6.1, io.agora.rtc:full-rtc-basic:4.6.1, io.agora.rtc:ains:4.6.1, io.agora.rtc:audio-beauty:4.6.1, io.agora.rtc:clear-vision:4.6.1, io.agora.rtc:full-content-inspect:4.6.1, io.agora.rtc:screen-capture:4.6.1, io.agora.rtc:full-virtual-background:4.6.1, io.agora.rtc:spatial-audio:4.6.1, io.agora.rtc:aiaec:4.6.1, io.agora.rtc:full-vqa:4.6.1, io.agora.rtc:full-face-detect:4.6.1, io.agora.rtc:full-face-capture:4.6.1, io.agora.rtc:full-voice-drive:4.6.1, io.agora.rtc:full-video-codec-enc:4.6.1, io.agora.rtc:full-video-codec-dec:4.6.1, io.agora.rtc:full-video-av1-codec-enc:4.6.1, io.agora.rtc:full-video-av1-codec-dec:4.6.1. Please ensure that all modules and libraries have a unique namespace. For more information, See https://developer.android.com/studio/build/configure-app-module#set-namespace
+
+> Task :app:processDebugManifest
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:l8DexDesugarLibDebug UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+> Task :app:processDebugManifestForPackage
+> Task :app:processDebugResources
+> Task :app:kspDebugKotlin
+
+> Task :app:compileDebugKotlin
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/core/rtc/CallRtcController.kt:133:30 'var isSpeakerphoneOn: Boolean' is deprecated. Deprecated in Java.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/core/rtc/CallRtcController.kt:149:30 'var isSpeakerphoneOn: Boolean' is deprecated. Deprecated in Java.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/core/rtc/CallRtcController.kt:278:22 'var isSpeakerphoneOn: Boolean' is deprecated. Deprecated in Java.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/call/ui/OnGoingCallScreen.kt:213:62 'val Icons.Filled.VolumeUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeUp.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/call/ui/OnGoingCallScreen.kt:213:90 'val Icons.Filled.VolumeMute: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.VolumeMute.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/chat/ui/components/ChatHeader.kt:62:35 'val Icons.Filled.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.ArrowBack.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/listenerDashboard/ui/ListenerDashboardScreen.kt:487:118 'val Icons.Filled.CallMissed: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CallMissed.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/listenerDashboard/ui/ListenerDashboardScreen.kt:777:57 'val Icons.Filled.TrendingUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TrendingUp.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/listenerDashboard/ui/ListenerDashboardScreen.kt:1062:38 'val Icons.Filled.CallMissed: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.CallMissed.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/listenerDashboard/ui/ListenerDashboardScreen.kt:1185:17 'fun LinearProgressIndicator(progress: Float, modifier: Modifier = ..., color: Color = ..., trackColor: Color = ..., strokeCap: StrokeCap = ...): Unit' is deprecated. Use the overload that takes `progress` as a lambda.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/listenerDashboard/ui/ListenerDashboardScreen.kt:1244:34 'val Icons.Filled.TrendingUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TrendingUp.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/login/domain/AuthModel.kt:8:1 Parcelize annotations from package 'kotlinx.android.parcel' are deprecated. Change package to 'kotlinx.parcelize'.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/login/domain/AuthModel.kt:14:1 Parcelize annotations from package 'kotlinx.android.parcel' are deprecated. Change package to 'kotlinx.parcelize'.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/login/ui/OtpViewModel.kt:66:25 Condition is always 'true'.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/user/ui/UserSettingScreen.kt:511:45 'val Icons.Filled.Logout: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.Logout.
+w: file:///Users/ashishkushwaha/Jugbu/helium_androidapp/app/src/main/java/com/example/app/feature/wallet/ui/WalletScreen.kt:261:57 'val Icons.Filled.TrendingUp: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Filled.TrendingUp.
+
+> Task :app:compileDebugJavaWithJavac
+> Task :app:hiltAggregateDepsDebug UP-TO-DATE
+> Task :app:hiltJavaCompileDebug
+> Task :app:processDebugJavaRes
+> Task :app:transformDebugClassesWithAsm
+> Task :app:mergeDebugJavaResource
+> Task :app:dexBuilderDebug
+> Task :app:mergeProjectDexDebug
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 23s
+44 actionable tasks: 15 executed, 29 up-to-date
