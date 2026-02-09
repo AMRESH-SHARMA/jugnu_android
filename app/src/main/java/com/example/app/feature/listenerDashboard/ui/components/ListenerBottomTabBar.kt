@@ -1,7 +1,7 @@
 package com.example.app.feature.listenerDashboard.ui.components
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
@@ -41,10 +41,10 @@ fun ListenerBottomTabBar(
         )
 
         NavigationBarItem(
-            selected = selected == ListenerTab.CALLS,
-            onClick = { onTabSelected(ListenerTab.CALLS) },
-            icon = { Icon(Icons.Default.Call, contentDescription = "Calls") },
-            label = { Text("Calls", style = MaterialTheme.typography.labelLarge) },
+            selected = selected == ListenerTab.RECENTS,
+            onClick = { onTabSelected(ListenerTab.RECENTS) },
+            icon = { Icon(Icons.Default.History, contentDescription = "Recents") },
+            label = { Text("Recents", style = MaterialTheme.typography.labelLarge) },
             colors = navBarColors
         )
 

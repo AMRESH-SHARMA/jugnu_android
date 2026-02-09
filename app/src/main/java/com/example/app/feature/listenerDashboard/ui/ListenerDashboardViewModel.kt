@@ -14,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ListenerDashboardViewModel @Inject constructor(
-    private val getListenerStats: GetListenerStatsUseCase
+    private val getListenerStats: GetListenerStatsUseCase,
+    private val userRepository: com.example.app.feature.user.data.UserRepository
 ) : ViewModel() {
     val stats = MutableStateFlow<UiState<ListenerStats>>(UiState.Loading)
     private val _isRefreshing = MutableStateFlow(false)
@@ -22,6 +23,12 @@ class ListenerDashboardViewModel @Inject constructor(
     
     private val _showTimeoutMessage = MutableStateFlow(false)
     val showTimeoutMessage = _showTimeoutMessage
+
+    private val _isAvailable = MutableStateFlow(true)
+    val isAvailable = _isAvailable
+
+    private val _isUpdatingAvailability = MutableStateFlow(false)
+    val isUpdatingAvailability = _isUpdatingAvailability
 
     var fromDate: String? = null
     var toDate: String? = null
@@ -83,5 +90,27 @@ class ListenerDashboardViewModel @Inject constructor(
     
     fun clearTimeoutMessage() {
         _showTimeoutMessage.value = false
+    }
+
+    fun toggleAvailability() = viewModelScope.launch {
+        _isUpdatingAvailability.value = true
+        val newStatus = !_isAvailable.value
+        
+        when (val result = userRepository.updateAvailability(newStatus)) {
+            is ApiResult.Success -> {
+                _isAvailable.value = newStatus
+                com.example.app.core.ui.SnackbarManager.showSuccess(
+                    if (newStatus) "You are now available" else "Silent mode enabled"
+                )
+            }
+            is ApiResult.Error -> {
+                // Keep old value on error
+                com.example.app.core.ui.SnackbarManager.showError(
+                    result.message ?: "Failed to update availability"
+                )
+            }
+        }
+        
+        _isUpdatingAvailability.value = false
     }
 }

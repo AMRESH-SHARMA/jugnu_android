@@ -41,4 +41,8 @@ class LoginViewModel @Inject constructor(
             }
         }
     }
+    
+    fun resetState() {
+        _otpRequestState.value = LoginUiState.Idle
+    }
 }

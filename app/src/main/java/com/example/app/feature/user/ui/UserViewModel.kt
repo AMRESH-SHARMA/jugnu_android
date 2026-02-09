@@ -17,6 +17,8 @@ sealed class UserUiState {
     object LoggedOut : UserUiState()
     object UpdatingProfile : UserUiState()
     object ProfileUpdated : UserUiState()
+    object ReportingAbuse : UserUiState()
+    object AbuseReported : UserUiState()
     data class Error(val message: String) : UserUiState()
 }
 
@@ -50,6 +52,9 @@ class UserViewModel @Inject constructor(
                 _uiState.value = UserUiState.LoggedOut
             } catch (e: Exception) {
                 _uiState.value = UserUiState.Error(e.message ?: "Logout failed")
+                com.example.app.core.ui.SnackbarManager.showError(
+                    e.message ?: "Logout failed"
+                )
             }
         }
     }
@@ -76,17 +81,50 @@ class UserViewModel @Inject constructor(
                     is com.example.app.core.network.ApiResult.Success -> {
                         userPreferencesRepository.saveInterestedIn(value)
                         _uiState.value = UserUiState.ProfileUpdated
+                        com.example.app.core.ui.SnackbarManager.showSuccess("Preference updated")
                         kotlinx.coroutines.delay(1000)
                         _uiState.value = UserUiState.Idle
                     }
                     is com.example.app.core.network.ApiResult.Error -> {
                         _uiState.value = UserUiState.Error(result.message ?: "Failed to update")
+                        com.example.app.core.ui.SnackbarManager.showError(
+                            result.message ?: "Failed to update preference"
+                        )
                         kotlinx.coroutines.delay(2000)
                         _uiState.value = UserUiState.Idle
                     }
                 }
             } catch (e: Exception) {
                 _uiState.value = UserUiState.Error(e.message ?: "Failed to update preference")
+                com.example.app.core.ui.SnackbarManager.showError(
+                    e.message ?: "Failed to update preference"
+                )
+                kotlinx.coroutines.delay(2000)
+                _uiState.value = UserUiState.Idle
+            }
+        }
+    }
+
+    fun reportAbuse(description: String) {
+        viewModelScope.launch {
+            try {
+                _uiState.value = UserUiState.ReportingAbuse
+                val result = userRepository.reportAbuse(description)
+                
+                when (result) {
+                    is com.example.app.core.network.ApiResult.Success -> {
+                        _uiState.value = UserUiState.AbuseReported
+                        kotlinx.coroutines.delay(2000)
+                        _uiState.value = UserUiState.Idle
+                    }
+                    is com.example.app.core.network.ApiResult.Error -> {
+                        _uiState.value = UserUiState.Error(result.message ?: "Failed to submit report")
+                        kotlinx.coroutines.delay(2000)
+                        _uiState.value = UserUiState.Idle
+                    }
+                }
+            } catch (e: Exception) {
+                _uiState.value = UserUiState.Error(e.message ?: "Failed to submit report")
                 kotlinx.coroutines.delay(2000)
                 _uiState.value = UserUiState.Idle
             }

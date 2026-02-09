@@ -2,6 +2,7 @@ package com.example.app.feature.home.ui.components
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Call
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -46,22 +47,20 @@ fun HomeBottomTabBar(
             },
             colors = navBarColors
         )
-        //TODO
-        //In future we will enable this functionality
-        /*
+        
         NavigationBarItem(
-            selected = selected == HomeTab.CHATS,
-            onClick = { onTabSelected(HomeTab.CHATS) },
-            icon = { Icon(Icons.Default.Chat, contentDescription = "Chats") },
+            selected = selected == HomeTab.RECENTS,
+            onClick = { onTabSelected(HomeTab.RECENTS) },
+            icon = { Icon(Icons.Default.History, contentDescription = "Recents") },
             label = {
                 Text(
-                    "Chats",
+                    "Recents",
                     style = MaterialTheme.typography.labelLarge
                 )
             },
             colors = navBarColors
         )
-         */
+        
         NavigationBarItem(
             selected = selected == HomeTab.USER,
             onClick = { onTabSelected(HomeTab.USER) },
