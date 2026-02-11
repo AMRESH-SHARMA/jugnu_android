@@ -9,10 +9,9 @@ class GetWalletHistoryUseCase @Inject constructor(
     private val repo: PaymentRepository
 ) {
     suspend operator fun invoke(
-        userId: Long,
         page: Int,
         size: Int
     ): ApiResult<WalletHistoryPage> {
-        return repo.getWalletHistory(userId, page, size)
+        return repo.getWalletHistory(page, size)
     }
 }

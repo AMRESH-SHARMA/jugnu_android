@@ -4,6 +4,7 @@ import com.example.app.core.network.BaseResponse
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.PATCH
+import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface UserApi {
@@ -22,11 +23,14 @@ interface UserApi {
         @Body req: UpdateAvailabilityDto
     ): BaseResponse<Unit>
 
-    @retrofit2.http.POST("users/report-abuse")
+    @POST("users/report-abuse")
     suspend fun reportAbuse(
         @Body req: ReportAbuseDto
     ): BaseResponse<Unit>
 
     @GET("users/recents")
     suspend fun getRecents(): BaseResponse<List<RecentInteractionDto>>
+
+    @POST("users/logout")
+    suspend fun logout(): BaseResponse<Unit>
 }

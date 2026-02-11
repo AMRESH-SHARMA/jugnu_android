@@ -27,11 +27,11 @@ class ProfileSetupViewModel @Inject constructor(
     private val _setupState = MutableStateFlow<ProfileSetupUiState>(ProfileSetupUiState.Idle)
     val setupState: StateFlow<ProfileSetupUiState> = _setupState
 
-    fun setupProfile(nickname: String, interestedIn: String) {
+    fun setupProfile(nickname: String, gender: String, interestedIn: String) {
         viewModelScope.launch {
             _setupState.value = ProfileSetupUiState.Loading
 
-            when (val result = setupProfileUseCase(nickname, interestedIn)) {
+            when (val result = setupProfileUseCase(nickname, gender, interestedIn)) {
                 is ApiResult.Success -> {
                     // Save interested in preference locally
                     userPreferencesRepository.saveInterestedIn(interestedIn)

@@ -55,11 +55,8 @@ class EnterAmountViewModel @Inject constructor(
     }
 
     private fun fetchBalance() {
-        val userId = userSession.accountId
-        if (userId == 0L) return
-
         viewModelScope.launch {
-            when (val res = getBalanceUseCase(userId)) {
+            when (val res = getBalanceUseCase()) {
                 is ApiResult.Success ->
                     _currentBalance.value = res.data.balanceCoins
 

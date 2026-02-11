@@ -29,11 +29,8 @@ class WalletViewModel @Inject constructor(
     }
 
     fun refreshBalance() {
-        val accountId = userSession.accountId
-        if (accountId == 0L) return
-
         viewModelScope.launch {
-            when (val res = getBalance(accountId)) {
+            when (val res = getBalance()) {
                 is ApiResult.Success -> _balance.value = res.data.balanceCoins
                 is ApiResult.Error -> { /* handle later */
                 }

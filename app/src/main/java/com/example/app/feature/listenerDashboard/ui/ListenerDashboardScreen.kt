@@ -111,6 +111,7 @@ fun ListenerDashboardScreen(
 ) {
     val uiState by vm.stats.collectAsState()
     val isRefreshing by vm.isRefreshing.collectAsState()
+    val isLoadingFilter by vm.isLoadingFilter.collectAsState()
     val showTimeoutMessage by vm.showTimeoutMessage.collectAsState()
 
     LaunchedEffect(Unit) { vm.load() }
@@ -212,118 +213,143 @@ fun ListenerDashboardScreen(
         ) {
             when (selectedTab) {
                 ListenerTab.DASHBOARD -> {
-                    when (uiState) {
-                        is UiState.Success -> {
-                            val stats = (uiState as UiState.Success).data
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .verticalScroll(rememberScrollState())
-                                    .padding(16.dp)
-                            ) {
-                                ImprovedHeaderSection(
-                                    username = stats.name,
-                                    avatarUrl = stats.avatar
-                                )
+                    Box(modifier = Modifier.fillMaxSize()) {
+                        when (val currentState = uiState) {
+                            is UiState.Success -> {
+                                val stats = currentState.data
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .verticalScroll(rememberScrollState())
+                                        .padding(16.dp)
+                                ) {
+                                    ImprovedHeaderSection(
+                                        username = stats.name,
+                                        avatarUrl = stats.avatar
+                                    )
 
-                                Spacer(Modifier.height(20.dp))
+                                    Spacer(Modifier.height(20.dp))
 
-                                // Availability Status Card
-                                AvailabilityStatusCard(
-                                    isAvailable = vm.isAvailable.collectAsState().value,
-                                    isUpdating = vm.isUpdatingAvailability.collectAsState().value,
-                                    onAvailabilityToggle = { vm.toggleAvailability() }
-                                )
+                                    // Availability Status Card
+                                    AvailabilityStatusCard(
+                                        isAvailable = vm.isAvailable.collectAsState().value,
+                                        isUpdating = vm.isUpdatingAvailability.collectAsState().value,
+                                        onAvailabilityToggle = { vm.toggleAvailability() }
+                                    )
 
-                                Spacer(Modifier.height(20.dp))
+                                    Spacer(Modifier.height(20.dp))
 
-                                // Filter Section
-                                FilterSection(
-                                    activeFilter = activeFilter,
-                                    customFromDate = customFromDate,
-                                    customToDate = customToDate,
-                                    onCustomDateClick = { type ->
-                                        datePickerType = type
-                                        showPicker = true
-                                    },
-                                    onFilterChange = { filter ->
-                                        if (activeFilter != filter) {
-                                            activeFilter = filter
-                                            when (filter) {
-                                                StatsFilter.ALL_TIME -> {
-                                                    customFromDate = null
-                                                    customToDate = null
-                                                    vm.setDateRange(null, null)
-                                                    vm.load()
-                                                }
-                                                StatsFilter.DAYS_30 -> {
-                                                    customFromDate = null
-                                                    customToDate = null
-                                                    val today = LocalDate.now()
-                                                    val from = today.minusDays(30).toString()
-                                                    val to = today.toString()
-                                                    vm.setDateRange(from, to)
-                                                    vm.load()
-                                                }
-                                                StatsFilter.CUSTOM -> {
-                                                    // Just switch to custom, don't load until dates are selected
+                                    // Filter Section
+                                    FilterSection(
+                                        activeFilter = activeFilter,
+                                        customFromDate = customFromDate,
+                                        customToDate = customToDate,
+                                        onCustomDateClick = { type ->
+                                            datePickerType = type
+                                            showPicker = true
+                                        },
+                                        onFilterChange = { filter ->
+                                            if (activeFilter != filter) {
+                                                activeFilter = filter
+                                                when (filter) {
+                                                    StatsFilter.ALL_TIME -> {
+                                                        customFromDate = null
+                                                        customToDate = null
+                                                        vm.setDateRange(null, null)
+                                                        vm.load()
+                                                    }
+                                                    StatsFilter.DAYS_30 -> {
+                                                        customFromDate = null
+                                                        customToDate = null
+                                                        val today = LocalDate.now()
+                                                        val from = today.minusDays(30).toString()
+                                                        val to = today.toString()
+                                                        vm.setDateRange(from, to)
+                                                        vm.load()
+                                                    }
+                                                    StatsFilter.CUSTOM -> {
+                                                        // Just switch to custom, don't load until dates are selected
+                                                    }
                                                 }
                                             }
                                         }
-                                    }
-                                )
-
-                                Spacer(Modifier.height(20.dp))
-
-                                ImprovedOverviewCards(stats)
-                                
-                                Spacer(Modifier.height(20.dp))
-                                
-                                RevenueChartCard(
-                                    stats = stats,
-                                    selectedFilter = revenueTrendFilter,
-                                    onFilterChange = { revenueTrendFilter = it }
-                                )
-                                
-                                Spacer(Modifier.height(20.dp))
-
-                                ImprovedTasksCard(stats)
-                                
-                                Spacer(Modifier.height(20.dp))
-
-                                ImprovedStatRows(stats)
-                                
-                                Spacer(Modifier.height(80.dp))
-                            }
-                        }
-
-                        is UiState.Loading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
-                        }
-
-                        is UiState.Error -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Failed to load data",
-                                        color = MaterialTheme.colorScheme.error,
-                                        style = MaterialTheme.typography.bodyLarge
                                     )
-                                    TextButton(onClick = { vm.load() }) {
-                                        Text("Retry")
+
+                                    Spacer(Modifier.height(20.dp))
+
+                                    ImprovedOverviewCards(stats)
+                                    
+                                    Spacer(Modifier.height(20.dp))
+                                    
+                                    RevenueChartCard(
+                                        stats = stats,
+                                        selectedFilter = revenueTrendFilter,
+                                        onFilterChange = { revenueTrendFilter = it },
+                                        viewModel = vm
+                                    )
+                                    
+                                    Spacer(Modifier.height(20.dp))
+
+                                    ImprovedTasksCard(stats)
+                                    
+                                    Spacer(Modifier.height(20.dp))
+
+                                    ImprovedStatRows(stats)
+                                    
+                                    Spacer(Modifier.height(80.dp))
+                                }
+                            }
+
+                            is UiState.Loading -> {
+                                // Show centered loading only on first load (when no previous data)
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator()
+                                }
+                            }
+
+                            is UiState.Error -> {
+                                // Show error in snackbar and keep previous data if available
+                                LaunchedEffect(currentState.message) {
+                                    com.example.app.core.ui.SnackbarManager.showError(
+                                        currentState.message ?: "Failed to load data"
+                                    )
+                                }
+                                
+                                Box(
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "Failed to load data",
+                                            color = MaterialTheme.colorScheme.error,
+                                            style = MaterialTheme.typography.bodyLarge
+                                        )
+                                        TextButton(onClick = { vm.load() }) {
+                                            Text("Retry")
+                                        }
                                     }
                                 }
+                            }
+                        }
+                        
+                        // Loading overlay for refresh or filter change
+                        if (isRefreshing || isLoadingFilter) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.3f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = MaterialTheme.colorScheme.primary
+                                )
                             }
                         }
                     }
@@ -716,27 +742,34 @@ fun CustomDatePickerDialog(
 fun RevenueChartCard(
     stats: ListenerStats,
     selectedFilter: RevenueTrendFilter,
-    onFilterChange: (RevenueTrendFilter) -> Unit
+    onFilterChange: (RevenueTrendFilter) -> Unit,
+    viewModel: ListenerDashboardViewModel
 ) {
-    val today = LocalDate.now()
+    val revenueTrend by viewModel.revenueTrend.collectAsState()
     
-    // Generate data based on selected filter
-    val (revenueData, periodLabel) = remember(stats, selectedFilter) {
+    // Load revenue trend when filter changes
+    LaunchedEffect(selectedFilter) {
         val days = when (selectedFilter) {
             RevenueTrendFilter.DAYS_7 -> 7
             RevenueTrendFilter.DAYS_30 -> 30
             RevenueTrendFilter.DAYS_90 -> 90
         }
-        
-        val data = List(days) { index ->
-            val date = today.minusDays((days - 1 - index).toLong())
-            Pair(date, (stats.netEarnings / 30 + (0..20).random()).toFloat())
-        }
-        
+        viewModel.loadRevenueTrend(days)
+    }
+    
+    val (revenueData, periodLabel) = remember(revenueTrend, selectedFilter) {
         val label = when (selectedFilter) {
             RevenueTrendFilter.DAYS_7 -> "Last 7 days"
             RevenueTrendFilter.DAYS_30 -> "Last 30 days"
             RevenueTrendFilter.DAYS_90 -> "Last 90 days"
+        }
+        
+        val data = try {
+            revenueTrend?.dailyRevenue?.map { 
+                Pair(it.date, it.netEarnings.toFloat())
+            } ?: emptyList()
+        } catch (e: Exception) {
+            emptyList()
         }
         
         Pair(data, label)
@@ -901,6 +934,21 @@ fun ImprovedRevenueLineChart(
     selectedFilter: RevenueTrendFilter,
     modifier: Modifier = Modifier
 ) {
+    // Handle empty data case
+    if (data.isEmpty()) {
+        Box(
+            modifier = modifier.padding(vertical = 8.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = "No revenue data available",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
+        }
+        return
+    }
+    
     val maxValue = data.maxOfOrNull { it.second } ?: 1f
     val chartColor = Color(0xFF4CAF50)
     val gridColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
@@ -948,80 +996,82 @@ fun ImprovedRevenueLineChart(
             )
         }
 
-        // Draw gradient fill
-        val gradientPath = Path().apply {
-            moveTo(points.first().x, padding + chartHeight)
-            points.forEach { lineTo(it.x, it.y) }
-            lineTo(points.last().x, padding + chartHeight)
-            close()
-        }
+        // Only draw if we have data points
+        if (points.isNotEmpty()) {
+            // Draw gradient fill
+            val gradientPath = Path().apply {
+                moveTo(points.first().x, padding + chartHeight)
+                points.forEach { lineTo(it.x, it.y) }
+                lineTo(points.last().x, padding + chartHeight)
+                close()
+            }
 
-        drawPath(
-            path = gradientPath,
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    chartColor.copy(alpha = 0.3f),
-                    Color.Transparent
+            drawPath(
+                path = gradientPath,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        chartColor.copy(alpha = 0.3f),
+                        Color.Transparent
+                    )
                 )
             )
-        )
 
-        // Draw line
-        val linePath = Path().apply {
-            moveTo(points.first().x, points.first().y)
-            for (i in 0 until points.lastIndex) {
-                val current = points[i]
-                val next = points[i + 1]
-                val midX = (current.x + next.x) / 2
-                cubicTo(
-                    midX, current.y,
-                    midX, next.y,
-                    next.x, next.y
+            // Draw line
+            val linePath = Path().apply {
+                moveTo(points.first().x, points.first().y)
+                for (i in 0 until points.lastIndex) {
+                    val current = points[i]
+                    val next = points[i + 1]
+                    val midX = (current.x + next.x) / 2
+                    cubicTo(
+                        midX, current.y,
+                        midX, next.y,
+                        next.x, next.y
+                    )
+                }
+            }
+            drawPath(
+                path = linePath,
+                color = chartColor,
+                style = Stroke(width = 6f, cap = StrokeCap.Round)
+            )
+
+            // Draw points
+            points.forEach { point ->
+                drawCircle(
+                    color = chartColor,
+                    radius = 8f,
+                    center = point
+                )
+                drawCircle(
+                    color = Color.White,
+                    radius = 4f,
+                    center = point
                 )
             }
-        }
 
-        drawPath(
-            path = linePath,
-            color = chartColor,
-            style = Stroke(width = 6f, cap = StrokeCap.Round)
-        )
-
-        // Draw points
-        points.forEach { point ->
-            drawCircle(
-                color = chartColor,
-                radius = 8f,
-                center = point
-            )
-            drawCircle(
-                color = Color.White,
-                radius = 4f,
-                center = point
-            )
-        }
-
-        // Draw X-axis labels (dates) - show fewer labels for larger ranges
-        val labelInterval = when (selectedFilter) {
-            RevenueTrendFilter.DAYS_7 -> 1  // Show all dates
-            RevenueTrendFilter.DAYS_30 -> 5  // Show every 5th date
-            RevenueTrendFilter.DAYS_90 -> 15 // Show every 15th date
-        }
-        
-        data.forEachIndexed { index, (date, _) ->
-            if (index % labelInterval == 0 || index == data.size - 1) {
-                val x = padding + (index * stepX)
-                val dateText = date.format(DateTimeFormatter.ofPattern("dd/MM"))
-                drawContext.canvas.nativeCanvas.drawText(
-                    dateText,
-                    x,
-                    size.height - 5f,
-                    Paint().apply {
-                        color = android.graphics.Color.GRAY
-                        textSize = 24f
-                        textAlign = Paint.Align.CENTER
-                    }
-                )
+            // Draw X-axis labels (dates) - show fewer labels for larger ranges
+            val labelInterval = when (selectedFilter) {
+                RevenueTrendFilter.DAYS_7 -> 1  // Show all dates
+                RevenueTrendFilter.DAYS_30 -> 5  // Show every 5th date
+                RevenueTrendFilter.DAYS_90 -> 15 // Show every 15th date
+            }
+            
+            data.forEachIndexed { index, (date, _) ->
+                if (index % labelInterval == 0 || index == data.size - 1) {
+                    val x = padding + (index * stepX)
+                    val dateText = date.format(DateTimeFormatter.ofPattern("dd/MM"))
+                    drawContext.canvas.nativeCanvas.drawText(
+                        dateText,
+                        x,
+                        size.height - 5f,
+                        Paint().apply {
+                            color = android.graphics.Color.GRAY
+                            textSize = 24f
+                            textAlign = Paint.Align.CENTER
+                        }
+                    )
+                }
             }
         }
     }

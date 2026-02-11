@@ -23,11 +23,15 @@ class CallAudioController @Inject constructor(
     init {
         scope.launch {
             CallStore.call.collect { call ->
-                val status = call?.status ?: run {
+                val status = call?.status
+                
+                // Call ended or cleared - always stop audio
+                if (call == null) {
                     stopAll()
                     lastStatus = null
                     return@collect
                 }
+                
                 // Ignore duplicate states
                 if (status == lastStatus) return@collect
                 lastStatus = status

@@ -8,7 +8,7 @@ import javax.inject.Inject
 class GetWalletBalanceUseCase @Inject constructor(
     private val repo: PaymentRepository
 ) {
-    suspend operator fun invoke(userId: Long): ApiResult<WalletModel> {
-        return repo.getBalance(userId)
+    suspend operator fun invoke(): ApiResult<WalletModel> {
+        return repo.getBalance()
     }
 }

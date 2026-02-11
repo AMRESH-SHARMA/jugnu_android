@@ -35,13 +35,10 @@ class WalletHistoryViewModel @Inject constructor(
     fun loadNextPage() {
         if (_loading.value || !hasMore) return
 
-        val userId = session.accountId
-        if (userId == 0L) return
-
         _loading.value = true
 
         viewModelScope.launch {
-            when (val res = getHistory(userId, page, size)) {
+            when (val res = getHistory(page, size)) {
                 is ApiResult.Success -> {
                     _items.value += res.data.items
                     hasMore = _items.value.size < res.data.total

@@ -45,6 +45,13 @@ fun UsageStatisticsScreen(
     var showDatePicker by remember { mutableStateOf(false) }
     var datePickerType by remember { mutableStateOf<DatePickerType>(DatePickerType.FROM) }
 
+    // Show error in global snackbar
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            com.example.app.core.ui.SnackbarManager.showError(error)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,62 +78,89 @@ fun UsageStatisticsScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
         ) {
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Filter Chips
-            FilterSection(
-                selectedFilter = uiState.selectedFilter,
-                onFilterSelected = { viewModel.selectFilter(it) },
-                onCustomDateClick = { type ->
-                    datePickerType = type
-                    showDatePicker = true
-                },
-                customFromDate = uiState.customFromDate,
-                customToDate = uiState.customToDate
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Summary Cards
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                SummaryCard(
-                    title = "Audio Calls",
-                    value = uiState.totalAudioMinutes,
-                    color = Color(0xFF4CAF50),
-                    modifier = Modifier.weight(1f)
+            // Show centered loading only on first load (when no data)
+            if (uiState.isLoading && uiState.chartData.isEmpty()) {
+                CircularProgressIndicator(
+                    modifier = Modifier.align(Alignment.Center),
+                    color = MaterialTheme.colorScheme.primary
                 )
-                SummaryCard(
-                    title = "Video Calls",
-                    value = uiState.totalVideoMinutes,
-                    color = Color(0xFFFFC107),
-                    modifier = Modifier.weight(1f)
-                )
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp)
+                ) {
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Filter Chips
+                    FilterSection(
+                        selectedFilter = uiState.selectedFilter,
+                        onFilterSelected = { viewModel.selectFilter(it) },
+                        onCustomDateClick = { type ->
+                            datePickerType = type
+                            showDatePicker = true
+                        },
+                        customFromDate = uiState.customFromDate,
+                        customToDate = uiState.customToDate
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Summary Cards
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        SummaryCard(
+                            title = "Audio Calls",
+                            value = uiState.totalAudioMinutes,
+                            color = Color(0xFF4CAF50),
+                            modifier = Modifier.weight(1f)
+                        )
+                        SummaryCard(
+                            title = "Video Calls",
+                            value = uiState.totalVideoMinutes,
+                            color = Color(0xFFFFC107),
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Chart
+                    UsageChart(
+                        data = uiState.chartData,
+                        selectedFilter = uiState.selectedFilter
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Legend
+                    ChartLegend()
+
+                    Spacer(modifier = Modifier.height(32.dp))
+                }
+
+                // Loading overlay for subsequent loads
+                if (uiState.isLoading && uiState.chartData.isNotEmpty()) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Chart
-            UsageChart(
-                data = uiState.chartData,
-                selectedFilter = uiState.selectedFilter
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Legend
-            ChartLegend()
-
-            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 

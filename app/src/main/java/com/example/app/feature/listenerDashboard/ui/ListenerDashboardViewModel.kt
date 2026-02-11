@@ -6,6 +6,7 @@ import com.example.app.core.network.ApiResult
 import com.example.app.core.session.SessionManager
 import com.example.app.core.ui.UiState
 import com.example.app.feature.listenerDashboard.domain.GetListenerStatsUseCase
+import com.example.app.feature.listenerDashboard.domain.GetRevenueTrendUseCase
 import com.example.app.feature.listenerDashboard.domain.ListenerStats
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,11 +16,18 @@ import javax.inject.Inject
 @HiltViewModel
 class ListenerDashboardViewModel @Inject constructor(
     private val getListenerStats: GetListenerStatsUseCase,
+    private val getRevenueTrend: GetRevenueTrendUseCase,
     private val userRepository: com.example.app.feature.user.data.UserRepository
 ) : ViewModel() {
     val stats = MutableStateFlow<UiState<ListenerStats>>(UiState.Loading)
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing = _isRefreshing
+    
+    private val _isLoadingFilter = MutableStateFlow(false)
+    val isLoadingFilter = _isLoadingFilter
+    
+    private val _revenueTrend = MutableStateFlow<com.example.app.feature.listenerDashboard.domain.RevenueTrend?>(null)
+    val revenueTrend = _revenueTrend
     
     private val _showTimeoutMessage = MutableStateFlow(false)
     val showTimeoutMessage = _showTimeoutMessage
@@ -39,11 +47,33 @@ class ListenerDashboardViewModel @Inject constructor(
     }
 
     fun load() = viewModelScope.launch {
+        // Show loading overlay if we have previous data
+        if (stats.value is UiState.Success) {
+            _isLoadingFilter.value = true
+        } else {
+            stats.value = UiState.Loading
+        }
+        
         val listenerId = SessionManager.userAccountId
 
         when (val res = getListenerStats(listenerId, fromDate, toDate)) {
-            is ApiResult.Success -> stats.value = UiState.Success(res.data)
-            is ApiResult.Error -> stats.value = UiState.Error(res.message)
+            is ApiResult.Success -> {
+                stats.value = UiState.Success(res.data)
+                // Initialize availability from API response
+                _isAvailable.value = res.data.isAvailable
+                _isLoadingFilter.value = false
+            }
+            is ApiResult.Error -> {
+                _isLoadingFilter.value = false
+                // Show error in snackbar but keep previous data if available
+                val errorMessage = res.message?.takeIf { it.isNotBlank() } 
+                    ?: "Failed to load dashboard data"
+                com.example.app.core.ui.SnackbarManager.showError(errorMessage)
+                // Only set error state if we don't have previous data
+                if (stats.value !is UiState.Success) {
+                    stats.value = UiState.Error(res.message)
+                }
+            }
         }
     }
 
@@ -105,12 +135,33 @@ class ListenerDashboardViewModel @Inject constructor(
             }
             is ApiResult.Error -> {
                 // Keep old value on error
-                com.example.app.core.ui.SnackbarManager.showError(
-                    result.message ?: "Failed to update availability"
-                )
+                val errorMessage = result.message?.takeIf { it.isNotBlank() } 
+                    ?: "Failed to update availability"
+                com.example.app.core.ui.SnackbarManager.showError(errorMessage)
             }
         }
         
         _isUpdatingAvailability.value = false
+    }
+
+    fun loadRevenueTrend(days: Int) = viewModelScope.launch {
+        try {
+            val listenerId = SessionManager.userAccountId
+            
+            when (val result = getRevenueTrend(listenerId, days)) {
+                is ApiResult.Success -> {
+                    _revenueTrend.value = result.data
+                }
+                is ApiResult.Error -> {
+                    val errorMessage = result.message?.takeIf { it.isNotBlank() } 
+                        ?: "Failed to load revenue trend"
+                    com.example.app.core.ui.SnackbarManager.showError(errorMessage)
+                }
+            }
+        } catch (e: Exception) {
+            com.example.app.core.ui.SnackbarManager.showError(
+                "Failed to load revenue trend"
+            )
+        }
     }
 }

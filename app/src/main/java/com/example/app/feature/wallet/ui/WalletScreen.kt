@@ -1,9 +1,6 @@
 package com.example.app.feature.wallet.ui
 
 import Routes
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -206,12 +203,6 @@ private fun formatTime(timestamp: Instant): String {
 @Composable
 fun ImprovedBalanceCard(balance: Double, currency: String) {
 
-    val animatedValue by animateFloatAsState(
-        targetValue = balance.toFloat(),
-        animationSpec = tween(1200, easing = FastOutSlowInEasing),
-        label = "balanceAnimation"
-    )
-
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -268,7 +259,7 @@ fun ImprovedBalanceCard(balance: Double, currency: String) {
 
                 Column {
                     Text(
-                        text = "🪙 ${"%,d".format(animatedValue.toInt())}",
+                        text = "🪙 ${"%,d".format(balance.toInt())}",
                         style = MaterialTheme.typography.displaySmall.copy(
                             fontWeight = FontWeight.Bold
                         ),
