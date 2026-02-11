@@ -3,6 +3,7 @@ package com.example.app.feature.listenerDashboard.domain
 data class ListenerStats(
     val avatar: String,
     val name: String,
+    val isAvailable: Boolean,
     val uniqueCallers: Long,
     val totalAnsweredCalls: Long,
     val totalMissedCalls: Long,

@@ -46,7 +46,9 @@ class AndroidAudioPlayer @Inject constructor(
 
     override fun stop() {
         mediaPlayer?.apply {
-            stop()
+            if (isPlaying) {
+                stop()
+            }
             release()
         }
         mediaPlayer = null

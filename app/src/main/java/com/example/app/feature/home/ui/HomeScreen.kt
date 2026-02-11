@@ -1,6 +1,12 @@
 package com.example.app.feature.home.ui
 
 import Routes
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +23,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalanceWallet
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -25,7 +34,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,9 +46,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.app.feature.home.ui.components.HomeBottomTabBar
@@ -57,7 +71,48 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val balance by viewModel.balance.collectAsState()
+    
+    // Notification permission state
+    var showNotificationDialog by remember { mutableStateOf(false) }
+    var hasCheckedPermission by remember { mutableStateOf(false) }
+    
+    // Check if notification permission is granted
+    val isNotificationPermissionGranted = remember(context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Auto-granted on Android 12 and below
+        }
+    }
+    
+    // Permission launcher
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            // User denied, but don't block them - just show once
+        }
+    }
+    
+    // Check permission on first launch
+    LaunchedEffect(Unit) {
+        if (!hasCheckedPermission && !isNotificationPermissionGranted) {
+            // Check if we've already asked before (using SharedPreferences)
+            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            val hasAskedBefore = prefs.getBoolean("notification_permission_asked", false)
+            
+            if (!hasAskedBefore) {
+                showNotificationDialog = true
+                prefs.edit().putBoolean("notification_permission_asked", true).apply()
+            }
+            hasCheckedPermission = true
+        }
+    }
     
     // Get the saved tab from navigation back stack entry
     val navBackStackEntry = navController.currentBackStackEntry
@@ -154,6 +209,51 @@ fun HomeScreen(
                 }
             }
         }
+    }
+    
+    // Notification Permission Dialog for existing users
+    if (showNotificationDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        AlertDialog(
+            onDismissRequest = { showNotificationDialog = false },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.Notifications,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "Enable Notifications",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+            },
+            text = {
+                Text(
+                    text = "Stay updated with incoming calls and messages. We'll notify you when someone tries to reach you.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showNotificationDialog = false
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                ) {
+                    Text("Enable")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showNotificationDialog = false }) {
+                    Text("Not Now")
+                }
+            }
+        )
     }
 }
 

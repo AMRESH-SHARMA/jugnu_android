@@ -2,6 +2,8 @@ package com.example.app.feature.usage.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.app.core.network.ApiResult
+import com.example.app.feature.usage.data.UsageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -11,13 +13,15 @@ import java.time.LocalDate
 import javax.inject.Inject
 
 @HiltViewModel
-class UsageStatisticsViewModel @Inject constructor() : ViewModel() {
+class UsageStatisticsViewModel @Inject constructor(
+    private val repository: UsageRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(UsageStatisticsUiState())
     val uiState: StateFlow<UsageStatisticsUiState> = _uiState.asStateFlow()
 
     init {
-        loadStaticData()
+        loadData()
     }
 
     fun selectFilter(filter: FilterType) {
@@ -26,67 +30,76 @@ class UsageStatisticsViewModel @Inject constructor() : ViewModel() {
             customFromDate = if (filter != FilterType.CUSTOM) null else _uiState.value.customFromDate,
             customToDate = if (filter != FilterType.CUSTOM) null else _uiState.value.customToDate
         )
-        loadStaticData()
+        loadData()
     }
 
     fun setCustomFromDate(date: LocalDate) {
         _uiState.value = _uiState.value.copy(customFromDate = date)
         if (_uiState.value.customToDate != null) {
-            loadStaticData()
+            loadData()
         }
     }
 
     fun setCustomToDate(date: LocalDate) {
         _uiState.value = _uiState.value.copy(customToDate = date)
         if (_uiState.value.customFromDate != null) {
-            loadStaticData()
+            loadData()
         }
     }
 
-    private fun loadStaticData() {
+    private fun loadData() {
         viewModelScope.launch {
-            val data = generateStaticData()
-            val totalAudio = data.sumOf { it.audioMinutes }
-            val totalVideo = data.sumOf { it.videoMinutes }
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            _uiState.value = _uiState.value.copy(
-                chartData = data,
-                totalAudioMinutes = totalAudio,
-                totalVideoMinutes = totalVideo
-            )
-        }
-    }
+            val (fromDate, toDate) = getDateRange()
 
-    private fun generateStaticData(): List<DailyUsage> {
-        val currentState = _uiState.value
-        val days = when (currentState.selectedFilter) {
-            FilterType.TEN_DAYS -> 10
-            FilterType.THIRTY_DAYS -> 30
-            FilterType.CUSTOM -> {
-                if (currentState.customFromDate != null && currentState.customToDate != null) {
-                    java.time.temporal.ChronoUnit.DAYS.between(
-                        currentState.customFromDate,
-                        currentState.customToDate
-                    ).toInt() + 1
-                } else {
-                    10
+            when (val result = repository.getUsageStatistics(fromDate, toDate)) {
+                is ApiResult.Success -> {
+                    val data = result.data
+                    val totalAudio = data.sumOf { it.audioMinutes }
+                    val totalVideo = data.sumOf { it.videoMinutes }
+
+                    _uiState.value = _uiState.value.copy(
+                        chartData = data,
+                        totalAudioMinutes = totalAudio,
+                        totalVideoMinutes = totalVideo,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+                is ApiResult.Error -> {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = result.message ?: "Failed to load usage statistics"
+                    )
                 }
             }
         }
+    }
 
-        val startDate = when (currentState.selectedFilter) {
-            FilterType.CUSTOM -> currentState.customFromDate ?: LocalDate.now().minusDays(9)
-            else -> LocalDate.now().minusDays(days.toLong() - 1)
+    private fun getDateRange(): Pair<LocalDate, LocalDate> {
+        val currentState = _uiState.value
+        return when (currentState.selectedFilter) {
+            FilterType.TEN_DAYS -> {
+                val toDate = LocalDate.now()
+                val fromDate = toDate.minusDays(9)
+                fromDate to toDate
+            }
+            FilterType.THIRTY_DAYS -> {
+                val toDate = LocalDate.now()
+                val fromDate = toDate.minusDays(29)
+                fromDate to toDate
+            }
+            FilterType.CUSTOM -> {
+                val fromDate = currentState.customFromDate ?: LocalDate.now().minusDays(9)
+                val toDate = currentState.customToDate ?: LocalDate.now()
+                fromDate to toDate
+            }
         }
+    }
 
-        return (0 until days).map { index ->
-            val date = startDate.plusDays(index.toLong())
-            DailyUsage(
-                date = date,
-                audioMinutes = (10..120).random(),
-                videoMinutes = (5..100).random()
-            )
-        }
+    fun retry() {
+        loadData()
     }
 }
 
@@ -96,7 +109,9 @@ data class UsageStatisticsUiState(
     val totalAudioMinutes: Int = 0,
     val totalVideoMinutes: Int = 0,
     val customFromDate: LocalDate? = null,
-    val customToDate: LocalDate? = null
+    val customToDate: LocalDate? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
 )
 
 data class DailyUsage(

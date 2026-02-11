@@ -11,14 +11,11 @@ interface PaymentApi {
 
     /* ---------- WALLET ---------- */
 
-    @GET("payments/balance/{userId}")
-    suspend fun getBalance(
-        @Path("userId") userId: Long
-    ): BaseResponse<WalletDto>
+    @GET("payments/balance")
+    suspend fun getBalance(): BaseResponse<WalletDto>
 
-    @GET("payments/history/{userId}")
+    @GET("payments/history")
     suspend fun getWalletHistory(
-        @Path("userId") userId: Long,
         @Query("page") page: Int,
         @Query("size") size: Int
     ): BaseResponse<WalletHistoryPageDto>

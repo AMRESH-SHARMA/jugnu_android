@@ -12,6 +12,12 @@ interface ListenerDashBoardApi {
         @Query("from") from: String? = null,
         @Query("to") to: String? = null
     ): BaseResponse<ListenerStatsDto>
+
+    @GET("listeners/{id}/revenue-trend")
+    suspend fun getRevenueTrend(
+        @Path("id") listenerId: Long,
+        @Query("days") days: Int
+    ): BaseResponse<RevenueTrendDto>
 }
 
 

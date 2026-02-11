@@ -8,7 +8,7 @@ object AppConstants {
 
     const val REMOTE_CONFIG_URL = "https://storage.googleapis.com/jugnu-config-server/config.json"
     const val USE_DEFAULT_URL = true
-    const val DEFAULT_BASE_URL = "http://192.168.1.6:3001/api/v1/"
+    const val DEFAULT_BASE_URL = "http://192.168.1.3:3001/api/v1/"
     const val WS_PRESENCE_PATH = "ws/presence"
 
     // =========================

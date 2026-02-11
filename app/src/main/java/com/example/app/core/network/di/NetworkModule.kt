@@ -14,6 +14,7 @@ import com.example.app.feature.call.data.CallApi
 import com.example.app.feature.listenerDashboard.data.ListenerDashBoardApi
 import com.example.app.feature.listeners.data.ListenerApi
 import com.example.app.feature.login.data.AuthApi
+import com.example.app.feature.usage.data.UsageApi
 import com.example.app.feature.user.data.UserApi
 import com.example.app.feature.wallet.data.PaymentApi
 import dagger.Module
@@ -168,5 +169,15 @@ object NetworkModule {
     fun provideAppConfigRepository(
         api: AppConfigApi
     ): AppConfigRepository = AppConfigRepository(api)
+
+    // -----------------------------
+    // Usage API
+    // -----------------------------
+    @Provides
+    @Singleton
+    fun provideUsageApi(
+        retrofit: Retrofit
+    ): UsageApi =
+        retrofit.create(UsageApi::class.java)
 
 }

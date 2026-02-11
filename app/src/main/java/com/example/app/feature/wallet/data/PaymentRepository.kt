@@ -10,19 +10,18 @@ class PaymentRepository @Inject constructor(
     private val api: PaymentApi
 ) {
 
-    suspend fun getBalance(userId: Long): ApiResult<WalletModel> =
+    suspend fun getBalance(): ApiResult<WalletModel> =
         safeApiCall {
-            val res = api.getBalance(userId)
+            val res = api.getBalance()
             res.data.toDomain()
         }
 
     suspend fun getWalletHistory(
-        userId: Long,
         page: Int,
         size: Int
     ): ApiResult<WalletHistoryPage> =
         safeApiCall {
-            val res = api.getWalletHistory(userId, page, size)
+            val res = api.getWalletHistory(page, size)
 
             WalletHistoryPage(
                 items = res.data.items.map { it.toDomain() },

@@ -87,9 +87,9 @@ fun UserSettingScreen(
         when (uiState) {
             is UserUiState.LoggedOut -> onLogout()
             is UserUiState.Error -> {
-                com.example.app.core.ui.SnackbarManager.showError(
-                    (uiState as UserUiState.Error).message
-                )
+                val errorMessage = (uiState as UserUiState.Error).message
+                    .takeIf { it.isNotBlank() } ?: "An error occurred"
+                com.example.app.core.ui.SnackbarManager.showError(errorMessage)
             }
             is UserUiState.ProfileUpdated -> {
                 showInterestedInDialog = false
@@ -742,6 +742,8 @@ fun ReportAbuseDialog(
     isLoading: Boolean
 ) {
     var reportText by remember { mutableStateOf("") }
+    val minChars = 10
+    val isValid = reportText.trim().length >= minChars
     
     AlertDialog(
         onDismissRequest = { if (!isLoading) onDismiss() },
@@ -772,6 +774,16 @@ fun ReportAbuseDialog(
                     placeholder = { Text("Describe the incident...") },
                     maxLines = 6,
                     enabled = !isLoading,
+                    supportingText = {
+                        Text(
+                            text = "${reportText.trim().length}/$minChars characters minimum",
+                            color = if (isValid) 
+                                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            else 
+                                MaterialTheme.colorScheme.error
+                        )
+                    },
+                    isError = reportText.isNotEmpty() && !isValid,
                     colors = androidx.compose.material3.TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
@@ -783,11 +795,11 @@ fun ReportAbuseDialog(
         confirmButton = {
             Button(
                 onClick = { 
-                    if (reportText.isNotBlank()) {
-                        onSubmit(reportText)
+                    if (isValid) {
+                        onSubmit(reportText.trim())
                     }
                 },
-                enabled = !isLoading && reportText.isNotBlank(),
+                enabled = !isLoading && isValid,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary
                 )

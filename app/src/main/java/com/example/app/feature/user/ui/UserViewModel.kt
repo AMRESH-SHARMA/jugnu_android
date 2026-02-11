@@ -74,6 +74,7 @@ class UserViewModel @Inject constructor(
                 _uiState.value = UserUiState.UpdatingProfile
                 val result = userRepository.updateProfile(
                     nickname = "Anonymous",
+                    gender = null, // Not updating gender, only interestedIn
                     interestedIn = value
                 )
                 
@@ -118,12 +119,18 @@ class UserViewModel @Inject constructor(
                         _uiState.value = UserUiState.Idle
                     }
                     is com.example.app.core.network.ApiResult.Error -> {
+                        com.example.app.core.ui.SnackbarManager.showError(
+                            result.message ?: "Failed to submit report"
+                        )
                         _uiState.value = UserUiState.Error(result.message ?: "Failed to submit report")
                         kotlinx.coroutines.delay(2000)
                         _uiState.value = UserUiState.Idle
                     }
                 }
             } catch (e: Exception) {
+                com.example.app.core.ui.SnackbarManager.showError(
+                    e.message ?: "Failed to submit report"
+                )
                 _uiState.value = UserUiState.Error(e.message ?: "Failed to submit report")
                 kotlinx.coroutines.delay(2000)
                 _uiState.value = UserUiState.Idle
