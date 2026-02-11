@@ -46,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -98,6 +99,15 @@ fun ListenerListScreen(
     val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
+
+    // Handle navigation to wallet for insufficient balance
+    LaunchedEffect(Unit) {
+        callVm.navigateToWallet.collect {
+            navController.navigate(Routes.Graph.WALLET) {
+                launchSingleTop = true
+            }
+        }
+    }
 
     // Pending call (ONLY cleared after permission result)
     var pendingCall by remember {

@@ -6,10 +6,12 @@ import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallStore
 import com.example.app.core.call.CallType
+import com.example.app.core.network.ApiErrorHandler
 import com.example.app.core.network.ApiResult
 import com.example.app.core.rtc.CallRtcController
 import com.example.app.core.rtc.VideoRenderer
 import com.example.app.core.session.SessionManager
+import com.example.app.core.ui.SnackbarManager
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
 import com.example.app.feature.call.domain.CallUiState
@@ -21,8 +23,11 @@ import com.example.app.feature.user.data.UserRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
@@ -59,6 +64,10 @@ class CallViewModel @Inject constructor(
     // header (name / avatar)
     private val _headerUiState = MutableStateFlow(CallHeaderUiState())
     val headerUiState: StateFlow<CallHeaderUiState> = _headerUiState.asStateFlow()
+
+    // Navigation event for insufficient balance
+    private val _navigateToWallet = MutableSharedFlow<Unit>()
+    val navigateToWallet: SharedFlow<Unit> = _navigateToWallet.asSharedFlow()
 
     // ----------------------------------------------------------------
     // UI TIMERS (presentation only)
@@ -204,7 +213,24 @@ class CallViewModel @Inject constructor(
                     )
                 }
 
-                is ApiResult.Error -> error.value = result.message ?: "Unable to start call"
+                is ApiResult.Error -> {
+                    val errorMessage = result.message ?: "Unable to start call"
+                    
+                    // Check if it's an insufficient balance error
+                    if (result.exception != null && ApiErrorHandler.isInsufficientBalance(result.exception)) {
+                        SnackbarManager.showError(errorMessage, duration = 4000L)
+                        // Trigger navigation to wallet after a short delay
+                        viewModelScope.launch {
+                            delay(500)
+                            _navigateToWallet.emit(Unit)
+                        }
+                    } else {
+                        // Regular error handling
+                        SnackbarManager.showError(errorMessage)
+                    }
+                    
+                    error.value = errorMessage
+                }
             }
         }
     }

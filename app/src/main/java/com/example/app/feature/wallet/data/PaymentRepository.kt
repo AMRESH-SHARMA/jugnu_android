@@ -34,13 +34,15 @@ class PaymentRepository @Inject constructor(
 
     suspend fun withdraw(
         userId: Long,
-        amount: Long
+        amount: Long,
+        destinationRef: String
     ): ApiResult<CreateWithdrawResponseDto> =
         safeApiCall {
             val res = api.withdraw(
                 CreateWithdrawRequestDto(
                     amount = amount,
-                    reason = "Withdraw"
+                    destinationType = "UPI",
+                    destinationRef = destinationRef
                 )
             )
             CreateWithdrawResponseDto(

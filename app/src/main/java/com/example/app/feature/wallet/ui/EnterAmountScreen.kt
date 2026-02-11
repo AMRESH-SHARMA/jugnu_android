@@ -61,11 +61,27 @@ fun EnterAmountScreen(
         viewModelStoreOwner = activity
     )
     val amount by viewModel.amount.collectAsState()
+    val upiId by viewModel.upiId.collectAsState()
     val error by viewModel.error.collectAsState()
     val loading by viewModel.loading.collectAsState()
     val success by viewModel.success.collectAsState()
     val canContinue by viewModel.canContinue.collectAsState()
     val balance by viewModel.currentBalance.collectAsState()
+
+    // Handle success
+    if (success) {
+        androidx.compose.runtime.LaunchedEffect(Unit) {
+            com.example.app.core.ui.SnackbarManager.showSuccess(
+                if (flowType == AmountFlowType.ADD)
+                    "Money added successfully!"
+                else
+                    "Withdrawal request submitted!",
+                duration = 3000L
+            )
+            kotlinx.coroutines.delay(500)
+            navController.popBackStack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -137,8 +153,10 @@ fun EnterAmountScreen(
             EnterAmountContent(
                 flowType = flowType,
                 amount = amount,
+                upiId = upiId,
                 error = error,
                 onAmountChange = viewModel::onAmountChange,
+                onUpiIdChange = viewModel::onUpiIdChange,
                 onQuickAmountClick = viewModel::onQuickAmountClick
             )
 
@@ -179,8 +197,10 @@ fun EnterAmountScreen(
 fun EnterAmountContent(
     flowType: AmountFlowType,
     amount: String,
+    upiId: String,
     error: String?,
     onAmountChange: (String) -> Unit,
+    onUpiIdChange: (String) -> Unit,
     onQuickAmountClick: (Int) -> Unit
 ) {
 
@@ -243,6 +263,41 @@ fun EnterAmountContent(
                     ),
                     shape = RoundedCornerShape(12.dp)
                 )
+
+                // UPI ID field for withdraw
+                if (flowType == AmountFlowType.WITHDRAW) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    
+                    Text(
+                        text = "UPI ID",
+                        style = MaterialTheme.typography.titleSmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedTextField(
+                        value = upiId,
+                        onValueChange = onUpiIdChange,
+                        placeholder = {
+                            Text(
+                                "yourname@upi",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
+                            )
+                        },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
 
                 if (error != null) {
                     Spacer(modifier = Modifier.height(8.dp))

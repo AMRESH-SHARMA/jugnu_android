@@ -31,6 +31,9 @@ class EnterAmountViewModel @Inject constructor(
     private val _amount = MutableStateFlow("")
     val amount = _amount.asStateFlow()
 
+    private val _upiId = MutableStateFlow("")
+    val upiId = _upiId.asStateFlow()
+
     private val _error = MutableStateFlow<String?>(null)
     val error = _error.asStateFlow()
 
@@ -46,9 +49,6 @@ class EnterAmountViewModel @Inject constructor(
 
     private val _currentBalance = MutableStateFlow<Long?>(null)
     val currentBalance = _currentBalance.asStateFlow()
-
-    private val _upiEvent = MutableSharedFlow<Long>()
-    val upiEvent = _upiEvent.asSharedFlow()
 
     init {
         fetchBalance()
@@ -70,7 +70,7 @@ class EnterAmountViewModel @Inject constructor(
     }
 
     // -----------------------------
-    // Input handlers (unchanged)
+    // Input handlers
     // -----------------------------
     fun onAmountChange(input: String) {
         if (input.all { it.isDigit() }) {
@@ -79,13 +79,18 @@ class EnterAmountViewModel @Inject constructor(
         }
     }
 
+    fun onUpiIdChange(input: String) {
+        _upiId.value = input
+        _error.value = null
+    }
+
     fun onQuickAmountClick(value: Int) {
         _amount.value = value.toString()
         _error.value = null
     }
 
     // -----------------------------
-    // SUBMIT ACTION (CORE LOGIC)
+    // SUBMIT ACTION
     // -----------------------------
 
     private companion object {
@@ -119,21 +124,20 @@ class EnterAmountViewModel @Inject constructor(
     }
 
     fun onContinue(flowType: AmountFlowType) {
-        Log.d(
-            "UPI_DEBUG",
-            " UPI_DEBUG onContinue called, flowType=$flowType, amount=${amount.value}"
-        )
         val amountValue = amount.value.toLongOrNull()
         val userId = userSession.accountId
-
-        if (flowType == AmountFlowType.ADD) {
-            Log.d("UPI_DEBUG", "UPI_DEBUG Emitting UPI event for amount=$amountValue")
-        }
 
         if (userId == 0L || amountValue == null || amountValue <= 0) {
             _error.value = "Invalid amount"
             return
         }
+
+        // Validate UPI ID for withdraw
+        if (flowType == AmountFlowType.WITHDRAW && upiId.value.isBlank()) {
+            _error.value = "Please enter UPI ID"
+            return
+        }
+
         val validationError = validateAmount(
             flowType = flowType,
             amount = amountValue,
@@ -149,24 +153,20 @@ class EnterAmountViewModel @Inject constructor(
             _loading.value = true
 
             val result = when (flowType) {
-//                AmountFlowType.ADD -> {
-//                    addMoneyUseCase(
-//                        userId = userId,
-//                        amount = amountValue,
-//                        currency = "INR",
-//                        description = "Wallet top-up"
-//                    )
-//                }
                 AmountFlowType.ADD -> {
-                    _upiEvent.emit(amountValue!!)
-                    Log.d("UPI_DEBUG", " UPI_DEBUG UPI event emitted")
-                    return@launch
+                    addMoneyUseCase(
+                        userId = userId,
+                        amount = amountValue,
+                        currency = "INR",
+                        description = "Wallet top-up"
+                    )
                 }
 
                 AmountFlowType.WITHDRAW -> {
                     withdrawMoneyUseCase(
                         userId = userId,
-                        amount = amountValue
+                        amount = amountValue,
+                        destinationRef = upiId.value.trim()
                     )
                 }
             }
@@ -184,15 +184,5 @@ class EnterAmountViewModel @Inject constructor(
             }
         }
     }
-
-    fun onUpiFlowFinished() {
-        _loading.value = false
-    }
-
-    fun onUpiCancelled() {
-        _loading.value = false
-        _error.value = null
-    }
-
 }
 
