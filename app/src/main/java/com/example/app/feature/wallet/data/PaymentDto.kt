@@ -23,7 +23,8 @@ data class WalletHistoryPageDto(
 
 data class CreateWithdrawRequestDto(
     val amount: Long,
-    val reason: String
+    val destinationType: String = "UPI",
+    val destinationRef: String
 )
 
 data class CreateWithdrawResponseDto(

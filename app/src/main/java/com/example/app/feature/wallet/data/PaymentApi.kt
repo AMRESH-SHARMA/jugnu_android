@@ -30,18 +30,9 @@ interface PaymentApi {
     suspend fun createOrder(
         @Body request: CreateOrderRequestDto
     ): BaseResponse<CreateOrderResponseDto>
-//
-//    @POST("api/v1/payments/intent")
-//    suspend fun createPaymentIntent(
-//        @Body request: CreatePaymentIntentRequestDto
-//    ): BaseResponse<CreatePaymentIntentResponseDto>
-//
+
     /* ---------- WITHDRAW ---------- */
 
-    //    @POST("api/v1/payments/withdraw")
-//    suspend fun createWithdraw(
-//        @Body request: CreateWithdrawRequestDto
-//    ): BaseResponse<CreateWithdrawResponseDto>
     @POST("payments/withdraw")
     suspend fun withdraw(
         @Body request: CreateWithdrawRequestDto

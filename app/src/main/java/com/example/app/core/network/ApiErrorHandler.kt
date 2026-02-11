@@ -12,6 +12,7 @@ object ApiErrorHandler {
             is HttpException -> {
                 when (exception.code()) {
                     401, 403 -> "Session expired. Please login again"
+                    402 -> backendMessage ?: "Insufficient balance to make this call"
                     404 -> backendMessage ?: "Resource not found"
                     408 -> "Request timeout. Please try again"
                     500 -> "Server error. Please try again later"
@@ -30,5 +31,9 @@ object ApiErrorHandler {
     
     fun isSessionExpired(exception: Throwable): Boolean {
         return exception is HttpException && (exception.code() == 401 || exception.code() == 403)
+    }
+    
+    fun isInsufficientBalance(exception: Throwable): Boolean {
+        return exception is HttpException && exception.code() == 402
     }
 }

@@ -10,8 +10,9 @@ class WithdrawMoneyUseCase @Inject constructor(
 ) {
     suspend operator fun invoke(
         userId: Long,
-        amount: Long
+        amount: Long,
+        destinationRef: String
     ): ApiResult<CreateWithdrawResponseDto> {
-        return repo.withdraw(userId, amount)
+        return repo.withdraw(userId, amount, destinationRef)
     }
 }
