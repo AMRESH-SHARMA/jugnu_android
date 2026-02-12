@@ -163,10 +163,13 @@ fun RecentInteractionItem(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // DEBUG: Log the actual value
+                android.util.Log.d("RecentsDebug", "lastInteractionType: '${recent.lastInteractionType}'")
+                
                 // Interaction type icon
                 Icon(
                     imageVector = when (recent.lastInteractionType) {
-                        "audio_call" -> Icons.Default.Phone
+                        "voice_call" -> Icons.Default.Phone
                         "video_call" -> Icons.Default.Videocam
                         "message" -> Icons.Default.Message
                         else -> Icons.Default.History
@@ -195,29 +198,12 @@ fun RecentInteractionItem(
                 )
             }
         }
-
-        // Interaction count badge
-        if (recent.interactionCount > 1) {
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    text = "${recent.interactionCount}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold
-                )
-            }
-        }
     }
 }
 
 private fun formatInteractionType(type: String): String {
     return when (type) {
-        "audio_call" -> "Audio call"
+        "voice_call" -> "Voice call"
         "video_call" -> "Video call"
         "message" -> "Message"
         else -> "Interaction"

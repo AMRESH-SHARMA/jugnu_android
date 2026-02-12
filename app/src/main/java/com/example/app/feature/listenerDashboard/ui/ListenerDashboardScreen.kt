@@ -95,7 +95,7 @@ import java.time.format.DateTimeFormatter
    DATA + RANGE
 --------------------------------------------------- */
 
-enum class StatsFilter { ALL_TIME, DAYS_30, CUSTOM }
+enum class StatsFilter { TODAY, ALL_TIME, DAYS_30, CUSTOM }
 
 enum class RevenueTrendFilter { DAYS_7, DAYS_30, DAYS_90 }
 
@@ -252,6 +252,13 @@ fun ListenerDashboardScreen(
                                             if (activeFilter != filter) {
                                                 activeFilter = filter
                                                 when (filter) {
+                                                    StatsFilter.TODAY -> {
+                                                        customFromDate = null
+                                                        customToDate = null
+                                                        val today = LocalDate.now().toString()
+                                                        vm.setDateRange(today, today)
+                                                        vm.load()
+                                                    }
                                                     StatsFilter.ALL_TIME -> {
                                                         customFromDate = null
                                                         customToDate = null
@@ -571,6 +578,16 @@ fun FilterSection(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            FilterChip(
+                selected = activeFilter == StatsFilter.TODAY,
+                onClick = { onFilterChange(StatsFilter.TODAY) },
+                label = { Text("Today") },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = Color.White
+                )
+            )
+            
             FilterChip(
                 selected = activeFilter == StatsFilter.ALL_TIME,
                 onClick = { onFilterChange(StatsFilter.ALL_TIME) },

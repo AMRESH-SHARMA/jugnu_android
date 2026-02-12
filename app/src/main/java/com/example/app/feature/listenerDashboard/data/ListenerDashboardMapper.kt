@@ -29,7 +29,7 @@ fun RevenueTrendDto.toDomain(): RevenueTrend =
 
 fun DailyRevenueDto.toDomain(): DailyRevenue =
     DailyRevenue(
-        date = LocalDate.parse(date),
+        date = LocalDate.parse(date.substringBefore('T')),  // Extract date part only
         grossEarnings = grossEarnings,
         netEarnings = netEarnings
     )

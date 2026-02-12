@@ -2,7 +2,10 @@ package com.example.app.feature.login.ui
 
 import Routes
 import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -18,12 +21,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.navigation.NavController
 import com.example.app.feature.components.HeadingTextComponent
 
@@ -34,11 +41,13 @@ fun ProfileSetupScreen(
 ) {
     val viewModel: ProfileSetupViewModel = hiltViewModel()
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     
     var nickname by remember { mutableStateOf("Anonymous") }
     var selectedGender by remember { mutableStateOf("MALE") }
     var notificationPermissionGranted by remember { mutableStateOf(false) }
     var showPermissionDialog by remember { mutableStateOf(false) }
+    var shouldShowRationale by remember { mutableStateOf(false) }
     
     val setupState by viewModel.setupState.collectAsState()
     
@@ -49,6 +58,45 @@ fun ProfileSetupScreen(
         notificationPermissionGranted = isGranted
         if (!isGranted) {
             showPermissionDialog = true
+        }
+    }
+    
+    // Check permission status
+    fun checkPermissionStatus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionGranted = androidx.core.content.ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            
+            // Check if we should show rationale
+            if (!notificationPermissionGranted && context is android.app.Activity) {
+                shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
+            }
+        } else {
+            // Auto-granted on Android 12 and below
+            notificationPermissionGranted = true
+        }
+    }
+    
+    // Check permission on launch
+    LaunchedEffect(Unit) {
+        checkPermissionStatus()
+    }
+    
+    // Re-check permission when app comes to foreground
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                checkPermissionStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
     
@@ -210,24 +258,29 @@ fun ProfileSetupScreen(
     // Permission Required Dialog
     if (showPermissionDialog) {
         AlertDialog(
-            onDismissRequest = { showPermissionDialog = false },
+            onDismissRequest = { /* Cannot dismiss - blocking */ },
             icon = {
                 Icon(
                     imageVector = Icons.Default.Notifications,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary
+                    tint = MaterialTheme.colorScheme.error
                 )
             },
             title = {
                 Text(
-                    text = "Notification Permission Required",
+                    text = "Permission Required",
                     style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
             },
             text = {
                 Text(
-                    text = "We need notification permission to alert you about incoming calls and messages. Please grant permission to continue.",
+                    text = if (shouldShowRationale) {
+                        "Notification permission is required to use this app. Without it, you won't receive calls or messages. Please grant permission to continue."
+                    } else {
+                        "Notification permission is required. Please enable it in your device settings:\n\nSettings → Apps → ${context.packageManager.getApplicationLabel(context.applicationInfo)} → Permissions → Notifications"
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center
                 )
@@ -235,18 +288,22 @@ fun ProfileSetupScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        showPermissionDialog = false
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        if (shouldShowRationale) {
+                            // User can still be prompted
+                            showPermissionDialog = false
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            }
+                        } else {
+                            // User selected "Don't ask again" - open app settings
+                            val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                data = Uri.fromParts("package", context.packageName, null)
+                            }
+                            context.startActivity(intent)
                         }
                     }
                 ) {
-                    Text("Grant Permission")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showPermissionDialog = false }) {
-                    Text("Cancel")
+                    Text(if (shouldShowRationale) "Grant Permission" else "Open Settings")
                 }
             }
         )
