@@ -44,7 +44,8 @@ class CallAudioController @Inject constructor(
                         audioPlayer.play(AudioType.IncomingCall)
                     }
 
-                    // 📞 Outgoing dialing tone
+                    // 📞 Outgoing dialing tone (both connecting and ringing)
+                    CallStatus.OUTGOING_CONNECTING,
                     CallStatus.OUTGOING_RINGING -> {
                         stopAll()
                         audioPlayer.play(AudioType.OutgoingCall)

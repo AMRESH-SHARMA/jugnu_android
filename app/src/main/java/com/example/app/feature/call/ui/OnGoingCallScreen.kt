@@ -34,6 +34,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,41 +105,46 @@ fun OnGoingCallScreen(
 
                 // avatar for voice calls
                 if (call!!.callType == CallType.VOICE) {
-                    if (header.avatarUrl != null) {
-                        AsyncImage(
-                            model = header.avatarUrl,
-                            contentDescription = "User avatar",
-                            modifier = Modifier
-                                .size(96.dp)
-                                .clip(CircleShape)
+                    key(header.avatarUrl, header.name) {
+                        if (header.avatarUrl != null) {
+                            AsyncImage(
+                                model = header.avatarUrl,
+                                contentDescription = "User avatar",
+                                modifier = Modifier
+                                    .size(96.dp)
+                                    .clip(CircleShape)
+                            )
+                        } else {
+                            Box(
+                                Modifier
+                                    .size(96.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.Gray.copy(alpha = 0.3f))
+                            )
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            text = header.name,
+                            style = MaterialTheme.typography.titleLarge
                         )
-                    } else {
-                        Box(
-                            Modifier
-                                .size(96.dp)
-                                .clip(CircleShape)
-                                .background(Color.Gray.copy(alpha = 0.3f))
-                        )
+
+                        Spacer(Modifier.height(6.dp))
                     }
-
-                    Spacer(Modifier.height(12.dp))
-
-                    Text(
-                        text = header.name,
-                        style = MaterialTheme.typography.titleLarge
-                    )
-
-                    Spacer(Modifier.height(6.dp))
                 }
 
                 Text(
-                    text = when (status) {
-                        CallStatus.OUTGOING_RINGING -> "Calling…"
-                        CallStatus.CONNECTING -> "Connecting…"
-                        CallStatus.CONNECTED ->
-                            if (remoteUid != null) uiState.durationLabel else "Connecting…"
+                    text = remember(status, remoteUid, uiState.durationLabel) {
+                        when (status) {
+                            CallStatus.OUTGOING_CONNECTING -> "Connecting…"
+                            CallStatus.OUTGOING_RINGING -> "Ringing…"
+                            CallStatus.CONNECTING -> "Connecting…"
+                            CallStatus.CONNECTED ->
+                                if (remoteUid != null) uiState.durationLabel else "Connecting…"
 
-                        else -> ""
+                            else -> ""
+                        }
                     },
                     color = Color.Gray
                 )

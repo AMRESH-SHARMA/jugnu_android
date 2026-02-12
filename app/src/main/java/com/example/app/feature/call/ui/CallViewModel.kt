@@ -195,26 +195,46 @@ class CallViewModel @Inject constructor(
         calleeName: String,
         calleeAvatar: String?
     ) {
+        // Generate temporary callId for optimistic UI
+        val tempCallId = java.util.UUID.randomUUID().toString()
+        
+        // 1️⃣ Emit event IMMEDIATELY (optimistic UI)
+        CallEventBus.emit(
+            CallEvent.Outgoing(
+                tempCallId,
+                callerAccountId,
+                calleeAccountId,
+                callType,
+                calleeName,
+                calleeAvatar
+            )
+        )
+        
+        // 2️⃣ Make API call in background
         viewModelScope.launch {
             when (val result = startCallUseCase(
                 callType, callerAccountId, calleeAccountId, calleeName, calleeAvatar
             )) {
                 is ApiResult.Success -> {
                     val call = result.data
-                    CallEventBus.emit(
-                        CallEvent.Outgoing(
-                            call.callId,
-                            call.callerAccountId,
-                            call.calleeAccountId,
-                            call.callType,
-                            call.calleeName,
-                            call.calleeAvatar
+                    // Smoothly update only callId, status, and channel
+                    val current = CallStore.current()
+                    if (current != null && current.callId == tempCallId) {
+                        CallStore.set(
+                            current.copy(
+                                callId = call.callId,
+                                status = CallStatus.OUTGOING_RINGING,
+                                channel = call.channel
+                            )
                         )
-                    )
+                    }
                 }
 
                 is ApiResult.Error -> {
                     val errorMessage = result.message ?: "Unable to start call"
+                    
+                    // Hangup the call
+                    CallEventBus.emit(CallEvent.Ended(tempCallId))
                     
                     // Check if it's an insufficient balance error
                     if (result.exception != null && ApiErrorHandler.isInsufficientBalance(result.exception)) {

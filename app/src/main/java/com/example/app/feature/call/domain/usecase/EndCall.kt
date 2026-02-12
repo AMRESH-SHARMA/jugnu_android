@@ -30,6 +30,7 @@ class EndCall @Inject constructor(
         )
 
         val event = when (callStatus) {
+            CallStatus.OUTGOING_CONNECTING,
             CallStatus.OUTGOING_RINGING,
             CallStatus.INCOMING_RINGING -> AppConstants.EVENT_CALL_CANCELLED
 

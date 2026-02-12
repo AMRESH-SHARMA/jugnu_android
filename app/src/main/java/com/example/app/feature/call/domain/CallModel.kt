@@ -25,7 +25,8 @@ data class CallModel(
 
 enum class CallStatus {
     INCOMING_RINGING,
-    OUTGOING_RINGING,
+    OUTGOING_CONNECTING,  // Before server confirms call creation
+    OUTGOING_RINGING,     // After server confirms, waiting for callee
     CONNECTING,
     CONNECTED,
     ENDED,
