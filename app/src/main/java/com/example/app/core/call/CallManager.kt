@@ -27,7 +27,7 @@ class CallManager @Inject constructor(
         CallStore.set(
             CallModel(
                 callId = event.callId,
-                status = CallStatus.OUTGOING_RINGING,
+                status = CallStatus.OUTGOING_CONNECTING,  // Start with CONNECTING
                 callType = event.callType,
                 callerAccountId = event.callerAccountId,
                 calleeAccountId = event.calleeAccountId,

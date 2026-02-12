@@ -32,6 +32,7 @@ fun AppNavGraph() {
     // Disable back button during incoming or ongoing calls
     androidx.activity.compose.BackHandler(
         enabled = callState?.status == CallStatus.INCOMING_RINGING ||
+                  callState?.status == CallStatus.OUTGOING_CONNECTING ||
                   callState?.status == CallStatus.OUTGOING_RINGING ||
                   callState?.status == CallStatus.CONNECTING ||
                   callState?.status == CallStatus.CONNECTED
@@ -43,21 +44,28 @@ fun AppNavGraph() {
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
     LaunchedEffect(Unit) {
+        var isOnCallScreen = false
         CallStore.call
             .drop(1) // skip initial null
             .collect { call ->
                 when (call?.status) {
                     CallStatus.INCOMING_RINGING -> Unit
 
+                    CallStatus.OUTGOING_CONNECTING,
                     CallStatus.OUTGOING_RINGING,
                     CallStatus.CONNECTING,
                     CallStatus.CONNECTED -> {
-                        navController.navigate(Routes.Screen.Call.ONGOING) {
-                            launchSingleTop = true
+                        // Only navigate if not already on call screen
+                        if (!isOnCallScreen) {
+                            navController.navigate(Routes.Screen.Call.ONGOING) {
+                                launchSingleTop = true
+                            }
+                            isOnCallScreen = true
                         }
                     }
 
                     CallStatus.ENDED, null -> {
+                        isOnCallScreen = false
                         Log.d("RTM", "NAVIGATE TO END")
                         when (SessionManager.userRole) {
                             UserRole.LISTENER -> {
