@@ -3,10 +3,15 @@ package com.example.app.feature.home.ui
 import Routes
 import android.Manifest
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
+import androidx.core.app.ActivityCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,6 +64,10 @@ import com.example.app.feature.home.ui.components.HomeTopBar
 import com.example.app.feature.listeners.domain.ListenerModel
 import com.example.app.feature.listeners.ui.list.ListenerListScreen
 import com.example.app.feature.user.ui.UserSettingScreen
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 
 enum class HomeTab { LISTENERS, RECENTS, USER }
 
@@ -72,14 +81,11 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val balance by viewModel.balance.collectAsState()
     
-    // Notification permission state
-    var showNotificationDialog by remember { mutableStateOf(false) }
-    var hasCheckedPermission by remember { mutableStateOf(false) }
-    
-    // Check if notification permission is granted
-    val isNotificationPermissionGranted = remember(context) {
+    // Check permission immediately (synchronously) to avoid flicker
+    val initialPermissionGranted = remember {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 context,
@@ -90,27 +96,52 @@ fun HomeScreen(
         }
     }
     
+    // Notification permission state
+    var notificationPermissionGranted by remember { mutableStateOf(initialPermissionGranted) }
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var shouldShowRationale by remember { mutableStateOf(false) }
+    
     // Permission launcher
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
+        notificationPermissionGranted = isGranted
         if (!isGranted) {
-            // User denied, but don't block them - just show once
+            showPermissionDialog = true
         }
     }
     
-    // Check permission on first launch
-    LaunchedEffect(Unit) {
-        if (!hasCheckedPermission && !isNotificationPermissionGranted) {
-            // Check if we've already asked before (using SharedPreferences)
-            val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
-            val hasAskedBefore = prefs.getBoolean("notification_permission_asked", false)
+    // Check permission status
+    fun checkPermissionStatus() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            notificationPermissionGranted = ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
             
-            if (!hasAskedBefore) {
-                showNotificationDialog = true
-                prefs.edit().putBoolean("notification_permission_asked", true).apply()
+            // Check if we should show rationale (user denied but didn't select "Don't ask again")
+            if (!notificationPermissionGranted && context is android.app.Activity) {
+                shouldShowRationale = ActivityCompat.shouldShowRequestPermissionRationale(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                )
             }
-            hasCheckedPermission = true
+        } else {
+            // Auto-granted on Android 12 and below
+            notificationPermissionGranted = true
+        }
+    }
+    
+    // Re-check permission when app comes to foreground
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                checkPermissionStatus()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
         }
     }
     
@@ -131,6 +162,119 @@ fun HomeScreen(
         navBackStackEntry?.savedStateHandle?.set("selected_tab", currentTab.name)
     }
 
+
+    // Show blocking permission screen if permission not granted
+    if (!notificationPermissionGranted && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    
+                    Text(
+                        text = "Notification Permission Required",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    
+                    Text(
+                        text = "We need notification permission to alert you about incoming calls and messages. This is essential for the app to function properly.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    )
+                    
+                    Button(
+                        onClick = {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text("Grant Permission")
+                    }
+                }
+            }
+        }
+        
+        // Show dialog if user denied permission
+        if (showPermissionDialog) {
+            AlertDialog(
+                onDismissRequest = { /* Cannot dismiss - blocking */ },
+                icon = {
+                    Icon(
+                        imageVector = Icons.Default.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.size(48.dp)
+                    )
+                },
+                title = {
+                    Text(
+                        text = "Permission Required",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                },
+                text = {
+                    Text(
+                        text = if (shouldShowRationale) {
+                            "Notification permission is required to use this app. Without it, you won't receive calls or messages. Please grant permission to continue."
+                        } else {
+                            "Notification permission is required. Please enable it in your device settings:\n\nSettings → Apps → ${context.packageManager.getApplicationLabel(context.applicationInfo)} → Permissions → Notifications"
+                        },
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            if (shouldShowRationale) {
+                                // User can still be prompted
+                                showPermissionDialog = false
+                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                            } else {
+                                // User selected "Don't ask again" - open app settings
+                                val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                                    data = Uri.fromParts("package", context.packageName, null)
+                                }
+                                context.startActivity(intent)
+                            }
+                        }
+                    ) {
+                        Text(if (shouldShowRationale) "Grant Permission" else "Open Settings")
+                    }
+                }
+            )
+        }
+        return
+    }
 
     Scaffold(
         bottomBar = {
@@ -209,51 +353,6 @@ fun HomeScreen(
                 }
             }
         }
-    }
-    
-    // Notification Permission Dialog for existing users
-    if (showNotificationDialog && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        AlertDialog(
-            onDismissRequest = { showNotificationDialog = false },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.Notifications,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(48.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "Enable Notifications",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-            },
-            text = {
-                Text(
-                    text = "Stay updated with incoming calls and messages. We'll notify you when someone tries to reach you.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        showNotificationDialog = false
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                ) {
-                    Text("Enable")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showNotificationDialog = false }) {
-                    Text("Not Now")
-                }
-            }
-        )
     }
 }
 
