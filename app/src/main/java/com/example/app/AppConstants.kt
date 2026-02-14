@@ -7,8 +7,8 @@ object AppConstants {
     // =========================
 
     const val REMOTE_CONFIG_URL = "https://storage.googleapis.com/jugnu-config-server/config.json"
-    const val USE_DEFAULT_URL = false
-    const val DEFAULT_BASE_URL = "http://192.168.1.3:3001/api/v1/"
+    const val USE_DEFAULT_URL = true
+    const val DEFAULT_BASE_URL = "http://192.168.1.6:3001/api/v1/"
     const val WS_PRESENCE_PATH = "ws/presence"
 
     // =========================
@@ -23,6 +23,9 @@ object AppConstants {
     //        UI TIMEOUTS
     // =========================
     const val SNACKBAR_DURATION = 3000L  // 3 seconds
+    
+    // Filter debounce delay to prevent rapid API calls when switching filters quickly
+    const val FILTER_DEBOUNCE_DELAY = 250L  // milliseconds
 
     // =========================
     //        CALL EVENTS

@@ -173,7 +173,10 @@ fun UsageStatisticsScreen(
                     DatePickerType.TO -> viewModel.setCustomToDate(date)
                 }
                 showDatePicker = false
-            }
+            },
+            datePickerType = datePickerType,
+            customFromDate = uiState.customFromDate,
+            customToDate = uiState.customToDate
         )
     }
 }
@@ -599,9 +602,29 @@ fun LegendItem(
 @Composable
 fun CustomDatePickerDialog(
     onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    datePickerType: DatePickerType,
+    customFromDate: LocalDate?,
+    customToDate: LocalDate?
 ) {
-    val datePickerState = rememberDatePickerState()
+    // Calculate date constraints
+    val minDateMillis = if (datePickerType == DatePickerType.TO && customFromDate != null) {
+        customFromDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    } else null
+    
+    val maxDateMillis = if (datePickerType == DatePickerType.FROM && customToDate != null) {
+        customToDate.atStartOfDay(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+    } else null
+    
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                if (minDateMillis != null && utcTimeMillis < minDateMillis) return false
+                if (maxDateMillis != null && utcTimeMillis > maxDateMillis) return false
+                return true
+            }
+        }
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,

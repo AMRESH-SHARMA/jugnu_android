@@ -11,12 +11,11 @@ class ListenerDashboardRepository @Inject constructor(
     private val api: ListenerDashBoardApi
 ) {
     suspend fun getListenerStats(
-        listenerId: Long,
-        from: String? = null,
-        to: String? = null
+        fromDate: String? = null,
+        toDate: String? = null
     ): ApiResult<ListenerStats> =
         safeApiCall {
-            val res = api.getListenerStats(listenerId, from, to)
+            val res = api.getListenerStats(fromDate, toDate)
             if (!res.success) throw Exception(res.message)
             res.data.toDomain()
         }

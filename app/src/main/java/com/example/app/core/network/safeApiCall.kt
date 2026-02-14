@@ -7,6 +7,9 @@ import java.io.IOException
 suspend fun <T> safeApiCall(block: suspend () -> T): ApiResult<T> {
     return try {
         ApiResult.Success(block())
+    } catch (e: kotlinx.coroutines.CancellationException) {
+        // Re-throw cancellation to allow proper coroutine cancellation
+        throw e
     } catch (e: HttpException) {
 
         val errorBody = e.response()?.errorBody()?.string()
