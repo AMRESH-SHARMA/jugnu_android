@@ -8,10 +8,9 @@ class GetListenerStatsUseCase @Inject constructor(
     private val repo: ListenerDashboardRepository
 ) {
     suspend operator fun invoke(
-        listenerId: Long,
-        from: String? = null,
-        to: String? = null
+        fromDate: String? = null,
+        toDate: String? = null
     ): ApiResult<ListenerStats> {
-        return repo.getListenerStats(listenerId, from, to)
+        return repo.getListenerStats(fromDate, toDate)
     }
 }

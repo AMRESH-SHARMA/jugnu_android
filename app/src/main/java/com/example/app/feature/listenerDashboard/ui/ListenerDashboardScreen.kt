@@ -257,13 +257,19 @@ fun ListenerDashboardScreen(
                                                         customToDate = null
                                                         val today = LocalDate.now().toString()
                                                         vm.setDateRange(today, today)
-                                                        vm.load()
+                                                        if (vm.shouldLoadForFilter(filter, null, null)) {
+                                                            vm.load()
+                                                            vm.markFilterAsLoaded(filter, null, null)
+                                                        }
                                                     }
                                                     StatsFilter.ALL_TIME -> {
                                                         customFromDate = null
                                                         customToDate = null
                                                         vm.setDateRange(null, null)
-                                                        vm.load()
+                                                        if (vm.shouldLoadForFilter(filter, null, null)) {
+                                                            vm.load()
+                                                            vm.markFilterAsLoaded(filter, null, null)
+                                                        }
                                                     }
                                                     StatsFilter.DAYS_30 -> {
                                                         customFromDate = null
@@ -272,10 +278,20 @@ fun ListenerDashboardScreen(
                                                         val from = today.minusDays(30).toString()
                                                         val to = today.toString()
                                                         vm.setDateRange(from, to)
-                                                        vm.load()
+                                                        if (vm.shouldLoadForFilter(filter, null, null)) {
+                                                            vm.load()
+                                                            vm.markFilterAsLoaded(filter, null, null)
+                                                        }
                                                     }
                                                     StatsFilter.CUSTOM -> {
-                                                        // Just switch to custom, don't load until dates are selected
+                                                        // Just switch to custom, don't load until both dates are selected
+                                                        if (customFromDate != null && customToDate != null) {
+                                                            vm.setDateRange(customFromDate.toString(), customToDate.toString())
+                                                            if (vm.shouldLoadForFilter(filter, customFromDate.toString(), customToDate.toString())) {
+                                                                vm.load()
+                                                                vm.markFilterAsLoaded(filter, customFromDate.toString(), customToDate.toString())
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
@@ -405,20 +421,33 @@ fun ListenerDashboardScreen(
                             DatePickerType.FROM -> {
                                 customFromDate = date
                                 if (customToDate != null) {
-                                    vm.setDateRange(date.toString(), customToDate.toString())
-                                    vm.load()
+                                    val fromStr = date.toString()
+                                    val toStr = customToDate.toString()
+                                    vm.setDateRange(fromStr, toStr)
+                                    if (vm.shouldLoadForFilter(StatsFilter.CUSTOM, fromStr, toStr)) {
+                                        vm.load()
+                                        vm.markFilterAsLoaded(StatsFilter.CUSTOM, fromStr, toStr)
+                                    }
                                 }
                             }
                             DatePickerType.TO -> {
                                 customToDate = date
                                 if (customFromDate != null) {
-                                    vm.setDateRange(customFromDate.toString(), date.toString())
-                                    vm.load()
+                                    val fromStr = customFromDate.toString()
+                                    val toStr = date.toString()
+                                    vm.setDateRange(fromStr, toStr)
+                                    if (vm.shouldLoadForFilter(StatsFilter.CUSTOM, fromStr, toStr)) {
+                                        vm.load()
+                                        vm.markFilterAsLoaded(StatsFilter.CUSTOM, fromStr, toStr)
+                                    }
                                 }
                             }
                         }
                         showPicker = false
-                    }
+                    },
+                    datePickerType = datePickerType,
+                    customFromDate = customFromDate,
+                    customToDate = customToDate
                 )
             }
         }
@@ -702,9 +731,29 @@ enum class DatePickerType {
 @Composable
 fun CustomDatePickerDialog(
     onDismiss: () -> Unit,
-    onDateSelected: (LocalDate) -> Unit
+    onDateSelected: (LocalDate) -> Unit,
+    datePickerType: DatePickerType,
+    customFromDate: LocalDate?,
+    customToDate: LocalDate?
 ) {
-    val datePickerState = rememberDatePickerState()
+    // Calculate date constraints
+    val minDateMillis = if (datePickerType == DatePickerType.TO && customFromDate != null) {
+        customFromDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    } else null
+    
+    val maxDateMillis = if (datePickerType == DatePickerType.FROM && customToDate != null) {
+        customToDate.atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+    } else null
+    
+    val datePickerState = rememberDatePickerState(
+        selectableDates = object : androidx.compose.material3.SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                if (minDateMillis != null && utcTimeMillis < minDateMillis) return false
+                if (maxDateMillis != null && utcTimeMillis > maxDateMillis) return false
+                return true
+            }
+        }
+    )
 
     DatePickerDialog(
         onDismissRequest = onDismiss,
@@ -771,7 +820,7 @@ fun RevenueChartCard(
             RevenueTrendFilter.DAYS_30 -> 30
             RevenueTrendFilter.DAYS_90 -> 90
         }
-        viewModel.loadRevenueTrend(days)
+        viewModel.loadRevenueTrend(days, selectedFilter)
     }
     
     val (revenueData, periodLabel) = remember(revenueTrend, selectedFilter) {

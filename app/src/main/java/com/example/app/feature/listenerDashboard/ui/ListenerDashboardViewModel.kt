@@ -2,6 +2,7 @@ package com.example.app.feature.listenerDashboard.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.app.AppConstants
 import com.example.app.core.network.ApiResult
 import com.example.app.core.session.SessionManager
 import com.example.app.core.ui.UiState
@@ -9,6 +10,7 @@ import com.example.app.feature.listenerDashboard.domain.GetListenerStatsUseCase
 import com.example.app.feature.listenerDashboard.domain.GetRevenueTrendUseCase
 import com.example.app.feature.listenerDashboard.domain.ListenerStats
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -40,6 +42,15 @@ class ListenerDashboardViewModel @Inject constructor(
 
     var fromDate: String? = null
     var toDate: String? = null
+    
+    // Track last loaded filter to avoid redundant API calls
+    private var lastLoadedFilter: StatsFilter? = null
+    private var lastLoadedCustomDates: Pair<String, String>? = null
+    
+    // Job tracking for cancellation
+    private var loadJob: Job? = null
+    private var revenueTrendJob: Job? = null
+    private var lastLoadedRevenueTrendFilter: RevenueTrendFilter? = null
 
     fun setDateRange(from: String?, to: String?) {
         fromDate = from
@@ -47,40 +58,73 @@ class ListenerDashboardViewModel @Inject constructor(
     }
 
     fun load() = viewModelScope.launch {
-        // Show loading overlay if we have previous data
-        if (stats.value is UiState.Success) {
-            _isLoadingFilter.value = true
-        } else {
-            stats.value = UiState.Loading
-        }
+        // Cancel previous request to avoid race conditions
+        loadJob?.cancel()
         
-        val listenerId = SessionManager.userAccountId
+        loadJob = viewModelScope.launch {
+            try {
+                // Small delay to debounce rapid filter changes
+                kotlinx.coroutines.delay(AppConstants.FILTER_DEBOUNCE_DELAY)
+                
+                // Show loading overlay if we have previous data
+                if (stats.value is UiState.Success) {
+                    _isLoadingFilter.value = true
+                } else {
+                    stats.value = UiState.Loading
+                }
 
-        when (val res = getListenerStats(listenerId, fromDate, toDate)) {
-            is ApiResult.Success -> {
-                stats.value = UiState.Success(res.data)
-                // Initialize availability from API response
-                _isAvailable.value = res.data.isAvailable
+                when (val res = getListenerStats(fromDate, toDate)) {
+                    is ApiResult.Success -> {
+                        stats.value = UiState.Success(res.data)
+                        // Initialize availability from API response
+                        _isAvailable.value = res.data.isAvailable
+                        _isLoadingFilter.value = false
+                    }
+                    is ApiResult.Error -> {
+                        _isLoadingFilter.value = false
+                        val errorMessage = res.message?.takeIf { it.isNotBlank() } 
+                            ?: "Failed to load dashboard data"
+                        com.example.app.core.ui.SnackbarManager.showError(errorMessage)
+                        // Only set error state if we don't have previous data
+                        if (stats.value !is UiState.Success) {
+                            stats.value = UiState.Error(res.message)
+                        }
+                    }
+                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Silently handle cancellation - this is expected when switching filters
                 _isLoadingFilter.value = false
             }
-            is ApiResult.Error -> {
-                _isLoadingFilter.value = false
-                // Show error in snackbar but keep previous data if available
-                val errorMessage = res.message?.takeIf { it.isNotBlank() } 
-                    ?: "Failed to load dashboard data"
-                com.example.app.core.ui.SnackbarManager.showError(errorMessage)
-                // Only set error state if we don't have previous data
-                if (stats.value !is UiState.Success) {
-                    stats.value = UiState.Error(res.message)
+        }
+    }
+    
+    fun shouldLoadForFilter(filter: StatsFilter, customFrom: String?, customTo: String?): Boolean {
+        return when (filter) {
+            StatsFilter.CUSTOM -> {
+                // For CUSTOM, check if dates are different from last loaded
+                if (customFrom == null || customTo == null) {
+                    false // Don't load if dates not selected
+                } else {
+                    lastLoadedCustomDates != (customFrom to customTo)
                 }
             }
+            else -> {
+                // For preset filters, check if different from last loaded
+                lastLoadedFilter != filter
+            }
+        }
+    }
+    
+    fun markFilterAsLoaded(filter: StatsFilter, customFrom: String?, customTo: String?) {
+        lastLoadedFilter = filter
+        if (filter == StatsFilter.CUSTOM && customFrom != null && customTo != null) {
+            lastLoadedCustomDates = customFrom to customTo
         }
     }
 
     fun refresh() = viewModelScope.launch {
         _isRefreshing.value = true
         _showTimeoutMessage.value = false
-        val listenerId = SessionManager.userAccountId
         
         val startTime = System.currentTimeMillis()
         val minDuration = 1000L // Minimum 1 second animation
@@ -89,7 +133,7 @@ class ListenerDashboardViewModel @Inject constructor(
         try {
             // Launch API call with timeout
             val result = kotlinx.coroutines.withTimeoutOrNull(timeout) {
-                getListenerStats(listenerId, fromDate, toDate)
+                getListenerStats(fromDate, toDate)
             }
             
             // Calculate remaining time to meet minimum duration
@@ -144,24 +188,36 @@ class ListenerDashboardViewModel @Inject constructor(
         _isUpdatingAvailability.value = false
     }
 
-    fun loadRevenueTrend(days: Int) = viewModelScope.launch {
-        try {
-            val listenerId = SessionManager.userAccountId
-            
-            when (val result = getRevenueTrend(listenerId, days)) {
-                is ApiResult.Success -> {
-                    _revenueTrend.value = result.data
+    fun loadRevenueTrend(days: Int, filter: RevenueTrendFilter) = viewModelScope.launch {
+        // Skip if same filter already loaded
+        if (lastLoadedRevenueTrendFilter == filter) {
+            return@launch
+        }
+        
+        // Cancel previous request to avoid race conditions
+        revenueTrendJob?.cancel()
+        
+        revenueTrendJob = viewModelScope.launch {
+            try {
+                // Small delay to debounce rapid filter changes
+                kotlinx.coroutines.delay(AppConstants.FILTER_DEBOUNCE_DELAY)
+                
+                val listenerId = SessionManager.userAccountId
+                
+                when (val result = getRevenueTrend(listenerId, days)) {
+                    is ApiResult.Success -> {
+                        _revenueTrend.value = result.data
+                        lastLoadedRevenueTrendFilter = filter
+                    }
+                    is ApiResult.Error -> {
+                        val errorMessage = result.message?.takeIf { it.isNotBlank() } 
+                            ?: "Failed to load revenue trend"
+                        com.example.app.core.ui.SnackbarManager.showError(errorMessage)
+                    }
                 }
-                is ApiResult.Error -> {
-                    val errorMessage = result.message?.takeIf { it.isNotBlank() } 
-                        ?: "Failed to load revenue trend"
-                    com.example.app.core.ui.SnackbarManager.showError(errorMessage)
-                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Silently handle cancellation - this is expected when switching filters
             }
-        } catch (e: Exception) {
-            com.example.app.core.ui.SnackbarManager.showError(
-                "Failed to load revenue trend"
-            )
         }
     }
 }

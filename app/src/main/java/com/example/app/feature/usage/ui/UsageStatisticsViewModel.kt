@@ -2,9 +2,11 @@ package com.example.app.feature.usage.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.app.AppConstants
 import com.example.app.core.network.ApiResult
 import com.example.app.feature.usage.data.UsageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -20,6 +22,10 @@ class UsageStatisticsViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(UsageStatisticsUiState())
     val uiState: StateFlow<UsageStatisticsUiState> = _uiState.asStateFlow()
 
+    private var loadJob: Job? = null
+    private var lastLoadedFilter: FilterType? = null
+    private var lastLoadedCustomDates: Pair<LocalDate, LocalDate>? = null
+
     init {
         loadData()
     }
@@ -30,49 +36,90 @@ class UsageStatisticsViewModel @Inject constructor(
             customFromDate = if (filter != FilterType.CUSTOM) null else _uiState.value.customFromDate,
             customToDate = if (filter != FilterType.CUSTOM) null else _uiState.value.customToDate
         )
-        loadData()
+        
+        // Check if we need to load data
+        val shouldLoad = when (filter) {
+            FilterType.CUSTOM -> {
+                // For CUSTOM, only load if both dates are selected
+                _uiState.value.customFromDate != null && _uiState.value.customToDate != null
+            }
+            else -> {
+                // For preset filters, only load if different from last loaded
+                lastLoadedFilter != filter
+            }
+        }
+        
+        if (shouldLoad) {
+            loadData()
+        }
     }
 
     fun setCustomFromDate(date: LocalDate) {
         _uiState.value = _uiState.value.copy(customFromDate = date)
         if (_uiState.value.customToDate != null) {
-            loadData()
+            val customDates = date to _uiState.value.customToDate!!
+            // Only load if dates changed
+            if (lastLoadedCustomDates != customDates) {
+                loadData()
+            }
         }
     }
 
     fun setCustomToDate(date: LocalDate) {
         _uiState.value = _uiState.value.copy(customToDate = date)
         if (_uiState.value.customFromDate != null) {
-            loadData()
+            val customDates = _uiState.value.customFromDate!! to date
+            // Only load if dates changed
+            if (lastLoadedCustomDates != customDates) {
+                loadData()
+            }
         }
     }
 
     private fun loadData() {
-        viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+        // Cancel previous request to avoid race conditions
+        loadJob?.cancel()
+        
+        val (fromDate, toDate) = getDateRange()
+        
+        loadJob = viewModelScope.launch {
+            try {
+                // Small delay to debounce rapid filter changes
+                kotlinx.coroutines.delay(AppConstants.FILTER_DEBOUNCE_DELAY)
+                
+                _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            val (fromDate, toDate) = getDateRange()
+                when (val result = repository.getUsageStatistics(fromDate, toDate)) {
+                    is ApiResult.Success -> {
+                        val data = result.data
+                        val totalAudio = data.sumOf { it.audioMinutes }
+                        val totalVideo = data.sumOf { it.videoMinutes }
 
-            when (val result = repository.getUsageStatistics(fromDate, toDate)) {
-                is ApiResult.Success -> {
-                    val data = result.data
-                    val totalAudio = data.sumOf { it.audioMinutes }
-                    val totalVideo = data.sumOf { it.videoMinutes }
-
-                    _uiState.value = _uiState.value.copy(
-                        chartData = data,
-                        totalAudioMinutes = totalAudio,
-                        totalVideoMinutes = totalVideo,
-                        isLoading = false,
-                        error = null
-                    )
+                        _uiState.value = _uiState.value.copy(
+                            chartData = data,
+                            totalAudioMinutes = totalAudio,
+                            totalVideoMinutes = totalVideo,
+                            isLoading = false,
+                            error = null
+                        )
+                        
+                        // Track what was loaded
+                        val currentFilter = _uiState.value.selectedFilter
+                        lastLoadedFilter = currentFilter
+                        if (currentFilter == FilterType.CUSTOM) {
+                            lastLoadedCustomDates = fromDate to toDate
+                        }
+                    }
+                    is ApiResult.Error -> {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = result.message ?: "Failed to load usage statistics"
+                        )
+                    }
                 }
-                is ApiResult.Error -> {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = result.message ?: "Failed to load usage statistics"
-                    )
-                }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                // Silently handle cancellation - this is expected when switching filters
+                _uiState.value = _uiState.value.copy(isLoading = false)
             }
         }
     }

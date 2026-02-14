@@ -6,11 +6,10 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface ListenerDashBoardApi {
-    @GET("listeners/{id}/stats")
+    @GET("listeners/stats")
     suspend fun getListenerStats(
-        @Path("id") listenerId: Long,
-        @Query("from") from: String? = null,
-        @Query("to") to: String? = null
+        @Query("fromDate") fromDate: String? = null,
+        @Query("toDate") toDate: String? = null
     ): BaseResponse<ListenerStatsDto>
 
     @GET("listeners/{id}/revenue-trend")
