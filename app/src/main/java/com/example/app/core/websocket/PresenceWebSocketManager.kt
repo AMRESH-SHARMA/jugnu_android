@@ -49,11 +49,11 @@ class PresenceWebSocketManager @Inject constructor(
     /** PUBLIC API **/
     fun connect() {
         if (!userSession.isLoggedIn()) {
-            Log.e("WebSocket", "Cannot connect - user not logged in")
+            Log.e("RTM", "Cannot connect - user not logged in")
             return
         }
         if (isConnected.get() || isConnecting.get()) {
-            Log.w("WebSocket", "Already connected or connecting")
+            Log.w("RTM", "Already connected or connecting")
             return
         }
 
@@ -62,10 +62,10 @@ class PresenceWebSocketManager @Inject constructor(
         val accountId = userSession.accountId
         val role = userSession.role.name
         
-        Log.d("WebSocket", "=== CONNECTING TO WEBSOCKET ===")
-        Log.d("WebSocket", "AccountID: $accountId")
-        Log.d("WebSocket", "Role: $role")
-        Log.d("WebSocket", "URL: ${buildWsUrl()}")
+        Log.d("RTM", "=== CONNECTING TO WEBSOCKET ===")
+        Log.d("RTM", "AccountID: $accountId")
+        Log.d("RTM", "Role: $role")
+        Log.d("RTM", "URL: ${buildWsUrl()}")
 
         val request = Request.Builder()
             .url(buildWsUrl())
@@ -73,8 +73,8 @@ class PresenceWebSocketManager @Inject constructor(
             .addHeader("X-User-Role", role)
             .build()
         
-        Log.d("WebSocket", "Authorization: Bearer $accountId")
-        Log.d("WebSocket", "X-User-Role: $role")
+        Log.d("RTM", "Authorization: Bearer $accountId")
+        Log.d("RTM", "X-User-Role: $role")
 
         webSocket = okHttpClient.newWebSocket(request, socketListener)
     }
@@ -146,11 +146,13 @@ class PresenceWebSocketManager @Inject constructor(
 //        }
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
-//            Log.d("RTM", "WS OPEN: $response")
+            Log.d("RTM", "WS OPEN: $response")
 
             isConnecting.set(false)
             isConnected.set(true)
 
+            reconnectJob?.cancel()  // ✅ Cancel pending reconnect
+            reconnectJob = null
             resetBackoff()
 
             scope.launch {
@@ -223,7 +225,7 @@ class PresenceWebSocketManager @Inject constructor(
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-//            Log.d("RTM", "WS CLOSED $reason")
+            Log.d("RTM", "WS CLOSED $reason")
 
             isConnecting.set(false)
             isConnected.set(false)

@@ -17,7 +17,7 @@ data class ListenerStatsDto(
 )
 
 data class RevenueTrendDto(
-    val dailyRevenue: List<DailyRevenueDto>
+    val dailyRevenue: List<DailyRevenueDto>?
 )
 
 data class DailyRevenueDto(

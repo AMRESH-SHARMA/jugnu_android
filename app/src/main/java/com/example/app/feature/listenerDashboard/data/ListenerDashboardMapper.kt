@@ -24,7 +24,7 @@ fun ListenerStatsDto.toDomain(): ListenerStats =
 
 fun RevenueTrendDto.toDomain(): RevenueTrend =
     RevenueTrend(
-        dailyRevenue = dailyRevenue.map { it.toDomain() }
+        dailyRevenue = dailyRevenue?.map { it.toDomain() } ?: emptyList()
     )
 
 fun DailyRevenueDto.toDomain(): DailyRevenue =
