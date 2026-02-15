@@ -1,5 +1,6 @@
 package com.example.app.core.ui
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -28,6 +29,14 @@ object SnackbarManager {
         type: SnackbarType = SnackbarType.INFO,
         duration: Long = 3000L
     ) {
+        // Log all snackbar events
+        when (type) {
+            SnackbarType.ERROR -> Log.e("Snackbar", "ERROR: $message")
+            SnackbarType.WARNING -> Log.w("Snackbar", "WARNING: $message")
+            SnackbarType.INFO -> Log.i("Snackbar", "INFO: $message")
+            SnackbarType.SUCCESS -> Log.d("Snackbar", "SUCCESS: $message")
+        }
+        
         _snackbarState.value = SnackbarData(message, type, duration)
     }
 
