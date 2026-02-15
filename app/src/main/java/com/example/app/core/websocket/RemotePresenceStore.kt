@@ -1,6 +1,5 @@
 package com.example.app.core.websocket
 
-import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -13,7 +12,7 @@ class RemotePresenceStore @Inject constructor() {
     val states: StateFlow<Map<String, PresenceState>> = _states
 
     fun update(accountId: String, status: PresenceState) {
-        Log.d("RTM", "PRESENCE update $accountId -> $status")
+//        Log.d("RTM", "PRESENCE update $accountId -> $status")
         _states.value = _states.value.toMutableMap().apply {
             this[accountId] = status
         }

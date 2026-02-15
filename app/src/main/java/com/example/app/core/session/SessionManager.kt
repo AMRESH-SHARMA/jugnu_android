@@ -8,6 +8,7 @@ object SessionManager {
     var userAccountId: Long = 0L
     var userRole: UserRole? = null  // Null until set after OTP verification
     var fcmToken: String? = null
+    var isProfileComplete: Boolean = false
 
     // Runtime-only values (not persisted)
     var sessionId: String = ""

@@ -8,6 +8,7 @@ import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.core.remoteconfig.OfferConfig
 import com.example.app.core.remoteconfig.RemoteConfig
 import com.example.app.core.session.UserSession
+import com.example.app.feature.user.domain.GetCustomerProfileUseCase
 import com.example.app.feature.wallet.domain.usecase.GetWalletBalanceUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -22,6 +23,7 @@ import javax.inject.Inject
 class HomeViewModel @Inject constructor(
     private val userSession: UserSession,
     private val getBalance: GetWalletBalanceUseCase,
+    private val getCustomerProfile: GetCustomerProfileUseCase,
     private val userPrefs: UserPreferencesRepository
 ) : ViewModel() {
 
@@ -30,6 +32,12 @@ class HomeViewModel @Inject constructor(
     // ---------------------------------------------------------
     private val _balance = MutableStateFlow<Long>(0)
     val balance = _balance.asStateFlow()
+
+    // ---------------------------------------------------------
+    // Username state
+    // ---------------------------------------------------------
+    private val _username = MutableStateFlow<String>("Anonymous")
+    val username = _username.asStateFlow()
 
     // ---------------------------------------------------------
     // 🔔 One-shot UI event (navigation trigger)
@@ -46,7 +54,7 @@ class HomeViewModel @Inject constructor(
     private var offerCheckedThisSession = false
 
     init {
-        refreshBalance()
+        refreshProfile()
         checkAndEmitOffer()
     }
 
@@ -109,6 +117,21 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Success -> _balance.value = res.data.balanceCoins
                 is ApiResult.Error -> { /* ignore */
                 }
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
+    // Profile refresh (fetches username + balance)
+    // ---------------------------------------------------------
+    private fun refreshProfile() {
+        viewModelScope.launch {
+            when (val res = getCustomerProfile()) {
+                is ApiResult.Success -> {
+                    _username.value = res.data.name
+                    _balance.value = res.data.balanceCoins
+                }
+                is ApiResult.Error -> { /* ignore */ }
             }
         }
     }

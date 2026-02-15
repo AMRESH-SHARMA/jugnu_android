@@ -22,5 +22,9 @@ class SessionInitializer @Inject constructor(
         // Load FCM token
         val fcmToken = userPreferencesRepository.fcmTokenFlow.first()
         SessionManager.fcmToken = fcmToken
+
+        // Load profile completion status
+        val isProfileComplete = userPreferencesRepository.isProfileCompleteFlow.first()
+        SessionManager.isProfileComplete = isProfileComplete
     }
 }

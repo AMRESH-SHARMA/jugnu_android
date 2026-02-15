@@ -77,7 +77,6 @@ import com.example.app.core.websocket.PresenceViewModel
 import com.example.app.feature.call.ui.CallViewModel
 import com.example.app.feature.components.AvatarWithStatus
 import com.example.app.feature.listeners.domain.ListenerModel
-
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.LazyPagingItems
 import androidx.paging.LoadState

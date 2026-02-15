@@ -12,8 +12,16 @@ import com.example.app.feature.login.ui.OtpVerificationScreen
 import com.example.app.feature.login.ui.ProfileSetupScreen
 
 fun NavGraphBuilder.authNavGraph(navController: NavController) {
+    // Determine auth graph start destination based on profile completion
+    val authStartDestination = if (com.example.app.core.session.SessionManager.userAccountId != 0L && 
+                                     !com.example.app.core.session.SessionManager.isProfileComplete) {
+        Routes.Screen.Auth.PROFILE_SETUP
+    } else {
+        Routes.Screen.Auth.LOGIN
+    }
+    
     navigation(
-        startDestination = Routes.Screen.Auth.LOGIN,
+        startDestination = authStartDestination,
         route = Routes.Graph.AUTH
     ) {
 

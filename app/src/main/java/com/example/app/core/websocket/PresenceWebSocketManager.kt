@@ -48,33 +48,16 @@ class PresenceWebSocketManager @Inject constructor(
 
     /** PUBLIC API **/
     fun connect() {
-        if (!userSession.isLoggedIn()) {
-            Log.e("RTM", "Cannot connect - user not logged in")
-            return
-        }
-        if (isConnected.get() || isConnecting.get()) {
-            Log.w("RTM", "Already connected or connecting")
-            return
-        }
+        if (!userSession.isLoggedIn()) return
+        if (isConnected.get() || isConnecting.get()) return
 
         isConnecting.set(true)
 
-        val accountId = userSession.accountId
-        val role = userSession.role.name
-        
-        Log.d("RTM", "=== CONNECTING TO WEBSOCKET ===")
-        Log.d("RTM", "AccountID: $accountId")
-        Log.d("RTM", "Role: $role")
-        Log.d("RTM", "URL: ${buildWsUrl()}")
-
         val request = Request.Builder()
             .url(buildWsUrl())
-            .addHeader("Authorization", "Bearer $accountId")
-            .addHeader("X-User-Role", role)
+            .addHeader("Authorization", "Bearer ${userSession.accountId}")
+            .addHeader("X-Role", userSession.role.name)
             .build()
-        
-        Log.d("RTM", "Authorization: Bearer $accountId")
-        Log.d("RTM", "X-User-Role: $role")
 
         webSocket = okHttpClient.newWebSocket(request, socketListener)
     }
@@ -146,13 +129,11 @@ class PresenceWebSocketManager @Inject constructor(
 //        }
 
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            Log.d("RTM", "WS OPEN: $response")
+//            Log.d("RTM", "WS OPEN: $response")
 
             isConnecting.set(false)
             isConnected.set(true)
 
-            reconnectJob?.cancel()  // ✅ Cancel pending reconnect
-            reconnectJob = null
             resetBackoff()
 
             scope.launch {
@@ -225,7 +206,7 @@ class PresenceWebSocketManager @Inject constructor(
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            Log.d("RTM", "WS CLOSED $reason")
+//            Log.d("RTM", "WS CLOSED $reason")
 
             isConnecting.set(false)
             isConnected.set(false)
