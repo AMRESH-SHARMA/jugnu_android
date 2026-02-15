@@ -349,12 +349,23 @@ private fun ListenerListContent(
                     return@items
                 }
 
-                val status =
-                    presenceMap[listener.accountId.toString()] ?: PresenceState.OFFLINE
+                // Combine API data (isAvailable, presence) with WebSocket updates (presenceMap)
+                // Priority: WebSocket real-time > API snapshot
+                val wsPresence = presenceMap[listener.accountId.toString()]
+                val finalStatus = when {
+                    // If listener manually set unavailable, show as unavailable regardless of connection
+                    !listener.isAvailable -> PresenceState.OFFLINE
+                    // Use WebSocket real-time status if available
+                    wsPresence != null -> wsPresence
+                    // Fallback to API snapshot presence
+                    listener.presence == "ONLINE" -> PresenceState.ONLINE
+                    listener.presence == "BUSY" -> PresenceState.BUSY
+                    else -> PresenceState.OFFLINE
+                }
 
                 ListenerRow(
                     listener = listener,
-                    status = status,
+                    status = finalStatus,
                     onOpenListener = onOpenListener,
                     onCallClick = onCallClick,
                     onMessageClick = onMessageClick,

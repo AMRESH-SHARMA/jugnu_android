@@ -48,16 +48,33 @@ class PresenceWebSocketManager @Inject constructor(
 
     /** PUBLIC API **/
     fun connect() {
-        if (!userSession.isLoggedIn()) return
-        if (isConnected.get() || isConnecting.get()) return
+        if (!userSession.isLoggedIn()) {
+            Log.e("WebSocket", "Cannot connect - user not logged in")
+            return
+        }
+        if (isConnected.get() || isConnecting.get()) {
+            Log.w("WebSocket", "Already connected or connecting")
+            return
+        }
 
         isConnecting.set(true)
 
+        val accountId = userSession.accountId
+        val role = userSession.role.name
+        
+        Log.d("WebSocket", "=== CONNECTING TO WEBSOCKET ===")
+        Log.d("WebSocket", "AccountID: $accountId")
+        Log.d("WebSocket", "Role: $role")
+        Log.d("WebSocket", "URL: ${buildWsUrl()}")
+
         val request = Request.Builder()
             .url(buildWsUrl())
-            .addHeader("Authorization", "Bearer ${userSession.accountId}")
-            .addHeader("X-Role", userSession.role.name)
+            .addHeader("Authorization", "Bearer $accountId")
+            .addHeader("X-User-Role", role)
             .build()
+        
+        Log.d("WebSocket", "Authorization: Bearer $accountId")
+        Log.d("WebSocket", "X-User-Role: $role")
 
         webSocket = okHttpClient.newWebSocket(request, socketListener)
     }

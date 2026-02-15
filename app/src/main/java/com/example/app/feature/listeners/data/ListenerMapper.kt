@@ -13,5 +13,7 @@ fun ListenerDto.toDomain(): ListenerModel {
         gender = gender,
         experience = experience,
         rating = rating,
+        isAvailable = isAvailable,
+        presence = presence,
     )
 }

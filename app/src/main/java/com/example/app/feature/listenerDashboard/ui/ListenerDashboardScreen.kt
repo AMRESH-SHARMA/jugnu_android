@@ -1318,27 +1318,27 @@ fun ImprovedTasksCard(stats: ListenerStats) {
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // Total Talk Time
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Total Talk Time",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                )
-                Text(
-                    text = "${talkTimeHours}h ${talkTimeMinutes}m",
-                    style = MaterialTheme.typography.bodyMedium.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+//            Spacer(Modifier.height(16.dp))
+//
+//            // Total Talk Time
+//            Row(
+//                modifier = Modifier.fillMaxWidth(),
+//                horizontalArrangement = Arrangement.SpaceBetween,
+//                verticalAlignment = Alignment.CenterVertically
+//            ) {
+//                Text(
+//                    text = "Total Talk Time",
+//                    style = MaterialTheme.typography.bodyMedium,
+//                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+//                )
+//                Text(
+//                    text = "${talkTimeHours}h ${talkTimeMinutes}m",
+//                    style = MaterialTheme.typography.bodyMedium.copy(
+//                        fontWeight = FontWeight.SemiBold
+//                    ),
+//                    color = MaterialTheme.colorScheme.primary
+//                )
+//            }
         }
     }
 }
