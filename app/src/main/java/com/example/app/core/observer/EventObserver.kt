@@ -34,17 +34,34 @@ class EventObserver @Inject constructor(
     private val callRtcController: CallRtcController,  //Just inject to make sure CallRtcController must initialized
     private val incomingCallNotificationManager: IncomingCallNotificationManager,
     private val missedCallNotificationManager: MissedCallNotificationManager,
+    private val appForegroundTracker: AppForegroundTracker,
+    private val networkStateTracker: NetworkStateTracker,
+    private val userSession: com.example.app.core.session.UserSession,
     @ApplicationContext private val appContext: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
+    private val TAG = "RTM"
+    
     init {
-        Log.w("RTM", "EventObserver INIT")
+        Log.d(TAG, "EventObserver: INIT - starting observers")
+        
+        // Start network tracking
+        networkStateTracker.startTracking()
+        
+        observeCallEvents()
+        observePresenceEvents()
+        observeAppLifecycle()
+        observeNetworkChanges()
+        
+        Log.d(TAG, "EventObserver: INIT complete - all observers started")
+    }
+    private fun observeCallEvents() {
         // -------------------------
         // Call events
         // -------------------------
         scope.launch {
             CallEventBus.events.collect { event ->
-                Log.w("RTM", "EventObserver received event=$event")
+                Log.d(TAG, "EventObserver: Call event received - $event")
                 when (event) {
                     is CallEvent.Outgoing -> {
                         callManager.onOutgoing(event)
@@ -88,13 +105,15 @@ class EventObserver @Inject constructor(
                 }
             }
         }
+    }
 
+    private fun observePresenceEvents() {
         // -------------------------
         // Presence WebSocket events
         // -------------------------
         scope.launch {
             PresenceEventBus.events.collect { event ->
-//                Log.d("RTM", "PresenceEvent received event=$event")
+                Log.d(TAG, "EventObserver: Presence event received - $event")
                 when (event) {
 
                     // ---- Socket connected → ONLINE (unless already BUSY)
@@ -111,6 +130,58 @@ class EventObserver @Inject constructor(
                     is PresenceEvent.StatusChanged -> {
                         presenceManager.onRemoteStateChanged(event.state)
                     }
+                }
+            }
+        }
+    }
+
+    private fun observeAppLifecycle() {
+        // -------------------------
+        // App foreground/background tracking
+        // -------------------------
+        scope.launch {
+            appForegroundTracker.isForeground.collect { isForeground ->
+                val isLoggedIn = userSession.isLoggedIn()
+                val accountId = userSession.accountId
+                val sessionId = userSession.sessionId
+                
+                Log.d(TAG, "EventObserver: App foreground state changed - isForeground=$isForeground, isLoggedIn=$isLoggedIn, accountId=$accountId, sessionId=$sessionId")
+                
+                if (isForeground) {
+                    // Only connect WebSocket if user is logged in
+                    if (isLoggedIn) {
+                        Log.d(TAG, "EventObserver: App foreground + logged in → connecting WebSocket")
+                        presenceManager.onAppForeground()
+                    } else {
+                        Log.d(TAG, "EventObserver: App foreground but NOT logged in → skipping WebSocket connect")
+                    }
+                } else {
+                    Log.d(TAG, "EventObserver: App background → disconnecting WebSocket")
+                    presenceManager.onAppBackground()
+                }
+            }
+        }
+    }
+
+    private fun observeNetworkChanges() {
+        // -------------------------
+        // Network availability tracking
+        // -------------------------
+        scope.launch {
+            networkStateTracker.isNetworkAvailable.collect { isAvailable ->
+                val isLoggedIn = userSession.isLoggedIn()
+                Log.d(TAG, "EventObserver: Network state changed - isAvailable=$isAvailable, isLoggedIn=$isLoggedIn")
+                
+                if (isAvailable) {
+                    if (isLoggedIn) {
+                        Log.d(TAG, "EventObserver: Network available + logged in → attempting reconnect")
+                        presenceManager.onNetworkAvailable()
+                    } else {
+                        Log.d(TAG, "EventObserver: Network available but NOT logged in → skipping reconnect")
+                    }
+                } else {
+                    Log.d(TAG, "EventObserver: Network lost → notifying presence manager")
+                    presenceManager.onNetworkLost()
                 }
             }
         }

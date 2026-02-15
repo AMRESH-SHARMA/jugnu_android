@@ -38,8 +38,11 @@ class PresenceWebSocketManager @Inject constructor(
 
     private var retryDelayMs = 1_000L
     private val maxRetryDelayMs = 30_000L
+    
+    private var shouldBeConnected = false // Track if we should maintain connection
 
     companion object {
+        private const val TAG = "RTM"
         private const val MSG_CALL_START = "CALL_START"
         private const val MSG_CALL_END = "CALL_END"
         private const val MSG_NET_OFFLINE = "NET_OFFLINE"
@@ -48,21 +51,38 @@ class PresenceWebSocketManager @Inject constructor(
 
     /** PUBLIC API **/
     fun connect() {
-        if (!userSession.isLoggedIn()) return
-        if (isConnected.get() || isConnecting.get()) return
+        if (!userSession.isLoggedIn()) {
+            Log.d(TAG, "WS connect() skipped - user not logged in")
+            return
+        }
+        if (isConnected.get() || isConnecting.get()) {
+            Log.d(TAG, "WS connect() skipped - already connected/connecting")
+            return
+        }
 
+        shouldBeConnected = true
         isConnecting.set(true)
+
+        val sessionId = userSession.sessionId
+        val accountId = userSession.accountId
+        val role = userSession.role.name
+
+        Log.d(TAG, "WS connecting... sessionId=$sessionId, accountId=$accountId, role=$role")
 
         val request = Request.Builder()
             .url(buildWsUrl())
-            .addHeader("Authorization", "Bearer ${userSession.accountId}")
-            .addHeader("X-Role", userSession.role.name)
+            .addHeader("Authorization", "Bearer $accountId")
+            .addHeader("X-Session-Id", sessionId)
+            .addHeader("X-Role", role)
             .build()
 
         webSocket = okHttpClient.newWebSocket(request, socketListener)
     }
 
     fun disconnect() {
+        Log.d(TAG, "WS disconnect() called")
+        
+        shouldBeConnected = false
         reconnectJob?.cancel()
 
         isConnecting.set(false)
@@ -77,26 +97,65 @@ class PresenceWebSocketManager @Inject constructor(
     }
 
     fun sendCallStart() {
-        webSocket?.send(MSG_CALL_START)
+        val sent = webSocket?.send(MSG_CALL_START) ?: false
+        Log.d(TAG, "WS sendCallStart() sent=$sent")
     }
 
     fun sendCallEnd() {
-        webSocket?.send(MSG_CALL_END)
+        val sent = webSocket?.send(MSG_CALL_END) ?: false
+        Log.d(TAG, "WS sendCallEnd() sent=$sent")
     }
 
     fun sendNetOffline() {
-        webSocket?.send(MSG_NET_OFFLINE)
+        val sent = webSocket?.send(MSG_NET_OFFLINE) ?: false
+        Log.d(TAG, "WS sendNetOffline() sent=$sent")
     }
 
     fun sendNetOnline() {
-        webSocket?.send(MSG_NET_ONLINE)
+        val sent = webSocket?.send(MSG_NET_ONLINE) ?: false
+        Log.d(TAG, "WS sendNetOnline() sent=$sent")
+    }
+    
+    fun onAppBackground() {
+        Log.d(TAG, "WS onAppBackground() - disconnecting")
+        disconnect()
+    }
+    
+    fun onAppForeground() {
+        Log.d(TAG, "WS onAppForeground() - reconnecting")
+        if (userSession.isLoggedIn()) {
+            connect()
+        }
+    }
+    
+    fun onNetworkAvailable() {
+        Log.d(TAG, "WS onNetworkAvailable() - reconnecting if needed")
+        if (shouldBeConnected && !isConnected.get() && !isConnecting.get()) {
+            connect()
+        }
+    }
+    
+    fun onNetworkLost() {
+        Log.d(TAG, "WS onNetworkLost() - sending offline status")
+        sendNetOffline()
     }
 
     /** INTERNAL **/
     private fun scheduleReconnect() {
-        if (!userSession.isLoggedIn()) return
-        if (reconnectJob?.isActive == true) return
+        if (!userSession.isLoggedIn()) {
+            Log.d(TAG, "WS scheduleReconnect() skipped - user not logged in")
+            return
+        }
+        if (!shouldBeConnected) {
+            Log.d(TAG, "WS scheduleReconnect() skipped - should not be connected")
+            return
+        }
+        if (reconnectJob?.isActive == true) {
+            Log.d(TAG, "WS scheduleReconnect() skipped - already scheduled")
+            return
+        }
 
+        Log.d(TAG, "WS scheduleReconnect() in ${retryDelayMs}ms")
         reconnectJob = scope.launch {
             delay(retryDelayMs)
             retryDelayMs = (retryDelayMs * 2).coerceAtMost(maxRetryDelayMs)
@@ -123,13 +182,8 @@ class PresenceWebSocketManager @Inject constructor(
 
     private val socketListener = object : WebSocketListener() {
 
-        //TODO for debugging
-//        fun onPong(webSocket: WebSocket, bytes: ByteString) {
-//            Log.d("RTM", "PONG received from server")
-//        }
-
         override fun onOpen(webSocket: WebSocket, response: Response) {
-//            Log.d("RTM", "WS OPEN: $response")
+            Log.d(TAG, "WS onOpen() - connection established, response code=${response.code}")
 
             isConnecting.set(false)
             isConnected.set(true)
@@ -145,14 +199,22 @@ class PresenceWebSocketManager @Inject constructor(
          * onMessage: is triggered ONLY for text / binary messages not for ping pong control frames
          */
         override fun onMessage(webSocket: WebSocket, text: String) {
-            Log.w("RTM", "WS onMesssage = $text")
+            Log.d(TAG, "WS onMessage() received: $text")
 
             try {
                 val obj = JSONObject(text)
 
+                // ---- DUPLICATE CONNECTION HANDLING ----
+                if (obj.optString("type") == "connection_replaced") {
+                    Log.w(TAG, "WS connection replaced by another session - closing old connection")
+                    disconnect()
+                    return
+                }
+
                 // ---- SNAPSHOT ----
                 if (obj.optString("type") == "presence_snapshot") {
                     val snapshot = json.decodeFromString<PresenceSnapshotMessage>(text)
+                    Log.d(TAG, "WS received presence snapshot with ${snapshot.data.size} users")
 
                     snapshot.data.forEach { (id, status) ->
                         val state = status.toPresenceState()
@@ -174,6 +236,8 @@ class PresenceWebSocketManager @Inject constructor(
                 // ---- SINGLE UPDATE ----
                 val broadcast = json.decodeFromString<PresenceBroadcastMessage>(text)
                 val state = broadcast.status.toPresenceState()
+                
+                Log.d(TAG, "WS presence update: accountId=${broadcast.account_id}, status=${broadcast.status}")
 
                 remotePresenceStore.update(broadcast.account_id, state)
 
@@ -187,13 +251,13 @@ class PresenceWebSocketManager @Inject constructor(
                 }
 
             } catch (e: Exception) {
-                Log.e("RTM", "WS decode error", e)
+                Log.e(TAG, "WS onMessage() decode error: ${e.message}", e)
             }
         }
 
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            Log.e("RTM", "WS FAILURE = ${t.message}")
+            Log.e(TAG, "WS onFailure() - error: ${t.message}, response: ${response?.code}", t)
 
             isConnecting.set(false)
             isConnected.set(false)
@@ -206,7 +270,7 @@ class PresenceWebSocketManager @Inject constructor(
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-//            Log.d("RTM", "WS CLOSED $reason")
+            Log.d(TAG, "WS onClosed() - code=$code, reason=$reason")
 
             isConnecting.set(false)
             isConnected.set(false)
@@ -215,7 +279,11 @@ class PresenceWebSocketManager @Inject constructor(
                 PresenceEventBus.events.emit(PresenceEvent.Disconnected)
             }
 
-            scheduleReconnect()
+            // Only reconnect if it was unexpected closure
+            if (code != 1000) {
+                Log.w(TAG, "WS unexpected closure (code=$code), scheduling reconnect")
+                scheduleReconnect()
+            }
         }
     }
 }
