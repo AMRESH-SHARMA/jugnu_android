@@ -19,6 +19,7 @@ import com.example.app.core.websocket.PresenceWebSocketManager
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -94,19 +95,32 @@ class MyApp : Application() {
 
 
     private fun observeUserSession() {
+        Log.d("RTM", "MyApp: Starting to observe user session flow")
         appScope.launch(Dispatchers.IO) {
-            userSession.sessionFlow.collect { (accountId, _) ->
-                if (accountId > 0) {
-                    // 🔥 THIS is what you were missing
+            combine(
+                userSession.sessionFlow,
+                userSession.sessionIdFlow
+            ) { (accountId, role), sessionId ->
+                Triple(accountId, role, sessionId)
+            }.collect { (accountId, role, sessionId) ->
+                val isLoggedIn = accountId > 0 && !sessionId.isNullOrBlank()
+                
+                Log.d("RTM", "MyApp: Session state - accountId=$accountId, role=$role, sessionId=$sessionId, isLoggedIn=$isLoggedIn")
+                
+                if (isLoggedIn) {
+                    Log.d("RTM", "MyApp: Valid session detected → connecting WebSocket")
                     presenceWebSocketManager.connect()
 
                     if (rtmInitialized.compareAndSet(false, true)) {
+                        Log.d("RTM", "MyApp: Initializing RTM for first time")
                         initAndLoginRtm(accountId)
+                    } else {
+                        Log.d("RTM", "MyApp: RTM already initialized, skipping")
                     }
                 } else {
+                    Log.d("RTM", "MyApp: No valid session (accountId=$accountId, sessionId=$sessionId) → disconnecting WebSocket")
                     presenceWebSocketManager.disconnect()
                 }
-
             }
         }
     }

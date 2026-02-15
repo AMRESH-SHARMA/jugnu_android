@@ -1,5 +1,6 @@
 package com.example.app.core.websocket
 
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -7,6 +8,8 @@ import javax.inject.Singleton
 
 @Singleton
 class PresenceStore @Inject constructor() {
+    private val TAG = "RTM"
+    
     /**
      * Tracks presence of the local logged-in user only
      * User can explicitly set their status Online / offline
@@ -15,6 +18,7 @@ class PresenceStore @Inject constructor() {
     val state: StateFlow<PresenceState> = _state
 
     fun setState(newState: PresenceState) {
+        Log.d(TAG, "PresenceStore: setState() - ${_state.value} -> $newState")
         _state.value = newState
     }
 
