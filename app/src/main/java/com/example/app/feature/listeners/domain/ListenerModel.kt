@@ -16,4 +16,6 @@ data class ListenerModel(
     val gender: String,
     val experience: Int,
     val rating: Double,
+    val isAvailable: Boolean,
+    val presence: String // ONLINE, OFFLINE, BUSY
 ) : Parcelable
