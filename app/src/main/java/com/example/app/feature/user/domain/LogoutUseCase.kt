@@ -27,6 +27,7 @@ class LogoutUseCase @Inject constructor(
             SessionManager.userRole = null
             SessionManager.sessionId = ""
             SessionManager.fcmToken = null
+            SessionManager.isProfileComplete = false
         }
     }
 }

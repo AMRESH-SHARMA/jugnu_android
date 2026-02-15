@@ -54,4 +54,10 @@ class UserRepository @Inject constructor(
         if (!res.success) throw Exception(res.message)
         res.data
     }
+
+    suspend fun getCustomerProfile(): ApiResult<CustomerProfileDto> = safeApiCall {
+        val res = api.getCustomerProfile()
+        if (!res.success) throw Exception(res.message)
+        res.data
+    }
 }

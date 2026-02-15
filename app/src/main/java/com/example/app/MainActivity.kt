@@ -108,6 +108,7 @@ class MainActivity : ComponentActivity() {
                 SessionManager.userRole = null
                 SessionManager.sessionId = ""
                 SessionManager.fcmToken = null
+                SessionManager.isProfileComplete = false
                 
                 // Show dialog
                 com.example.app.core.ui.SnackbarManager.showError(

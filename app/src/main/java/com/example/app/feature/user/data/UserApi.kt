@@ -13,6 +13,9 @@ interface UserApi {
         @Path("id") id: Long
     ): BaseResponse<CallerInfoDto>
 
+    @GET("users/profile")
+    suspend fun getCustomerProfile(): BaseResponse<CustomerProfileDto>
+
     @PATCH("users/profile")
     suspend fun updateProfile(
         @Body req: UpdateProfileDto

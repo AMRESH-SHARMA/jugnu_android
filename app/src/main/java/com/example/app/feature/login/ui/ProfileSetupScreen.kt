@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -156,6 +158,9 @@ fun ProfileSetupScreen(
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Enter your nickname") },
                 singleLine = true,
+                keyboardOptions = KeyboardOptions(
+                    capitalization = KeyboardCapitalization.Words
+                ),
                 colors = TextFieldDefaults.colors(
                     focusedTextColor = Color.White,
                     unfocusedTextColor = Color.White,
@@ -227,7 +232,16 @@ fun ProfileSetupScreen(
                         else -> {
                             // Set interestedIn as opposite of gender
                             val interestedIn = if (selectedGender == "MALE") "FEMALE" else "MALE"
-                            viewModel.setupProfile(nickname.trim(), selectedGender, interestedIn)
+                            
+                            // Capitalize first letter of each word
+                            val formattedName = nickname.trim()
+                                .split(" ")
+                                .filter { it.isNotBlank() }
+                                .joinToString(" ") { word ->
+                                    word.lowercase().replaceFirstChar { it.uppercase() }
+                                }
+                            
+                            viewModel.setupProfile(formattedName, selectedGender, interestedIn)
                         }
                     }
                 },

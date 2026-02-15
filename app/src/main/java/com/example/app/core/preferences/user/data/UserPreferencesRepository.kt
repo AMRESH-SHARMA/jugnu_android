@@ -22,6 +22,7 @@ class UserPreferencesRepository @Inject constructor(
         val KEY_ACCESS_TOKEN = stringPreferencesKey("access_token")
         val KEY_SESSION_ID = stringPreferencesKey("session_id")
         val KEY_INTERESTED_IN = stringPreferencesKey("interested_in")
+        val KEY_IS_PROFILE_COMPLETE = stringPreferencesKey("is_profile_complete")
 
         // 🆕 Offer tracking (single offer, content-based)
         val KEY_LAST_OFFER_DATE = stringPreferencesKey("last_offer_date")
@@ -45,6 +46,10 @@ class UserPreferencesRepository @Inject constructor(
 
     val interestedInFlow = dataStore.data.map { prefs ->
         prefs[KEY_INTERESTED_IN] ?: "MALE"
+    }
+
+    val isProfileCompleteFlow = dataStore.data.map { prefs ->
+        prefs[KEY_IS_PROFILE_COMPLETE]?.toBoolean() ?: false
     }
 
     suspend fun saveUserPrefs(id: Long, role: UserRole) {
@@ -72,11 +77,18 @@ class UserPreferencesRepository @Inject constructor(
         }
     }
 
+    suspend fun saveProfileComplete(isComplete: Boolean) {
+        dataStore.edit { prefs ->
+            prefs[KEY_IS_PROFILE_COMPLETE] = isComplete.toString()
+        }
+    }
+
     suspend fun clearSession() {
         dataStore.edit { prefs ->
             prefs.remove(KEY_SESSION_ID)
             prefs.remove(KEY_ACCOUNT_ID)
             prefs.remove(KEY_ROLE)
+            prefs.remove(KEY_IS_PROFILE_COMPLETE)
         }
     }
 

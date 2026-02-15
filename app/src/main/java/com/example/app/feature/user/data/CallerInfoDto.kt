@@ -4,3 +4,7 @@ data class CallerInfoDto(
     val name: String,
     val avatar: String?
 )
+data class CustomerProfileDto(
+    val name: String,
+    val balanceCoins: Long
+)
