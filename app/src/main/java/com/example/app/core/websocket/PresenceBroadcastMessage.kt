@@ -14,6 +14,12 @@ data class PresenceSnapshotMessage(
     val data: Map<String, String>
 )
 
+@Serializable
+data class ConnectionReplacedMessage(
+    val type: String,
+    val message: String? = null
+)
+
 // TODO
 fun PresenceBroadcastMessage.toState(): PresenceState =
     when (status) {

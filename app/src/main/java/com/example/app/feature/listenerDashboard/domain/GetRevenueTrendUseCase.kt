@@ -7,7 +7,7 @@ import javax.inject.Inject
 class GetRevenueTrendUseCase @Inject constructor(
     private val repository: ListenerDashboardRepository
 ) {
-    suspend operator fun invoke(listenerId: Long, days: Int): ApiResult<RevenueTrend> {
-        return repository.getRevenueTrend(listenerId, days)
+    suspend operator fun invoke(days: Int): ApiResult<RevenueTrend> {
+        return repository.getRevenueTrend(days)
     }
 }

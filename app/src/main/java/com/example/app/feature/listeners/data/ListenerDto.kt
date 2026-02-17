@@ -11,5 +11,7 @@ data class ListenerDto(
     val experience: Int,
     val pricePerMin: Double,
     val languages: List<String>,
-    val rating: Double
+    val rating: Double,
+    val isAvailable: Boolean,
+    val presence: String // ONLINE, OFFLINE, BUSY
 )

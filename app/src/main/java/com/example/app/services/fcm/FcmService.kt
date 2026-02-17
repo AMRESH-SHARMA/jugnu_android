@@ -47,6 +47,9 @@ class FcmService : FirebaseMessagingService() {
     lateinit var prefs: UserPreferencesRepository
 
     @Inject
+    lateinit var callRepository: com.example.app.feature.call.data.CallRepository
+
+    @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
 
@@ -116,14 +119,23 @@ class FcmService : FirebaseMessagingService() {
                     callType = callTypeText
                 )
 
-                // 2️⃣ Emit local Incoming event (THIS IS THE KEY)
+                // Send acknowledgment to backend (background/killed scenario)
+                // Backend will notify caller via FCM
+                appScope.launch(Dispatchers.IO) {
+                    callRepository.callReceived(
+                        callId = payload.callId,
+                        calleeAccountId = SessionManager.userAccountId
+                    )
+                }
+
+                // Emit local Incoming event
                 CallEventBus.emit(
                     CallEvent.Incoming(
                         callId = payload.callId,
-                        callerAccountId = payload.callerAccountId!!,
+                        callerAccountId = payload.callerAccountId,
                         calleeAccountId = SessionManager.userAccountId,
                         callType = payload.callType ?: CallType.VOICE,
-                        channel = payload.channel // optional
+                        channel = payload.channel
                     )
                 )
             }
@@ -131,24 +143,26 @@ class FcmService : FirebaseMessagingService() {
             // ----------------------------------------------------------
             // CALL TERMINATION FALLBACKS
             // ----------------------------------------------------------
+            AppConstants.EVENT_CALL_RECEIVED -> {
+                // Callee's device received the call (sent by backend via FCM)
+                CallEventBus.emit(
+                    CallEvent.CallReceived(payload.callId)
+                )
+            }
+
             AppConstants.EVENT_CALL_REJECTED,
             AppConstants.EVENT_CALL_ENDED,
             AppConstants.EVENT_CALL_CANCELLED -> {
-
-//                Log.d("RTM", "Call ended via FCM")
-//                // 🔕 Stop ringing/Dismiss incoming call notification
-////                        IncomingCallRingingService.stop(appContext)
-////                        incomingCallNotificationManager.dismiss(event.callId)
-////                IncomingCallRingingService.stop(applicationContext)
-//
-////                     2️⃣ Dismiss incoming call notification
-//                incomingCallNotificationManager.dismiss(payload.callId)
-//
-////                     3️⃣ Clear pending cold-start call
-//                pendingCallStore.clear()
-//                CallEventBus.emit(
-//                    CallEvent.Ended(payload.callId)
-//                )
+                // Stop ringing and dismiss incoming call notification
+                incomingCallNotificationManager.dismiss()
+                
+                // Clear pending call data
+                pendingCallStore.clear()
+                
+                // Emit event to update CallStore (stops audio if app is running)
+                CallEventBus.emit(
+                    CallEvent.Ended(payload.callId)
+                )
             }
         }
     }

@@ -60,6 +60,12 @@ class RtmEventListenerImpl(
                         )
                     }
 
+                    AppConstants.EVENT_CALL_RECEIVED -> {
+                        CallEventBus.emit(
+                            CallEvent.CallReceived(signal.callId)
+                        )
+                    }
+
                     AppConstants.EVENT_CALL_ACCEPTED -> {
                         if (!acceptedCalls.add(signal.callId)) {
                             Log.w(

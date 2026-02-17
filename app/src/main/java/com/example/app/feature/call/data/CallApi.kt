@@ -26,4 +26,9 @@ interface CallApi {
     suspend fun endCall(
         @Body req: EndCallRequest
     ): BaseResponse<Unit>
+
+    @POST("call/received")
+    suspend fun callReceived(
+        @Body req: CallReceivedRequest
+    ): BaseResponse<Unit>
 }

@@ -23,6 +23,11 @@ data class EndCallRequest(
     val callId: String
 )
 
+data class CallReceivedRequest(
+    val callId: String,
+    val calleeAccountId: Long
+)
+
 
 // ---------------- RESPONSES / DTOs ----------------
 

@@ -217,13 +217,13 @@ class CallViewModel @Inject constructor(
             )) {
                 is ApiResult.Success -> {
                     val call = result.data
-                    // Smoothly update only callId, status, and channel
+                    // Update only callId and channel, keep status as OUTGOING_CONNECTING
+                    // Status will change to OUTGOING_RINGING when we receive CallReceived event
                     val current = CallStore.current()
                     if (current != null && current.callId == tempCallId) {
                         CallStore.set(
                             current.copy(
                                 callId = call.callId,
-                                status = CallStatus.OUTGOING_RINGING,
                                 channel = call.channel
                             )
                         )

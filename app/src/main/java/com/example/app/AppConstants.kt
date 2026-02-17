@@ -32,6 +32,7 @@ object AppConstants {
     // =========================
 
     const val EVENT_INCOMING_CALL = "incoming_call"
+    const val EVENT_CALL_RECEIVED = "call_received"  // Callee confirms they received the call
     const val EVENT_CALL_ACCEPTED = "call_accepted"
     const val EVENT_CALL_REJECTED = "call_rejected"
     const val EVENT_CALL_CANCELLED = "call_cancelled"

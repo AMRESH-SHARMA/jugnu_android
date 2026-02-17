@@ -50,10 +50,11 @@ class StartCall @Inject constructor(
                 )
 
                 // Build domain model for caller UI
+                // Return OUTGOING_CONNECTING - will change to OUTGOING_RINGING when callee acknowledges
                 ApiResult.Success(
                     CallModel(
                         callId = dto.callId,
-                        status = CallStatus.INCOMING_RINGING,
+                        status = CallStatus.OUTGOING_CONNECTING,
                         callType = callType,
                         channel = dto.channel,
                         callerAccountId = callerAccountId,

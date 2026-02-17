@@ -83,6 +83,7 @@ fun HomeScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val balance by viewModel.balance.collectAsState()
+    val username by viewModel.username.collectAsState()
     
     // Check permission immediately (synchronously) to avoid flicker
     val initialPermissionGranted = remember {
@@ -143,6 +144,11 @@ fun HomeScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+    
+    // Refresh balance every time HomeScreen is displayed (like WalletScreen)
+    LaunchedEffect(Unit) {
+        viewModel.refreshProfile()
     }
     
     // Get the saved tab from navigation back stack entry
@@ -296,7 +302,7 @@ fun HomeScreen(
             // Show header only when NOT on Settings tab
             if (currentTab != HomeTab.USER) {
                 CustomerHeaderSection(
-                    username = "Anonymous",
+                    username = username,
                     balance = balance,
                     onWalletClick = {
                         navController.navigate(Routes.Graph.WALLET) {
