@@ -59,6 +59,21 @@ class CallManager @Inject constructor(
     }
 
     // ------------------------------------------------------------
+    // CALL RECEIVED (Callee acknowledges receiving the call)
+    // ------------------------------------------------------------
+    fun onCallReceived(event: CallEvent.CallReceived) {
+        log("onCallReceived()")
+        val current = CallStore.current() ?: return
+        
+        // Only update if we're still in OUTGOING_CONNECTING state
+        if (current.callId == event.callId && current.status == CallStatus.OUTGOING_CONNECTING) {
+            CallStore.update {
+                it.copy(status = CallStatus.OUTGOING_RINGING)
+            }
+        }
+    }
+
+    // ------------------------------------------------------------
     // ACCEPTED (RTM)
     // ------------------------------------------------------------
     fun onAccepted(event: CallEvent.Accepted) {

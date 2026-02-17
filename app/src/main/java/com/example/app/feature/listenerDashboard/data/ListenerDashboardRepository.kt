@@ -21,11 +21,10 @@ class ListenerDashboardRepository @Inject constructor(
         }
 
     suspend fun getRevenueTrend(
-        listenerId: Long,
         days: Int
     ): ApiResult<RevenueTrend> =
         safeApiCall {
-            val res = api.getRevenueTrend(listenerId, days)
+            val res = api.getRevenueTrend(days)
             if (!res.success) throw Exception(res.message)
             res.data.toDomain()
         }
