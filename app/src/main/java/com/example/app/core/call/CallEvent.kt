@@ -21,6 +21,10 @@ sealed class CallEvent {
     ) : CallEvent()
 
     // ---- Signaling ----
+    data class CallReceived(
+        val callId: String
+    ) : CallEvent()
+
     data class Accepted(
         val callId: String,
         val channel: String?,

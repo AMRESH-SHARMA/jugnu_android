@@ -123,8 +123,9 @@ class HomeViewModel @Inject constructor(
 
     // ---------------------------------------------------------
     // Profile refresh (fetches username + balance)
+    // Public so it can be called from UI when screen resumes
     // ---------------------------------------------------------
-    private fun refreshProfile() {
+    fun refreshProfile() {
         viewModelScope.launch {
             when (val res = getCustomerProfile()) {
                 is ApiResult.Success -> {

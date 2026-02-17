@@ -37,6 +37,7 @@ class EventObserver @Inject constructor(
     private val appForegroundTracker: AppForegroundTracker,
     private val networkStateTracker: NetworkStateTracker,
     private val userSession: com.example.app.core.session.UserSession,
+    private val rtmCallSignaling: com.example.app.core.rtm.RtmCallSignaling,
     @ApplicationContext private val appContext: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
@@ -71,6 +72,22 @@ class EventObserver @Inject constructor(
                     is CallEvent.Incoming -> {
                         callManager.onIncoming(event)
                         presenceManager.onCallStarted()
+                        
+                        // Send acknowledgment back to caller that we received the call
+                        rtmCallSignaling.sendCallEvent(
+                            channel = com.example.app.core.rtm.RtmChannels.user(event.callerAccountId),
+                            payload = com.example.app.core.rtm.CallSignalPayload(
+                                event = com.example.app.AppConstants.EVENT_CALL_RECEIVED,
+                                callId = event.callId,
+                                callType = event.callType,
+                                callerAccountId = event.callerAccountId,
+                                calleeAccountId = event.calleeAccountId
+                            )
+                        )
+                    }
+
+                    is CallEvent.CallReceived -> {
+                        callManager.onCallReceived(event)
                     }
 
                     is CallEvent.Accepted -> {

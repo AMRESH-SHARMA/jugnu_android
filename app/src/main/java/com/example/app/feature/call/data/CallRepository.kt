@@ -29,7 +29,7 @@ class CallRepository @Inject constructor(
 
         CallModel(
             callId = data.callId,
-            status = CallStatus.OUTGOING_RINGING,
+            status = CallStatus.OUTGOING_CONNECTING,
             callType = callType,
             channel = data.channel,
             callerAccountId = callerAccountId,
@@ -51,6 +51,11 @@ class CallRepository @Inject constructor(
 
     suspend fun endCall(callId: String): ApiResult<Unit> = safeApiCall {
         val res = api.endCall(EndCallRequest(callId))
+        if (!res.success) throw Exception(res.message)
+    }
+
+    suspend fun callReceived(callId: String, calleeAccountId: Long): ApiResult<Unit> = safeApiCall {
+        val res = api.callReceived(CallReceivedRequest(callId, calleeAccountId))
         if (!res.success) throw Exception(res.message)
     }
 }

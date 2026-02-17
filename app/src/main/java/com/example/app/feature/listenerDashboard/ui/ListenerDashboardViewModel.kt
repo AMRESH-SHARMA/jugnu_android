@@ -202,9 +202,7 @@ class ListenerDashboardViewModel @Inject constructor(
                 // Small delay to debounce rapid filter changes
                 kotlinx.coroutines.delay(AppConstants.FILTER_DEBOUNCE_DELAY)
                 
-                val listenerId = SessionManager.userAccountId
-                
-                when (val result = getRevenueTrend(listenerId, days)) {
+                when (val result = getRevenueTrend(days)) {
                     is ApiResult.Success -> {
                         _revenueTrend.value = result.data
                         lastLoadedRevenueTrendFilter = filter

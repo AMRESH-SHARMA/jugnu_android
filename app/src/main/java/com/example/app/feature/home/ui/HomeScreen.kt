@@ -146,6 +146,11 @@ fun HomeScreen(
         }
     }
     
+    // Refresh balance every time HomeScreen is displayed (like WalletScreen)
+    LaunchedEffect(Unit) {
+        viewModel.refreshProfile()
+    }
+    
     // Get the saved tab from navigation back stack entry
     val navBackStackEntry = navController.currentBackStackEntry
     val savedTab = navBackStackEntry?.savedStateHandle?.get<String>("selected_tab")
