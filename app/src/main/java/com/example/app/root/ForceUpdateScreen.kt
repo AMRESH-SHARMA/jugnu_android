@@ -59,7 +59,7 @@ fun ForceUpdateScreen(
             Button(
                 onClick = {
                     val url = playStoreUrl
-                        ?: "https://play.google.com/store/apps/details?id=com.example.app"
+                        ?: "https://play.google.com/store/apps/details?id=com.amresh.helium"
 
                     val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                     intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)

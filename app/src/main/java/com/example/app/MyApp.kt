@@ -16,6 +16,7 @@ import com.example.app.core.rtm.RtmEventListenerImpl
 import com.example.app.core.rtm.RtmManager
 import com.example.app.core.session.UserSession
 import com.example.app.core.websocket.PresenceWebSocketManager
+import com.google.firebase.crashlytics.FirebaseCrashlytics
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +59,10 @@ class MyApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        
+        // Initialize Firebase Crashlytics
+        initializeCrashlytics()
+        
         /** Observe whether app is in foreground/background */
         ProcessLifecycleOwner.get()
             .lifecycle
@@ -84,6 +89,24 @@ class MyApp : Application() {
         restoreSessionId()
         observeUserSession()
         eventObserver.toString()
+    }
+    
+    private fun initializeCrashlytics() {
+        val crashlytics = FirebaseCrashlytics.getInstance()
+        
+        // Enable crash reporting
+        crashlytics.setCrashlyticsCollectionEnabled(true)
+        
+        // Set user identifier (will be updated when user logs in)
+        if (SessionManager.userAccountId != 0L) {
+            crashlytics.setUserId(SessionManager.userAccountId.toString())
+        }
+        
+        // Add custom keys for debugging
+        crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
+        crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
+        
+        Log.d("Crashlytics", "Firebase Crashlytics initialized")
     }
 
     //Restore from DATA Store and put in SessionManager

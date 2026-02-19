@@ -334,6 +334,56 @@ Uncommented dismiss logic in `FcmService` for call termination events (`EVENT_CA
 
 ---
 
+### ✅ Unified Permission Flow (Notification + Microphone)
+**Status:** Implemented  
+**Date:** 2024
+
+**Problem:**
+- Permission flow was inconsistent between Customers and Listeners
+- Notification permission was embedded in ProfileSetupScreen (only for Customers)
+- Listeners had no permission screen at all
+- App could crash when accepting calls without microphone permission
+- Permission dialog stayed open after granting from settings
+- No permission check on app restart
+- When user clicked "Answer" on FCM notification (app not opened), app would crash or silently fail if microphone permission was missing
+
+**Solution:**
+1. Created dedicated `PermissionScreen.kt` - blocking notification permission screen for both roles
+2. Updated flow: Login → OTP → PermissionScreen → (Customer: ProfileSetup) → Home/Dashboard
+3. Removed notification permission logic from `ProfileSetupScreen` (now only handles profile fields)
+4. Updated `AppNavGraph` to check notification permission on app restart
+5. Added safety check in `CallRtcController` before `joinChannel()` to prevent Agora crash
+6. PermissionScreen handles ON_RESUME to auto-navigate when permission granted from settings
+7. Disabled back button on PermissionScreen (truly blocking)
+8. Created `CallPermissionDialog.kt` - shows permission request when accepting call from notification
+9. Updated `OnGoingCallScreen` to check microphone/camera permissions on launch and show dialog if missing
+10. Modified `CallRtcController` to not silently end incoming calls when permission is missing (UI handles it)
+
+**Flow:**
+- Listeners: Login → OTP → PermissionScreen → Dashboard
+- Customers: Login → OTP → PermissionScreen → ProfileSetup → Home
+- Call from notification (app killed): Notification → App opens → OnGoingCallScreen → Permission dialog → Accept/Reject
+
+**Edge Cases Handled:**
+- App restart with missing permission
+- Permission granted from settings (auto-navigates)
+- App kill/cache clear scenarios
+- Microphone permission missing during call accept
+- Back button disabled on PermissionScreen (truly blocking)
+- User clicks "Answer" on FCM notification without microphone permission (shows dialog)
+- User clicks "Answer" on FCM notification without camera permission for video calls (shows dialog)
+
+**Files Modified:**
+- `jugnu_android/app/src/main/java/com/example/app/feature/login/ui/PermissionScreen.kt` (NEW)
+- `jugnu_android/app/src/main/java/com/example/app/feature/call/ui/CallPermissionDialog.kt` (NEW)
+- `jugnu_android/app/src/main/java/com/example/app/feature/login/ui/ProfileSetupScreen.kt`
+- `jugnu_android/app/src/main/java/com/example/app/feature/navigation/ui/AppNavGraph.kt`
+- `jugnu_android/app/src/main/java/com/example/app/feature/navigation/ui/AuthNavGraph.kt`
+- `jugnu_android/app/src/main/java/com/example/app/core/rtc/CallRtcController.kt`
+- `jugnu_android/app/src/main/java/com/example/app/feature/call/ui/OnGoingCallScreen.kt`
+
+---
+
 ## Notes
 
 ### Architecture Decisions

@@ -78,9 +78,8 @@ class OtpViewModel @Inject constructor(
                         SessionManager.userRole = userRole
                         SessionManager.userAccountId = data.accountId
                         
-                        // Set profile completion status based on isNewUser
-                        val isProfileComplete = !data.isNewUser
-                        SessionManager.isProfileComplete = isProfileComplete
+                        // Use server-side profile completion status (source of truth)
+                        SessionManager.isProfileComplete = data.isProfileComplete
                         
                         // Persist to DataStore
                         userPreferencesRepository.saveSessionId(data.sessionId)
@@ -88,7 +87,7 @@ class OtpViewModel @Inject constructor(
                             id = data.accountId,
                             role = userRole
                         )
-                        userPreferencesRepository.saveProfileComplete(isProfileComplete)
+                        userPreferencesRepository.saveProfileComplete(data.isProfileComplete)
                     }
 
                     _otpVerifyState.value = OtpUiState.Success(data)

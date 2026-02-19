@@ -71,42 +71,13 @@ fun OtpVerificationScreen(
                 
                 Toast.makeText(context, "✓ Login successful!", Toast.LENGTH_SHORT).show()
                 
-                // Route based on user role and new user status
-                val destination = if (data != null) {
-                    when {
-                        // New CUSTOMER users need to complete profile setup
-                        data.userRole.uppercase() == "CUSTOMER" && data.isNewUser -> {
-                            android.util.Log.d("OtpScreen", "Navigating to PROFILE_SETUP")
-                            Routes.Screen.Auth.PROFILE_SETUP
-                        }
-                        // Existing users or LISTENER role go to their respective home
-                        data.userRole.uppercase() == "LISTENER" -> {
-                            android.util.Log.d("OtpScreen", "Navigating to LISTENER")
-                            Routes.Graph.LISTENER
-                        }
-                        else -> {
-                            android.util.Log.d("OtpScreen", "Navigating to HOME")
-                            Routes.Graph.HOME
-                        }
-                    }
-                } else {
-                    android.util.Log.d("OtpScreen", "Data is null, navigating to HOME")
-                    Routes.Graph.HOME // Fallback
-                }
+                // Always navigate to PermissionScreen first
+                // PermissionScreen will handle routing to ProfileSetup or Home/Dashboard
+                android.util.Log.d("OtpScreen", "Navigating to PERMISSION screen")
                 
-                android.util.Log.d("OtpScreen", "Final destination: $destination")
-                
-                // Navigate - clear auth stack only if not going to profile setup
-                if (destination == Routes.Screen.Auth.PROFILE_SETUP) {
-                    navController.navigate(destination) {
-                        popUpTo(Routes.Screen.Auth.LOGIN) { inclusive = false }
-                        launchSingleTop = true
-                    }
-                } else {
-                    navController.navigate(destination) {
-                        popUpTo(Routes.Graph.AUTH) { inclusive = true }
-                        launchSingleTop = true
-                    }
+                navController.navigate(Routes.Screen.Auth.PERMISSION) {
+                    popUpTo(Routes.Screen.Auth.LOGIN) { inclusive = false }
+                    launchSingleTop = true
                 }
             }
 

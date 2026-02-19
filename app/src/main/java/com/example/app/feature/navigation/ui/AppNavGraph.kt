@@ -1,6 +1,8 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
+import android.Manifest
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,7 +13,9 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
@@ -26,6 +30,8 @@ import kotlinx.coroutines.flow.drop
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    
     // Observe call state for UI overlays
     val callState by CallStore.call.collectAsState(initial = null)
 
@@ -93,8 +99,22 @@ fun AppNavGraph() {
 
     // Determine start destination based on login state
     val startDestination = if (SessionManager.userAccountId != 0L && SessionManager.userRole != null) {
+        // Check notification permission for Android 13+
+        val hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+        } else {
+            true // Auto-granted on Android 12 and below
+        }
+        
+        // If notification permission is missing, redirect to permission screen
+        if (!hasNotificationPermission) {
+            Routes.Graph.AUTH  // Will show PERMISSION via authNavGraph logic
+        }
         // Check if profile is complete for customers
-        if (SessionManager.userRole == UserRole.CUSTOMER && !SessionManager.isProfileComplete) {
+        else if (SessionManager.userRole == UserRole.CUSTOMER && !SessionManager.isProfileComplete) {
             Routes.Graph.AUTH  // Will show PROFILE_SETUP via authNavGraph logic
         } else {
             when (SessionManager.userRole) {

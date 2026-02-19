@@ -16,5 +16,6 @@ fun VerifyOtpResponseDto.toDomain(): VerifyOtpResult {
         accountId = this.accountId,
         isNewUser = this.is_new_user,
         userRole = this.userRole,
+        isProfileComplete = this.is_profile_complete
     )
 }
