@@ -17,6 +17,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import android.util.Log
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.PendingCallStore
@@ -88,6 +89,14 @@ class MainActivity : ComponentActivity() {
     private fun restorePendingIncomingCall() {
         lifecycleScope.launch {
             val pending = pendingCallStore.consume() ?: return@launch
+            
+            // Validate call is not expired (Option 2: Timestamp validation)
+            val age = System.currentTimeMillis() - pending.timestamp
+            if (age > AppConstants.CALL_PENDING_STORE_TTL) {
+                Log.w("Call", "Pending call expired (${age}ms old), ignoring")
+                return@launch
+            }
+            
             CallEventBus.emit(
                 CallEvent.Incoming(
                     callId = pending.callId,

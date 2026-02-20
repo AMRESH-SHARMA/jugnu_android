@@ -19,6 +19,10 @@ data class RejectCallRequest(
     val callId: String
 )
 
+data class CancelCallRequest(
+    val callId: String
+)
+
 data class EndCallRequest(
     val callId: String
 )

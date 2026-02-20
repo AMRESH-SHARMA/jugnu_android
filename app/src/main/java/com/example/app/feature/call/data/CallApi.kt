@@ -22,6 +22,11 @@ interface CallApi {
         @Body req: RejectCallRequest
     ): BaseResponse<RejectCallDto>
 
+    @POST("call/cancel")
+    suspend fun cancelCall(
+        @Body req: CancelCallRequest
+    ): BaseResponse<Unit>
+
     @POST("call/end")
     suspend fun endCall(
         @Body req: EndCallRequest

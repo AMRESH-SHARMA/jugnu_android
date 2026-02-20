@@ -11,7 +11,8 @@ import javax.inject.Singleton
 data class PendingIncomingCall(
     val callId: String,
     val callType: CallType,
-    val callerAccountId: Long
+    val callerAccountId: Long,
+    val timestamp: Long = System.currentTimeMillis()
 )
 
 @Singleton

@@ -7,7 +7,7 @@ object AppConstants {
     // =========================
 
     const val REMOTE_CONFIG_URL = "https://storage.googleapis.com/jugnu-config-server/config.json"
-    const val USE_DEFAULT_URL = false
+    const val USE_DEFAULT_URL = true
     const val DEFAULT_BASE_URL = "http://192.168.1.6:3001/api/v1/"
     const val WS_PRESENCE_PATH = "ws/presence"
 
@@ -18,6 +18,14 @@ object AppConstants {
     const val API_CONNECT_TIMEOUT = 10L      // Connection timeout in seconds
     const val API_READ_TIMEOUT = 30L         // Read timeout in seconds
     const val API_WRITE_TIMEOUT = 30L        // Write timeout in seconds
+
+    // =========================
+    //        CALL TIMEOUTS
+    // =========================
+    
+    const val CALL_RINGING_TIMEOUT = 30_000L        // 30 seconds - Backend auto-cancels if not answered
+    const val CALL_PENDING_STORE_TTL = 35_000L      // 35 seconds - PendingCallStore expiry (ringing timeout + buffer)
+    const val CALL_RTC_CONNECT_TIMEOUT = 15_000L    // 15 seconds - RTC connection timeout after accept
 
     // =========================
     //        UI TIMEOUTS

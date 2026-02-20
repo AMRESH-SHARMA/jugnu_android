@@ -72,7 +72,7 @@ class PresenceWebSocketManager @Inject constructor(
         val request = Request.Builder()
             .url(buildWsUrl())
             .addHeader("Authorization", "Bearer $accountId")
-            .addHeader("X-Session-Id", sessionId)
+            .addHeader("X-Session-ID", sessionId)
             .addHeader("X-Role", role)
             .build()
 
