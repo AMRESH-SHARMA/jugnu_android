@@ -73,8 +73,10 @@ class CallForegroundService : Service() {
         val returnIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra("from_call_notification", true)
+            },
             PendingIntent.FLAG_IMMUTABLE
         )
 

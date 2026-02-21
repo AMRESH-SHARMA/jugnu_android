@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -51,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
         restorePendingIncomingCall()
         observeSessionExpiry()
+        handleIncomingIntent(intent)
 
         setContent {
             AppTheme {
@@ -82,6 +84,33 @@ class MainActivity : ComponentActivity() {
                 
                 // Global Snackbar - Outside Scaffold for highest z-index, even above dialogs
                 com.example.app.core.ui.GlobalSnackbar()
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        // Check if this is a return-to-call intent from notification
+        val isFromNotification = intent?.getBooleanExtra("from_call_notification", false) == true
+        
+        if (isFromNotification) {
+            // Broadcast event to navigate to call screen if there's an active call
+            lifecycleScope.launch {
+                val activeCall = com.example.app.core.call.CallStore.current()
+                if (activeCall != null && activeCall.status in listOf(
+                    com.example.app.feature.call.domain.CallStatus.OUTGOING_CONNECTING,
+                    com.example.app.feature.call.domain.CallStatus.OUTGOING_RINGING,
+                    com.example.app.feature.call.domain.CallStatus.CONNECTING,
+                    com.example.app.feature.call.domain.CallStatus.CONNECTED
+                )) {
+                    // Emit a navigation event
+                    CallEventBus.emit(CallEvent.NavigateToCall)
+                }
             }
         }
     }

@@ -43,4 +43,7 @@ sealed class CallEvent {
     data class Ended(val callId: String) : CallEvent()
 
     data class Cancelled(val callId: String, val calleeAccountId: Long?) : CallEvent()
+
+    // ---- Navigation ----
+    data object NavigateToCall : CallEvent()
 }
