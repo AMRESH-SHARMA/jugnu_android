@@ -9,9 +9,15 @@ data class PresenceBroadcastMessage(
 )
 
 @Serializable
+data class PresenceSnapshotData(
+    val status: String,
+    val is_available: Boolean
+)
+
+@Serializable
 data class PresenceSnapshotMessage(
     val type: String,
-    val data: Map<String, String>
+    val data: Map<String, PresenceSnapshotData>
 )
 
 @Serializable
@@ -28,4 +34,3 @@ fun PresenceBroadcastMessage.toState(): PresenceState =
         "OFFLINE" -> PresenceState.OFFLINE
         else -> PresenceState.OFFLINE
     }
-

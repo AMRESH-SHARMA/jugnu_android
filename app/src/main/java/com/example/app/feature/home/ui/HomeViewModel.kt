@@ -54,7 +54,6 @@ class HomeViewModel @Inject constructor(
     private var offerCheckedThisSession = false
 
     init {
-        refreshProfile()
         checkAndEmitOffer()
     }
 

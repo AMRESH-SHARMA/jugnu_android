@@ -8,3 +8,7 @@ fun String.toPresenceState(): PresenceState {
         else -> PresenceState.OFFLINE
     }
 }
+
+fun PresenceSnapshotData.toPresenceState(): PresenceState {
+    return this.status.toPresenceState()
+}

@@ -211,14 +211,29 @@ class PresenceWebSocketManager @Inject constructor(
                     return
                 }
 
+                // ---- AVAILABILITY CHANGE ----
+                if (obj.optString("type") == "availability_changed") {
+                    val accountId = obj.getString("account_id")
+                    val isAvailable = obj.getBoolean("is_available")
+                    
+                    Log.d(TAG, "WS availability update: accountId=$accountId, isAvailable=$isAvailable")
+                    
+                    remotePresenceStore.updateAvailability(accountId, isAvailable)
+                    return
+                }
+
                 // ---- SNAPSHOT ----
                 if (obj.optString("type") == "presence_snapshot") {
                     val snapshot = json.decodeFromString<PresenceSnapshotMessage>(text)
                     Log.d(TAG, "WS received presence snapshot with ${snapshot.data.size} users")
 
-                    snapshot.data.forEach { (id, status) ->
-                        val state = status.toPresenceState()
+                    snapshot.data.forEach { (id, data) ->
+                        // Update presence state
+                        val state = data.status.toPresenceState()
                         remotePresenceStore.update(id, state)
+
+                        // Update availability
+                        remotePresenceStore.updateAvailability(id, data.is_available)
 
                         scope.launch {
                             PresenceEventBus.events.emit(

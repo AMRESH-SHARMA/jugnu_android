@@ -96,6 +96,7 @@ fun ListenerListScreen(
     // State
     val listeners = listenerVm.pagedListeners.collectAsLazyPagingItems()
     val presenceMap by presenceVm.remotePresenceStore.states.collectAsState()
+    val availabilityMap by presenceVm.remotePresenceStore.availability.collectAsState()
     val context = LocalContext.current
     val activity = context as Activity
 
@@ -145,6 +146,7 @@ fun ListenerListScreen(
     ListenerListContent(
         listeners = listeners,
         presenceMap = presenceMap,
+        availabilityMap = availabilityMap,
         navController = navController,
         onOpenListener = onOpenListener,
         onMessageClick = { listener ->
@@ -246,6 +248,7 @@ fun ListenerListScreen(
 private fun ListenerListContent(
     listeners: LazyPagingItems<ListenerModel>,
     presenceMap: Map<String, PresenceState>,
+    availabilityMap: Map<String, Boolean>,
     navController: NavController,
     onOpenListener: (ListenerModel) -> Unit,
     onCallClick: (ListenerModel, CallType) -> Unit,
@@ -348,18 +351,22 @@ private fun ListenerListContent(
                     return@items
                 }
 
-                // Combine API data (isAvailable, presence) with WebSocket updates (presenceMap)
-                // Priority: WebSocket real-time > API snapshot
+                // Combine WebSocket data (presence + availability)
+                // WebSocket snapshot includes ALL listeners, so no fallback needed
                 val wsPresence = presenceMap[listener.accountId.toString()]
+                val wsAvailability = availabilityMap[listener.accountId.toString()]
+                
+                // Use WebSocket data, default to false if not present
+                val isAvailable = wsAvailability ?: false
+                
                 val finalStatus = when {
-                    // If listener manually set unavailable, show as unavailable regardless of connection
-                    !listener.isAvailable -> PresenceState.OFFLINE
-                    // Use WebSocket real-time status if available
-                    wsPresence != null -> wsPresence
-                    // Fallback to API snapshot presence
-                    listener.presence == "ONLINE" -> PresenceState.ONLINE
-                    listener.presence == "BUSY" -> PresenceState.BUSY
-                    else -> PresenceState.OFFLINE
+                    // If listener set silent mode or has no active session, show as unavailable (white dot with X)
+                    !isAvailable -> PresenceState.OFFLINE
+                    // If listener is on a call, show as busy (red dot)
+                    wsPresence == PresenceState.BUSY -> PresenceState.BUSY
+                    // If available (has session + wants calls), show as online (green dot)
+                    // Even if WebSocket disconnected, they'll get FCM notification
+                    else -> PresenceState.ONLINE
                 }
 
                 ListenerRow(
