@@ -13,7 +13,9 @@ data class VerifyOtpResponseDto(
     val sessionId: String,
     val userRole: String,
     @SerializedName("is_new_user", alternate = ["isNewUser"])
-    val is_new_user: Boolean
+    val is_new_user: Boolean,
+    @SerializedName("is_profile_complete", alternate = ["isProfileComplete"])
+    val is_profile_complete: Boolean = false
 )
 
 // Request DTO

@@ -23,20 +23,19 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization") version "2.0.21"
     // To Temporarily disabled - google-services.json missing
      id("com.google.gms.google-services")
+     id("com.google.firebase.crashlytics")
 }
 
 android {
     namespace = "com.example.app"
-    compileSdk {
-        version = release(36)
-    }
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.amresh.helium"
         minSdk = 24
         targetSdk = 36
-        versionCode = 12
-        versionName = "12.0"
+        versionCode = 15
+        versionName = "15.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -146,6 +145,7 @@ dependencies {
     // Add the dependency for the Firebase SDK for Google Analytics
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-crashlytics")
 
     // Agora SDK
     // RTM (signaling)

@@ -41,6 +41,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -343,7 +344,7 @@ fun ModernProfileHeader() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Anonymous",
+                    text = "Profile Settings",
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -366,13 +367,13 @@ fun ModernProfileHeader() {
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        text = "Active",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
+//                    Text(
+//                        text = "Active",
+//                        style = MaterialTheme.typography.bodyMedium.copy(
+//                            fontWeight = FontWeight.Medium
+//                        ),
+//                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+//                    )
                 }
             }
         }
@@ -654,7 +655,8 @@ fun InterestedInDialog(
                 onClick = { onConfirm(selectedGender) },
                 enabled = !isLoading,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.height(48.dp)
@@ -662,7 +664,7 @@ fun InterestedInDialog(
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary,
+                        color = Color.White,
                         strokeWidth = 2.dp
                     )
                 } else {
@@ -670,7 +672,8 @@ fun InterestedInDialog(
                         text = "Save",
                         style = MaterialTheme.typography.labelLarge.copy(
                             fontWeight = FontWeight.SemiBold
-                        )
+                        ),
+                        color = Color.White
                     )
                 }
             }
@@ -680,14 +683,17 @@ fun InterestedInDialog(
                 onClick = onDismiss,
                 enabled = !isLoading,
                 shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.height(48.dp)
+                modifier = Modifier.height(48.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color.White
+                )
             ) {
                 Text(
                     text = "Cancel",
                     style = MaterialTheme.typography.labelLarge.copy(
                         fontWeight = FontWeight.Medium
                     ),
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+                    color = Color.White
                 )
             }
         }
@@ -722,13 +728,18 @@ private fun GenderDialogOption(
         ) {
             RadioButton(
                 selected = selected,
-                onClick = null
+                onClick = null,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = MaterialTheme.colorScheme.primary,
+                    unselectedColor = Color.White.copy(alpha = 0.6f)
+                )
             )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                color = Color.White
             )
         }
     }
@@ -787,7 +798,11 @@ fun ReportAbuseDialog(
                     colors = androidx.compose.material3.TextFieldDefaults.colors(
                         focusedContainerColor = Color.Transparent,
                         unfocusedContainerColor = Color.Transparent,
-                        disabledContainerColor = Color.Transparent
+                        disabledContainerColor = Color.Transparent,
+                        errorContainerColor = Color.Transparent,
+                        focusedTextColor = Color.White,
+                        unfocusedTextColor = Color.White,
+                        cursorColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }
@@ -801,7 +816,8 @@ fun ReportAbuseDialog(
                 },
                 enabled = !isLoading && isValid,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = Color.White
                 )
             ) {
                 if (isLoading) {
@@ -811,16 +827,25 @@ fun ReportAbuseDialog(
                         strokeWidth = 2.dp
                     )
                 } else {
-                    Text("Submit Report")
+                    Text(
+                        text = "Submit Report",
+                        color = Color.White
+                    )
                 }
             }
         },
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                enabled = !isLoading
+                enabled = !isLoading,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color.White
+                )
             ) {
-                Text("Cancel")
+                Text(
+                    text = "Cancel",
+                    color = Color.White
+                )
             }
         },
         shape = RoundedCornerShape(24.dp),

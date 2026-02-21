@@ -54,7 +54,6 @@ class HomeViewModel @Inject constructor(
     private var offerCheckedThisSession = false
 
     init {
-        refreshProfile()
         checkAndEmitOffer()
     }
 
@@ -122,7 +121,7 @@ class HomeViewModel @Inject constructor(
     }
 
     // ---------------------------------------------------------
-    // Profile refresh (fetches username + balance)
+    // Profile refresh (fetches username + balance + profile completion)
     // Public so it can be called from UI when screen resumes
     // ---------------------------------------------------------
     fun refreshProfile() {
@@ -131,6 +130,10 @@ class HomeViewModel @Inject constructor(
                 is ApiResult.Success -> {
                     _username.value = res.data.name
                     _balance.value = res.data.balanceCoins
+                    
+                    // Update profile completion status from server (source of truth)
+                    com.example.app.core.session.SessionManager.isProfileComplete = res.data.isProfileComplete
+                    userPrefs.saveProfileComplete(res.data.isProfileComplete)
                 }
                 is ApiResult.Error -> { /* ignore */ }
             }

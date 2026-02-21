@@ -65,26 +65,26 @@ class FcmService : FirebaseMessagingService() {
 
         Log.d("RTM", "ON FCM EVENT Received: ${message.data}")
 
-        // Android 13+ → notification permission guard
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+        val event = message.data["event"] ?: return
+        
+        // Check notification permission (for showing notification only)
+        val hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.w("RTM", "POST_NOTIFICATIONS not granted, ignoring notification")
-            return
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
         }
-
-        val event = message.data["event"] ?: return
-        // Screen On and app in foreground ignore fcm
+        
+        // Screen On and app in foreground - RTM should handle it, but emit event as fallback
         val appInForeground = appForegroundTracker.isForeground.value
         val screenOn = screenStateTracker.isScreenOn()
         if (event == AppConstants.EVENT_INCOMING_CALL &&
             appInForeground && screenOn
         ) {
-            Log.d("RTM", "Foreground + screen ON → ignore FCM")
-            return
+            Log.d("RTM", "Foreground + screen ON → RTM should handle, but emitting event as fallback")
+            // Don't return - let it process the event as fallback
         }
 
         val payload = try {
@@ -114,10 +114,17 @@ class FcmService : FirebaseMessagingService() {
                     null -> "Incoming call"
                 }
 
-                incomingCallNotificationManager.showIncomingCall(
-                    callId = payload.callId,
-                    callType = callTypeText
-                )
+                // Only show notification if permission is granted AND app is not in foreground
+                if (hasNotificationPermission && !(appInForeground && screenOn)) {
+                    incomingCallNotificationManager.showIncomingCall(
+                        callId = payload.callId,
+                        callType = callTypeText
+                    )
+                } else if (!hasNotificationPermission) {
+                    Log.w("RTM", "POST_NOTIFICATIONS not granted, skipping notification (events still processed)")
+                } else {
+                    Log.d("RTM", "App in foreground, skipping notification (banner will show)")
+                }
 
                 // Send acknowledgment to backend (background/killed scenario)
                 // Backend will notify caller via FCM
@@ -128,7 +135,7 @@ class FcmService : FirebaseMessagingService() {
                     )
                 }
 
-                // Emit local Incoming event
+                // Emit local Incoming event (even without notification permission)
                 CallEventBus.emit(
                     CallEvent.Incoming(
                         callId = payload.callId,

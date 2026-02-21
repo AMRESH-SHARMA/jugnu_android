@@ -60,6 +60,8 @@ import kotlin.math.roundToInt
 fun OnGoingCallScreen(
     vm: CallViewModel
 ) {
+    val context = LocalContext.current
+    
     // Disable back button during call
     BackHandler(enabled = true) {
         // Do nothing - prevent back navigation during call
@@ -74,6 +76,39 @@ fun OnGoingCallScreen(
 
     val status = call!!.status
     val renderer by vm.videoRenderer.collectAsState()
+    
+    // Permission check state
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    var permissionCheckDone by remember { mutableStateOf(false) }
+    
+    // Check permissions when screen opens (especially from notification)
+    LaunchedEffect(call!!.callId) {
+        if (!permissionCheckDone) {
+            permissionCheckDone = true
+            
+            // Check if we have required permissions
+            val requiredPermissions = if (call!!.callType == CallType.VOICE) {
+                listOf(android.Manifest.permission.RECORD_AUDIO)
+            } else {
+                listOf(
+                    android.Manifest.permission.RECORD_AUDIO,
+                    android.Manifest.permission.CAMERA
+                )
+            }
+            
+            val hasAllPermissions = requiredPermissions.all { permission ->
+                androidx.core.content.ContextCompat.checkSelfPermission(
+                    context,
+                    permission
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            }
+            
+            // If permissions are missing and call is incoming, show dialog
+            if (!hasAllPermissions && status == CallStatus.INCOMING_RINGING) {
+                showPermissionDialog = true
+            }
+        }
+    }
 
     Box(Modifier.fillMaxSize()) {
         // VIDEO layer only when connected AND remote video present
@@ -166,6 +201,23 @@ fun OnGoingCallScreen(
                 onEndCall = vm::endCall
             )
         }
+    }
+    
+    // Show permission dialog if needed
+    if (showPermissionDialog) {
+        CallPermissionDialog(
+            callType = call!!.callType,
+            onPermissionsGranted = {
+                showPermissionDialog = false
+                // Accept the call now that we have permissions
+                vm.acceptCall()
+            },
+            onDismiss = {
+                showPermissionDialog = false
+                // Reject the call if user doesn't grant permission
+                vm.rejectCall()
+            }
+        )
     }
 }
 

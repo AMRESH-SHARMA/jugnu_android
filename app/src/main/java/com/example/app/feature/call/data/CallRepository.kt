@@ -49,6 +49,11 @@ class CallRepository @Inject constructor(
         res.data
     }
 
+    suspend fun cancelCall(callId: String): ApiResult<Unit> = safeApiCall {
+        val res = api.cancelCall(CancelCallRequest(callId))
+        if (!res.success) throw Exception(res.message)
+    }
+
     suspend fun endCall(callId: String): ApiResult<Unit> = safeApiCall {
         val res = api.endCall(EndCallRequest(callId))
         if (!res.success) throw Exception(res.message)

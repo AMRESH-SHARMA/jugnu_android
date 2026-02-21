@@ -16,12 +16,19 @@ import com.example.app.R
 
 class CallForegroundService : Service() {
 
+    companion object {
+        const val EXTRA_CALL_TYPE = "call_type"
+        const val CALL_TYPE_VOICE = "voice"
+        const val CALL_TYPE_VIDEO = "video"
+    }
+
     override fun onCreate() {
         super.onCreate()
-        startAsForeground()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val callType = intent?.getStringExtra(EXTRA_CALL_TYPE) ?: CALL_TYPE_VOICE
+        startAsForeground(callType)
         return START_STICKY
     }
 
@@ -31,7 +38,7 @@ class CallForegroundService : Service() {
         super.onDestroy()
     }
 
-    private fun startAsForeground() {
+    private fun startAsForeground(callType: String) {
 
         val channelId = "call_channel"
         val channelName = "Ongoing Calls"
@@ -57,7 +64,7 @@ class CallForegroundService : Service() {
             }
         }
 
-        // Person (who the call is “with”) — can just be generic text
+        // Person (who the call is "with") — can just be generic text
         val person = Person.Builder()
             .setName("In a call")
             .build()
@@ -66,8 +73,10 @@ class CallForegroundService : Service() {
         val returnIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, MainActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP),
+            Intent(this, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                putExtra("from_call_notification", true)
+            },
             PendingIntent.FLAG_IMMUTABLE
         )
 
@@ -94,14 +103,16 @@ class CallForegroundService : Service() {
 
         val notification = builder.build()
 
-        // ---- Start as foreground service ----
+        // ---- Start as foreground service with appropriate type ----
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            startForeground(
-                1001,
-                notification,
+            val serviceType = if (callType == CALL_TYPE_VIDEO) {
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE or
                         ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA
-            )
+            } else {
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+            }
+            
+            startForeground(1001, notification, serviceType)
         } else {
             startForeground(1001, notification)
         }

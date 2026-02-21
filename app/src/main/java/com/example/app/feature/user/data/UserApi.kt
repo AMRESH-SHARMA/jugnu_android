@@ -8,10 +8,8 @@ import retrofit2.http.POST
 import retrofit2.http.Path
 
 interface UserApi {
-    @GET("users/caller-info/{id}")
-    suspend fun getCallerInfo(
-        @Path("id") id: Long
-    ): BaseResponse<CallerInfoDto>
+    @GET("users/caller-info")
+    suspend fun getCallerInfo(): BaseResponse<CallerInfoDto>
 
     @GET("users/profile")
     suspend fun getCustomerProfile(): BaseResponse<CustomerProfileDto>

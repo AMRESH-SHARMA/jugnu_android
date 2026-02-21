@@ -20,6 +20,14 @@ object AppConstants {
     const val API_WRITE_TIMEOUT = 30L        // Write timeout in seconds
 
     // =========================
+    //        CALL TIMEOUTS
+    // =========================
+    
+    const val CALL_RINGING_TIMEOUT = 30_000L        // 30 seconds - Backend auto-cancels if not answered
+    const val CALL_PENDING_STORE_TTL = 35_000L      // 35 seconds - PendingCallStore expiry (ringing timeout + buffer)
+    const val CALL_RTC_CONNECT_TIMEOUT = 15_000L    // 15 seconds - RTC connection timeout after accept
+
+    // =========================
     //        UI TIMEOUTS
     // =========================
     const val SNACKBAR_DURATION = 3000L  // 3 seconds
@@ -37,12 +45,6 @@ object AppConstants {
     const val EVENT_CALL_REJECTED = "call_rejected"
     const val EVENT_CALL_CANCELLED = "call_cancelled"
     const val EVENT_CALL_ENDED = "call_ended"
-
-    // Timeouts
-    const val STATE_FLOW_STOP_TIMEOUT = 5000L
-
-    const val START_RINGING_TIMEOUT = 30000L
-    const val START_CONNECT_TIMEOUT = 30000L
 
     // DataStore Keys (optional)
     const val DATASTORE_FILE_NAME = "user_prefs.json"

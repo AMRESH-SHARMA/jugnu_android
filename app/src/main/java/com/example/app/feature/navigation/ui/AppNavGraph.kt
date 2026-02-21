@@ -1,6 +1,8 @@
 package com.example.app.feature.navigation.ui
 
 import Routes
+import android.Manifest
+import android.os.Build
 import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,13 +11,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.zIndex
+import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.example.app.core.call.CallStore
+import com.example.app.core.call.CallEvent
+import com.example.app.core.call.CallEventBus
 import com.example.app.core.preferences.user.domain.UserRole
 import com.example.app.core.session.SessionManager
 import com.example.app.feature.call.domain.CallStatus
@@ -26,8 +35,13 @@ import kotlinx.coroutines.flow.drop
 @Composable
 fun AppNavGraph() {
     val navController = rememberNavController()
+    val context = LocalContext.current
+    
     // Observe call state for UI overlays
     val callState by CallStore.call.collectAsState(initial = null)
+    
+    // Remember if we're on call screen to prevent duplicate navigation
+    var isOnCallScreen by remember { mutableStateOf(false) }
 
     // Disable back button during incoming or ongoing calls
     androidx.activity.compose.BackHandler(
@@ -44,7 +58,6 @@ fun AppNavGraph() {
     // 🔥 Call lifecycle → Navigation (RTM-driven)
     // ---------------------------------------------------------
     LaunchedEffect(Unit) {
-        var isOnCallScreen = false
         CallStore.call
             .drop(1) // skip initial null
             .collect { call ->
@@ -57,7 +70,7 @@ fun AppNavGraph() {
                     CallStatus.CONNECTED -> {
                         // Only navigate if not already on call screen
                         if (!isOnCallScreen) {
-                            navController.navigate(Routes.Screen.Call.ONGOING) {
+                            navController.navigate(Routes.Graph.CALL) {
                                 launchSingleTop = true
                             }
                             isOnCallScreen = true
@@ -90,17 +103,58 @@ fun AppNavGraph() {
                 }
             }
     }
+    
+    // ---------------------------------------------------------
+    // 📲 Handle notification tap to return to call
+    // ---------------------------------------------------------
+    LaunchedEffect(Unit) {
+        CallEventBus.events.collect { event ->
+            if (event is CallEvent.NavigateToCall && !isOnCallScreen) {
+                navController.navigate(Routes.Graph.CALL) {
+                    launchSingleTop = true
+                }
+                isOnCallScreen = true
+            }
+        }
+    }
 
-    // Determine start destination based on login state
+    // Determine start destination based on login state and active call
     val startDestination = if (SessionManager.userAccountId != 0L && SessionManager.userRole != null) {
-        // Check if profile is complete for customers
-        if (SessionManager.userRole == UserRole.CUSTOMER && !SessionManager.isProfileComplete) {
-            Routes.Graph.AUTH  // Will show PROFILE_SETUP via authNavGraph logic
+        // Check if there's an active ongoing call - prioritize call screen
+        val activeCall = callState
+        val isCallActive = activeCall?.status in listOf(
+            CallStatus.OUTGOING_CONNECTING,
+            CallStatus.OUTGOING_RINGING,
+            CallStatus.CONNECTING,
+            CallStatus.CONNECTED
+        )
+        
+        if (isCallActive) {
+            Routes.Graph.CALL
         } else {
-            when (SessionManager.userRole) {
-                UserRole.LISTENER -> Routes.Graph.LISTENER
-                UserRole.CUSTOMER -> Routes.Graph.HOME
-                else -> Routes.Graph.AUTH
+            // Check notification permission for Android 13+
+            val hasNotificationPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+            } else {
+                true // Auto-granted on Android 12 and below
+            }
+            
+            // If notification permission is missing, redirect to permission screen
+            if (!hasNotificationPermission) {
+                Routes.Graph.AUTH  // Will show PERMISSION via authNavGraph logic
+            }
+            // Check if profile is complete for customers
+            else if (SessionManager.userRole == UserRole.CUSTOMER && !SessionManager.isProfileComplete) {
+                Routes.Graph.AUTH  // Will show PROFILE_SETUP via authNavGraph logic
+            } else {
+                when (SessionManager.userRole) {
+                    UserRole.LISTENER -> Routes.Graph.LISTENER
+                    UserRole.CUSTOMER -> Routes.Graph.HOME
+                    else -> Routes.Graph.AUTH
+                }
             }
         }
     } else {

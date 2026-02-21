@@ -119,6 +119,8 @@ class EventObserver @Inject constructor(
                         callManager.onEnded()
                         presenceManager.onCallEnded()
                     }
+
+                    else -> {}
                 }
             }
         }

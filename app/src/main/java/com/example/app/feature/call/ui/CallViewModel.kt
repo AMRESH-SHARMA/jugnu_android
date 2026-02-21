@@ -65,6 +65,10 @@ class CallViewModel @Inject constructor(
     private val _headerUiState = MutableStateFlow(CallHeaderUiState())
     val headerUiState: StateFlow<CallHeaderUiState> = _headerUiState.asStateFlow()
 
+    // Cache caller info per call session to avoid repeated API calls
+    private var cachedCallId: String? = null
+    private var cachedCallerInfo: Pair<String, String?>? = null
+
     // Navigation event for insufficient balance
     private val _navigateToWallet = MutableSharedFlow<Unit>()
     val navigateToWallet: SharedFlow<Unit> = _navigateToWallet.asSharedFlow()
@@ -87,6 +91,9 @@ class CallViewModel @Inject constructor(
             callModel.collect { call ->
                 if (call == null) {
                     _headerUiState.value = CallHeaderUiState()
+                    // Clear cache when call ends
+                    cachedCallId = null
+                    cachedCallerInfo = null
                     return@collect
                 }
 
@@ -102,16 +109,31 @@ class CallViewModel @Inject constructor(
                     return@collect
                 }
 
-                // incoming -> load caller
+                // incoming -> check cache first
+                if (call.callId == cachedCallId && cachedCallerInfo != null) {
+                    _headerUiState.value = CallHeaderUiState(
+                        name = cachedCallerInfo!!.first,
+                        avatarUrl = cachedCallerInfo!!.second,
+                        isLoading = false
+                    )
+                    return@collect
+                }
+
+                // incoming -> load caller (only once per call)
                 _headerUiState.value = CallHeaderUiState(isLoading = true)
 
-                when (val result = userRepository.getCallerInfo(call.callerAccountId)) {
-                    is ApiResult.Success ->
+                when (val result = userRepository.getCallerInfo()) {
+                    is ApiResult.Success -> {
+                        // Cache the result
+                        cachedCallId = call.callId
+                        cachedCallerInfo = result.data.name to result.data.avatar
+                        
                         _headerUiState.value = CallHeaderUiState(
                             name = result.data.name,
                             avatarUrl = result.data.avatar,
                             isLoading = false
                         )
+                    }
 
                     is ApiResult.Error ->
                         _headerUiState.value = CallHeaderUiState(

@@ -223,12 +223,18 @@ fun IncomingCallBanner(
                     showSettingsDialog = false
                     openAppSettings(context)
                 }) {
-                    Text("Open Settings")
+                    Text(
+                        text = "Open Settings",
+                        color = Color.White
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSettingsDialog = false }) {
-                    Text("Cancel")
+                    Text(
+                        text = "Cancel",
+                        color = Color.White
+                    )
                 }
             }
         )

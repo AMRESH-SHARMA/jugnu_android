@@ -57,19 +57,30 @@ class EndCall @Inject constructor(
             )
         )
 
-        // SLOW PATH → persist only on END
-        return if (event == AppConstants.EVENT_CALL_ENDED) {
-            when (val result = repo.endCall(callId)) {
-                is ApiResult.Success -> ApiResult.Success(Unit)
-                is ApiResult.Error -> ApiResult.Error(
-                    message = result.message,
-                    code = result.code,
-                    exception = result.exception
-                )
+        // SLOW PATH → persist to backend (Option 1: Always call backend)
+        return when (event) {
+            AppConstants.EVENT_CALL_CANCELLED -> {
+                // Call backend to notify cancellation so it can send FCM to callee
+                when (val result = repo.cancelCall(callId)) {
+                    is ApiResult.Success -> ApiResult.Success(Unit)
+                    is ApiResult.Error -> ApiResult.Error(
+                        message = result.message,
+                        code = result.code,
+                        exception = result.exception
+                    )
+                }
             }
-        } else {
-            // cancel call → nothing to persist
-            ApiResult.Success(Unit)
+            AppConstants.EVENT_CALL_ENDED -> {
+                when (val result = repo.endCall(callId)) {
+                    is ApiResult.Success -> ApiResult.Success(Unit)
+                    is ApiResult.Error -> ApiResult.Error(
+                        message = result.message,
+                        code = result.code,
+                        exception = result.exception
+                    )
+                }
+            }
+            else -> ApiResult.Success(Unit)
         }
     }
 }

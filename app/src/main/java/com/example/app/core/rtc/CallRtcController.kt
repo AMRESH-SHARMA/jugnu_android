@@ -10,6 +10,7 @@ import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.CallForegroundService
 import com.example.app.core.call.CallStore
+import com.example.app.core.call.CallType
 import com.example.app.core.di.ApplicationScope
 import com.example.app.feature.call.domain.CallModel
 import com.example.app.feature.call.domain.CallStatus
@@ -91,6 +92,26 @@ class CallRtcController @Inject constructor(
 
         if (rtcJoinStarted) {
             Log.w("RTC", "Join already started, ignoring")
+            return
+        }
+
+        // Safety check: Verify microphone permission before joining
+        val hasMicPermission = androidx.core.content.ContextCompat.checkSelfPermission(
+            context,
+            android.Manifest.permission.RECORD_AUDIO
+        ) == android.content.pm.PackageManager.PERMISSION_GRANTED
+
+        if (!hasMicPermission) {
+            Log.e("RTC", "Cannot join channel: RECORD_AUDIO permission not granted")
+            // For incoming calls, UI will handle permission request
+            // For outgoing calls, this shouldn't happen as we check before calling
+            // Only end call if it's not an incoming call (to avoid silent failure)
+            val currentCall = CallStore.current()
+            if (currentCall != null && currentCall.status != CallStatus.INCOMING_RINGING) {
+                scope.launch {
+                    CallEventBus.emit(CallEvent.Ended(call.callId))
+                }
+            }
             return
         }
 
@@ -284,7 +305,18 @@ class CallRtcController @Inject constructor(
     // ------------------------------------------------------------
 
     private fun startCallService() {
-        val intent = Intent(context, CallForegroundService::class.java)
+        val call = CallStore.current() ?: return
+        
+        val intent = Intent(context, CallForegroundService::class.java).apply {
+            putExtra(
+                CallForegroundService.EXTRA_CALL_TYPE,
+                if (call.callType == CallType.VIDEO) {
+                    CallForegroundService.CALL_TYPE_VIDEO
+                } else {
+                    CallForegroundService.CALL_TYPE_VOICE
+                }
+            )
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             context.startForegroundService(intent)

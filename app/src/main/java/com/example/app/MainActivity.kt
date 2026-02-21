@@ -1,5 +1,6 @@
 package com.example.app
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -17,6 +18,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import android.util.Log
 import com.example.app.core.call.CallEvent
 import com.example.app.core.call.CallEventBus
 import com.example.app.core.call.PendingCallStore
@@ -50,6 +52,7 @@ class MainActivity : ComponentActivity() {
 
         restorePendingIncomingCall()
         observeSessionExpiry()
+        handleIncomingIntent(intent)
 
         setContent {
             AppTheme {
@@ -85,9 +88,44 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleIncomingIntent(intent)
+    }
+
+    private fun handleIncomingIntent(intent: Intent?) {
+        // Check if this is a return-to-call intent from notification
+        val isFromNotification = intent?.getBooleanExtra("from_call_notification", false) == true
+        
+        if (isFromNotification) {
+            // Broadcast event to navigate to call screen if there's an active call
+            lifecycleScope.launch {
+                val activeCall = com.example.app.core.call.CallStore.current()
+                if (activeCall != null && activeCall.status in listOf(
+                    com.example.app.feature.call.domain.CallStatus.OUTGOING_CONNECTING,
+                    com.example.app.feature.call.domain.CallStatus.OUTGOING_RINGING,
+                    com.example.app.feature.call.domain.CallStatus.CONNECTING,
+                    com.example.app.feature.call.domain.CallStatus.CONNECTED
+                )) {
+                    // Emit a navigation event
+                    CallEventBus.emit(CallEvent.NavigateToCall)
+                }
+            }
+        }
+    }
+
     private fun restorePendingIncomingCall() {
         lifecycleScope.launch {
             val pending = pendingCallStore.consume() ?: return@launch
+            
+            // Validate call is not expired (Option 2: Timestamp validation)
+            val age = System.currentTimeMillis() - pending.timestamp
+            if (age > AppConstants.CALL_PENDING_STORE_TTL) {
+                Log.w("Call", "Pending call expired (${age}ms old), ignoring")
+                return@launch
+            }
+            
             CallEventBus.emit(
                 CallEvent.Incoming(
                     callId = pending.callId,

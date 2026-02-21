@@ -73,7 +73,7 @@ class UserViewModel @Inject constructor(
             try {
                 _uiState.value = UserUiState.UpdatingProfile
                 val result = userRepository.updateProfile(
-                    nickname = "Anonymous",
+                    nickname = "",
                     gender = null, // Not updating gender, only interestedIn
                     interestedIn = value
                 )
