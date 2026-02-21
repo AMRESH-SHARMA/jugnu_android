@@ -21,6 +21,7 @@ import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
@@ -47,7 +48,6 @@ class MyApp : Application() {
 
     @Inject
     lateinit var apiRepository: ApiRepository
-
 
     @Inject
     lateinit var eventObserver: EventObserver
@@ -84,11 +84,23 @@ class MyApp : Application() {
             }
         }
 
-        // 2️⃣ Now it’s safe to start the rest
-        tokenManager.start()
-        restoreSessionId()
-        observeUserSession()
-        eventObserver.toString()
+        // Wait for valid session to load, then start services
+        appScope.launch(Dispatchers.IO) {
+            // Wait for VALID session (not just first emission of default values)
+            combine(
+                userSession.sessionFlow,
+                userSession.sessionIdFlow
+            ) { (accountId, _), sessionId ->
+                accountId > 0 && sessionId.isNotBlank()
+            }.first { it }
+            
+            Log.d("RTM", "MyApp: Valid session loaded, starting services")
+            
+            // Now start reactive services
+            tokenManager.start()
+            eventObserver.start()
+            observeUserSession()
+        }
     }
     
     private fun initializeCrashlytics() {
@@ -108,14 +120,6 @@ class MyApp : Application() {
         
         Log.d("Crashlytics", "Firebase Crashlytics initialized")
     }
-
-    //Restore from DATA Store and put in SessionManager
-    private fun restoreSessionId() {
-        appScope.launch(Dispatchers.IO) {
-            SessionManager.sessionId = userSession.sessionId
-        }
-    }
-
 
     private fun observeUserSession() {
         Log.d("RTM", "MyApp: Starting to observe user session flow")
@@ -179,5 +183,3 @@ class MyApp : Application() {
         }
     }
 }
-
-

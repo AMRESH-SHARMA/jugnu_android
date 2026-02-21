@@ -42,9 +42,13 @@ class EventObserver @Inject constructor(
     @ApplicationScope private val scope: CoroutineScope
 ) {
     private val TAG = "RTM"
+    private var started = false
     
-    init {
-        Log.d(TAG, "EventObserver: INIT - starting observers")
+    fun start() {
+        if (started) return
+        started = true
+        
+        Log.d(TAG, "EventObserver: Starting observers after session load")
         
         // Start network tracking
         networkStateTracker.startTracking()
@@ -54,7 +58,7 @@ class EventObserver @Inject constructor(
         observeAppLifecycle()
         observeNetworkChanges()
         
-        Log.d(TAG, "EventObserver: INIT complete - all observers started")
+        Log.d(TAG, "EventObserver: All observers started")
     }
     private fun observeCallEvents() {
         // -------------------------
@@ -145,9 +149,19 @@ class EventObserver @Inject constructor(
                         presenceManager.onDisconnected()
                     }
 
-                    // ---- Optional (future: server-driven state)
+                    // ---- Remote status changes (for OTHER users, not self)
                     is PresenceEvent.StatusChanged -> {
-                        presenceManager.onRemoteStateChanged(event.state)
+                        val currentUserId = userSession.accountId.toString()
+                        
+                        // Only update local state if this is OUR status change
+                        if (event.accountId == currentUserId) {
+                            Log.d(TAG, "EventObserver: Status change for SELF - updating local presence")
+                            presenceManager.onRemoteStateChanged(event.state)
+                        } else {
+                            Log.d(TAG, "EventObserver: Status change for OTHER user (${event.accountId}) - ignoring for local presence")
+                            // Remote user status changes are already handled by RemotePresenceStore
+                            // No need to update local presence
+                        }
                     }
                 }
             }
