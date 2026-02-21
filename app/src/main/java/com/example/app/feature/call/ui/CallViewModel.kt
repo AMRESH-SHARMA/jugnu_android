@@ -105,7 +105,7 @@ class CallViewModel @Inject constructor(
                 // incoming -> load caller
                 _headerUiState.value = CallHeaderUiState(isLoading = true)
 
-                when (val result = userRepository.getCallerInfo(call.callerAccountId)) {
+                when (val result = userRepository.getCallerInfo()) {
                     is ApiResult.Success ->
                         _headerUiState.value = CallHeaderUiState(
                             name = result.data.name,

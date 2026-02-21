@@ -9,16 +9,8 @@ import javax.inject.Inject
 class UserRepository @Inject constructor(
     private val api: UserApi
 ) {
-    suspend fun getCallerInfo(userId: Long): ApiResult<CallerInfo> = safeApiCall {
-        val res = BaseResponse(
-            success = true,
-            message = "User lite profile fetched",
-            data = CallerInfoDto(
-                name = "Anonym",
-                avatar = "https://i.pravatar.cc/150?img=48"
-            )
-        )
-//        val res2 = api.getCallerInfo(userId)
+    suspend fun getCallerInfo(): ApiResult<CallerInfo> = safeApiCall {
+        val res = api.getCallerInfo()
         if (!res.success) throw Exception(res.message)
         res.data.toDomain()
     }

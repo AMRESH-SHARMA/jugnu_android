@@ -344,7 +344,7 @@ fun ModernProfileHeader() {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Anonymous",
+                    text = "Profile Settings",
                     style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold
                     ),
@@ -367,13 +367,13 @@ fun ModernProfileHeader() {
 
                     Spacer(modifier = Modifier.width(8.dp))
 
-                    Text(
-                        text = "Active",
-                        style = MaterialTheme.typography.bodyMedium.copy(
-                            fontWeight = FontWeight.Medium
-                        ),
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
-                    )
+//                    Text(
+//                        text = "Active",
+//                        style = MaterialTheme.typography.bodyMedium.copy(
+//                            fontWeight = FontWeight.Medium
+//                        ),
+//                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f)
+//                    )
                 }
             }
         }
