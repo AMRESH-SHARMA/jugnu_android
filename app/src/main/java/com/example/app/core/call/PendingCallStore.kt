@@ -46,4 +46,15 @@ class PendingCallStore @Inject constructor(
     fun clear() {
         prefs.edit().remove(KEY_PENDING_CALL).apply()
     }
+
+    fun peek(): PendingIncomingCall? {
+        val json = prefs.getString(KEY_PENDING_CALL, null) ?: return null
+        return runCatching {
+            Json.decodeFromString<PendingIncomingCall>(json)
+        }.getOrNull()
+    }
+
+    fun exists(callId: String): Boolean {
+        return peek()?.callId == callId
+    }
 }

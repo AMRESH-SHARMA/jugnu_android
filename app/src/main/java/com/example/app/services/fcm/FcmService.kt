@@ -50,11 +50,14 @@ class FcmService : FirebaseMessagingService() {
     lateinit var callRepository: com.example.app.feature.call.data.CallRepository
 
     @Inject
+    lateinit var userSession: com.example.app.core.session.UserSession
+
+    @Inject
     @ApplicationScope
     lateinit var appScope: CoroutineScope
 
     override fun onNewToken(token: String) {
-        Log.d("RTM", "New FCM token: $token")
+        Log.d("APP:FCM", "New FCM token: $token")
         appScope.launch(Dispatchers.IO) {
             prefs.saveFcmToken(token)
         }
@@ -63,7 +66,7 @@ class FcmService : FirebaseMessagingService() {
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onMessageReceived(message: RemoteMessage) {
 
-        Log.d("RTM", "ON FCM EVENT Received: ${message.data}")
+        Log.d("APP:FCM", "ON FCM EVENT Received: ${message.data}")
 
         val event = message.data["event"] ?: return
         
@@ -80,19 +83,18 @@ class FcmService : FirebaseMessagingService() {
         // Screen On and app in foreground - RTM should handle it, but emit event as fallback
         val appInForeground = appForegroundTracker.isForeground.value
         val screenOn = screenStateTracker.isScreenOn()
-        if (event == AppConstants.EVENT_INCOMING_CALL &&
-            appInForeground && screenOn
-        ) {
-            Log.d("RTM", "Foreground + screen ON → RTM should handle, but emitting event as fallback")
-            return
+        val shouldSkipNotification = event == AppConstants.EVENT_INCOMING_CALL &&  appInForeground && screenOn
+        if (shouldSkipNotification) {
+            Log.d("APP:FCM", "Foreground + screen ON → RTM should handle, but emitting event as fallback")
             // Continue to emit event as fallback (RTM might fail/delay)
         }
 
         val payload = try {
-            val json = Json.encodeToString(message.data)
-            Json.decodeFromString<CallSignalPayload>(json)
+            val json = Json { ignoreUnknownKeys = true }
+            val jsonString = json.encodeToString(message.data)
+            json.decodeFromString<CallSignalPayload>(jsonString)
         } catch (e: Exception) {
-            Log.e("RTM", "Failed to parse payload", e)
+            Log.e("APP:FCM", "Failed to parse payload", e)
             return
         }
 
@@ -102,6 +104,18 @@ class FcmService : FirebaseMessagingService() {
             // INCOMING CALL (background / killed)
             // ----------------------------------------------------------
             AppConstants.EVENT_INCOMING_CALL -> {
+                // Persist minimal data for cold start with server timestamp
+                val calleeAccountId = userSession.accountId
+                if (calleeAccountId <= 0) {
+                    Log.w("APP:FCM", "Session not ready during FCM call")
+                    return
+                }
+
+                if (pendingCallStore.exists(payload.callId)) {
+                    Log.d("APP:FCM", "Duplicate call signal ignored")
+                    return
+                }
+
                 // Persist minimal data for cold start with server timestamp
                 val startedAtMillis = (payload.startedAt ?: (System.currentTimeMillis() / 1000)) * 1000
                 pendingCallStore.save(
@@ -124,17 +138,17 @@ class FcmService : FirebaseMessagingService() {
                         callType = callTypeText
                     )
                 } else if (!hasNotificationPermission) {
-                    Log.w("RTM", "POST_NOTIFICATIONS not granted, skipping notification (events still processed)")
+                    Log.w("APP:FCM", "POST_NOTIFICATIONS not granted, skipping notification (events still processed)")
                 } else {
-                    Log.d("RTM", "App in foreground, skipping notification (banner will show)")
+                    Log.d("APP:FCM", "App in foreground, skipping notification (banner will show)")
                 }
 
                 // Send acknowledgment to backend (background/killed scenario)
-                // Backend will notify caller via FCM
+                // Backend will notify caller via RTM+FCM
                 appScope.launch(Dispatchers.IO) {
                     callRepository.callReceived(
                         callId = payload.callId,
-                        calleeAccountId = SessionManager.userAccountId
+                        calleeAccountId = userSession.accountId
                     )
                 }
 
@@ -143,7 +157,7 @@ class FcmService : FirebaseMessagingService() {
                     CallEvent.Incoming(
                         callId = payload.callId,
                         callerAccountId = payload.callerAccountId,
-                        calleeAccountId = SessionManager.userAccountId,
+                        calleeAccountId = userSession.accountId,
                         callType = payload.callType ?: CallType.VOICE,
                         channel = payload.channel
                     )

@@ -88,19 +88,20 @@ class MyApp : Application() {
         // Wait for valid session to load, then start services
         appScope.launch(Dispatchers.IO) {
             // Wait for VALID session (not just first emission of default values)
-            combine(
+            val (accountId, sessionId) = combine(
                 userSession.sessionFlow,
                 userSession.sessionIdFlow
             ) { (accountId, _), sessionId ->
-                accountId > 0 && sessionId.isNotBlank()
-            }.first { it }
-            
-            Log.d("RTM", "MyApp: Valid session loaded, starting services")
-            
+                Triple(accountId, sessionId, accountId > 0 && sessionId.isNotBlank())
+            }.first { it.third }
+                .let { Pair(it.first, it.second) }
+
+            Log.d("APP", "MyApp: Valid session loaded - accountId=$accountId, sessionId=$sessionId")
+
             // Start services (but NOT RTM - moved to AppRoot after config check)
             tokenManager.start()
             eventObserver.start()
-            observeUserSession()  // Only for WebSocket, not RTM
+            observeUserSession() // Only for WebSocket, not RTM
         }
     }
     
@@ -119,11 +120,12 @@ class MyApp : Application() {
         crashlytics.setCustomKey("app_version", BuildConfig.VERSION_NAME)
         crashlytics.setCustomKey("version_code", BuildConfig.VERSION_CODE)
         
-        Log.d("Crashlytics", "Firebase Crashlytics initialized")
+        Log.d("APP", "Firebase Crashlytics initialized")
     }
 
+    // Tracks future session changes like logout.
     private fun observeUserSession() {
-        Log.d("RTM", "MyApp: Starting to observe user session flow (WebSocket only)")
+        Log.d("APP", "MyApp: Starting to observe user session flow (WebSocket only)")
         appScope.launch(Dispatchers.IO) {
             combine(
                 userSession.sessionFlow,
@@ -135,13 +137,13 @@ class MyApp : Application() {
             .collect { (accountId, role, sessionId) ->
                 val isLoggedIn = accountId > 0 && !sessionId.isNullOrBlank()
                 
-                Log.d("RTM", "MyApp: Session state - accountId=$accountId, role=$role, sessionId=$sessionId, isLoggedIn=$isLoggedIn")
+                Log.d("APP", "MyApp: Session state - accountId=$accountId, role=$role, sessionId=$sessionId, isLoggedIn=$isLoggedIn")
                 
                 if (isLoggedIn) {
-                    Log.d("RTM", "MyApp: Valid session detected → connecting WebSocket")
+                    Log.d("APP", "MyApp: Valid session detected → connecting WebSocket")
                     presenceWebSocketManager.connect()
                 } else {
-                    Log.d("RTM", "MyApp: No valid session → disconnecting WebSocket")
+                    Log.d("APP", "MyApp: No valid session → disconnecting WebSocket")
                     presenceWebSocketManager.disconnect()
                 }
             }
@@ -156,7 +158,7 @@ class MyApp : Application() {
             is ApiResult.Success -> {
                 val token = result.data
                 Log.d(
-                    "RTM",
+                    "APP",
                     "App ID='${BuildConfig.AGORA_APP_ID}' length=${BuildConfig.AGORA_APP_ID.length} token=$token"
                 )
 
@@ -174,7 +176,7 @@ class MyApp : Application() {
             }
 
             is ApiResult.Error -> {
-                Log.e("RTM", "Failed to get RTM token: ${result.message}")
+                Log.e("APP", "Failed to get RTM token: ${result.message}")
                 // optional: retry/backoff or PresenceEventBus
             }
         }

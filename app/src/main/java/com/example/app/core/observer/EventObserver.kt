@@ -44,7 +44,7 @@ class EventObserver @Inject constructor(
     @ApplicationContext private val appContext: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
-    private val TAG = "RTM"
+    private val TAG = "APP:EVENTOBSERVER"
     private var started = false
     
     fun start() {
@@ -59,6 +59,8 @@ class EventObserver @Inject constructor(
         observeCallEvents()
         observePresenceEvents()
         observeWebSocketConnectionState()
+        observeAppLifecycle()
+        observeNetworkChanges()
         
         Log.d(TAG, "EventObserver: All observers started")
     }
@@ -80,7 +82,7 @@ class EventObserver @Inject constructor(
                         presenceManager.onCallStarted()
                         
                         // Send acknowledgment to backend (required for watchdog)
-                        scope.launch {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                             callRepository.callReceived(
                                 callId = event.callId,
                                 calleeAccountId = event.calleeAccountId
@@ -127,7 +129,7 @@ class EventObserver @Inject constructor(
                     is CallEvent.Cancelled -> {
                         /** Dismiss incoming call notification/ show missed call */
                         incomingCallNotificationManager.dismiss()
-                        if (SessionManager.userAccountId == event.calleeAccountId) {
+                        if (userSession.accountId == event.calleeAccountId) {
                             missedCallNotificationManager.showMissedCall()
                         }
                         callManager.onEnded()

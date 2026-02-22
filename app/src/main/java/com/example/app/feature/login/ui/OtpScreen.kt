@@ -65,16 +65,10 @@ fun OtpVerificationScreen(
             is OtpUiState.Success -> {
                 val data = (otpVerifyState as OtpUiState.Success).data as? com.example.app.feature.login.domain.VerifyOtpResult
                 
-                // Debug logging
-                android.util.Log.d("OtpScreen", "OTP Success - Data: $data")
-                android.util.Log.d("OtpScreen", "UserRole: ${data?.userRole}, IsNewUser: ${data?.isNewUser}")
-                
                 Toast.makeText(context, "✓ Login successful!", Toast.LENGTH_SHORT).show()
                 
                 // Always navigate to PermissionScreen first
                 // PermissionScreen will handle routing to ProfileSetup or Home/Dashboard
-                android.util.Log.d("OtpScreen", "Navigating to PERMISSION screen")
-                
                 navController.navigate(Routes.Screen.Auth.PERMISSION) {
                     popUpTo(Routes.Screen.Auth.LOGIN) { inclusive = false }
                     launchSingleTop = true

@@ -1,5 +1,6 @@
 package com.example.app.root
 
+import android.util.Log
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -29,7 +30,7 @@ fun AppRoot() {
     LaunchedEffect(state.isLoading, state.forceUpdate) {
         if (!state.isLoading && !state.forceUpdate && SessionManager.userAccountId != 0L) {
             if (myApp.rtmInitialized.compareAndSet(false, true)) {
-                android.util.Log.d("RTM", "AppRoot: Initializing RTM after config check")
+                Log.d("APP:ROOT", "AppRoot: Initializing RTM after config check")
                 myApp.initAndLoginRtm(SessionManager.userAccountId)
             }
         }

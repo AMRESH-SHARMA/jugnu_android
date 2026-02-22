@@ -14,10 +14,10 @@ class LogoutUseCase @Inject constructor(
         try {
             // Try to invalidate server session
             userRepository.logout()
-            Log.d("LogoutUseCase", "Server logout successful")
+            Log.d("APP:LOGOUT", "Server logout successful")
         } catch (e: Exception) {
             // Log error but don't throw - continue with local cleanup
-            Log.w("LogoutUseCase", "Server logout failed, clearing local data anyway", e)
+            Log.w("APP:LOGOUT", "Server logout failed, clearing local data anyway", e)
         } finally {
             // Always clear local data regardless of server response
             userPreferencesRepository.clearSession()

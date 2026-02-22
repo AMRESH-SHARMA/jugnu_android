@@ -10,7 +10,7 @@ class PresenceManager @Inject constructor(
     private val store: PresenceStore,
     private val wsManager: PresenceWebSocketManager
 ) {
-    private val TAG = "RTM"
+    private val TAG = "APP:WS"
 
     /** Fired when WebSocket connects. */
     fun onConnected() {

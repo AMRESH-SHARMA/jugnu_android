@@ -57,10 +57,7 @@ class AgoraVoiceRtcManager @Inject constructor(
             }
         }
         val engine = try {
-            Log.d(
-                "RTM",
-                "Creating RTC Engine | appId=${BuildConfig.AGORA_APP_ID.take(8)}..."
-            )
+            Log.d("RTM", "Creating RTC Engine | appId=${BuildConfig.AGORA_APP_ID.take(8)}...")
             RtcEngine.create(
                 context.applicationContext,
                 BuildConfig.AGORA_APP_ID,

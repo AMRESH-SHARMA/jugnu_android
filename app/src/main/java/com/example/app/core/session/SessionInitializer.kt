@@ -1,5 +1,6 @@
 package com.example.app.core.session
 
+import android.util.Log
 import com.example.app.core.network.ApiResult
 import com.example.app.core.preferences.user.data.UserPreferencesRepository
 import com.example.app.feature.user.domain.GetCustomerProfileUseCase
@@ -28,23 +29,23 @@ class SessionInitializer @Inject constructor(
 
         // If logged in, fetch fresh profile from server (source of truth)
         if (sessionId.isNotEmpty() && accountId != 0L) {
-            android.util.Log.d("SessionInitializer", "Fetching profile for accountId=$accountId")
+            Log.d("RTM", "SessionInitializer Fetching profile for accountId=$accountId")
             when (val result = getCustomerProfile()) {
                 is ApiResult.Success -> {
                     // Update from server (no caching)
                     SessionManager.isProfileComplete = result.data.isProfileComplete
-                    android.util.Log.d("SessionInitializer", "Profile loaded: isProfileComplete=${result.data.isProfileComplete}")
+                    Log.d("RTM", "SessionInitializer Profile loaded: isProfileComplete=${result.data.isProfileComplete}")
                 }
                 is ApiResult.Error -> {
                     // Default to true if API fails (assume profile complete unless proven otherwise)
                     SessionManager.isProfileComplete = true
-                    android.util.Log.w("SessionInitializer", "Profile fetch failed: ${result.message}, defaulting to true")
+                    Log.w("RTM", "SessionInitializer Profile fetch failed: ${result.message}, defaulting to true")
                 }
             }
         } else {
             // Not logged in, default to true
             SessionManager.isProfileComplete = true
-            android.util.Log.d("SessionInitializer", "Not logged in, isProfileComplete=true")
+            Log.d("RTM", "SessionInitializer Not logged in, isProfileComplete=true")
         }
     }
 }

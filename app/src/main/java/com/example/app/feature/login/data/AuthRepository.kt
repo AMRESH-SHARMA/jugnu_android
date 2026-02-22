@@ -15,7 +15,6 @@ class AuthRepository @Inject constructor(
     // ------------------- Request OTP -------------------
     suspend fun requestOtp(phone: String): ApiResult<RequestOtpResult> = safeApiCall {
         val res = api.requestOtp(RequestOtpDto(phone))
-        Log.d("LoginScreen", res.toString())
         if (!res.success) throw Exception(res.message)
 
         // Map DTO to Domain

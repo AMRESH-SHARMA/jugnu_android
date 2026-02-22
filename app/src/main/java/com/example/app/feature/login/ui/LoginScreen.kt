@@ -155,7 +155,6 @@ fun LoginScreen(navController: NavController) {
                 LaunchedEffect(otpState) {
                     when (otpState) {
                         is LoginUiState.Success -> {
-                            Log.d("LoginScreen", "OTP request success, navigating to OTP screen")
                             navController.navigate(Routes.Screen.Auth.otpRoute(mobileNumber))
                             // Reset state to prevent re-navigation when coming back
                             viewModel.resetState()
@@ -163,7 +162,6 @@ fun LoginScreen(navController: NavController) {
 
                         is LoginUiState.Error -> {
                             val msg = (otpState as LoginUiState.Error).message
-                            Log.e("LoginScreen", "OTP request failed: $msg")
                             // Optional: show Toast if you want
                             // Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
                         }

@@ -79,7 +79,6 @@ fun AppNavGraph() {
 
                     CallStatus.ENDED, null -> {
                         isOnCallScreen = false
-                        Log.d("RTM", "NAVIGATE TO END")
                         when (SessionManager.userRole) {
                             UserRole.LISTENER -> {
                                 navController.navigate(Routes.Graph.LISTENER) {

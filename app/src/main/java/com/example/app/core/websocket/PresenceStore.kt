@@ -8,7 +8,7 @@ import javax.inject.Singleton
 
 @Singleton
 class PresenceStore @Inject constructor() {
-    private val TAG = "RTM"
+    private val TAG = "APP:WS"
     
     /**
      * Tracks presence of the local logged-in user only

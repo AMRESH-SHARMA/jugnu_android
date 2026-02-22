@@ -31,7 +31,7 @@ class RtmEventListenerImpl(
         val rtmMessage = event.message
         val raw = rtmMessage.toString()
         Log.d(
-            "RTM",
+            "APP:RTM",
             "ON RTM Event Received $raw"
         )
 
@@ -44,15 +44,11 @@ class RtmEventListenerImpl(
             val signal = json.decodeFromString<CallSignalPayload>(jsonPayload)
 
             scope.launch {
-//                Log.d(
-//                    "RTM",
-//                    "RtmEventListenerImpl $signal"
-//                )
                 when (signal.event) {
                     AppConstants.EVENT_INCOMING_CALL -> {
                         // Deduplicate incoming calls
                         if (!incomingCalls.add(signal.callId)) {
-                            Log.w("RTM", "Duplicate incoming call ignored for callId=${signal.callId}")
+                            Log.w("APP:RTM", "Duplicate incoming call ignored for callId=${signal.callId}")
                             return@launch
                         }
                         
@@ -76,7 +72,7 @@ class RtmEventListenerImpl(
                     AppConstants.EVENT_CALL_ACCEPTED -> {
                         if (!acceptedCalls.add(signal.callId)) {
                             Log.w(
-                                "RTM",
+                                "APP:RTM",
                                 "Duplicate call_accepted ignored for callId=${signal.callId}"
                             )
                             return@launch
@@ -112,7 +108,7 @@ class RtmEventListenerImpl(
             }
         } catch (e: Exception) {
             Log.e(
-                "RTM",
+                "APP:RTM",
                 "Failed to decode RTM payload = $jsonPayload",
                 e
             )
@@ -120,6 +116,6 @@ class RtmEventListenerImpl(
     }
 
     fun onTokenExpired() {
-//        Log.w("RTM", "RTM token expired")
+//        Log.w("APP:RTM", "RTM token expired")
     }
 }

@@ -163,8 +163,6 @@ fun RecentInteractionItem(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // DEBUG: Log the actual value
-                android.util.Log.d("RecentsDebug", "lastInteractionType: '${recent.lastInteractionType}'")
                 
                 // Interaction type icon
                 Icon(

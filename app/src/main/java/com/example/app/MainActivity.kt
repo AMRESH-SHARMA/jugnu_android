@@ -125,7 +125,7 @@ class MainActivity : ComponentActivity() {
             // 1️⃣ Client-side TTL check (fast path - avoid unnecessary API call)
             val age = System.currentTimeMillis() - pending.timestamp
             if (age > AppConstants.CALL_PENDING_STORE_TTL) {
-                Log.w("RTM", "Pending call expired locally (${age}ms old), skipping")
+                Log.w("APP", "Pending call expired locally (${age}ms old), skipping")
                 return@launch
             }
             
@@ -135,12 +135,12 @@ class MainActivity : ComponentActivity() {
                 is com.example.app.core.network.ApiResult.Success -> {
                     val callState = result.data
                     if (!callState.isActive || callState.isExpired) {
-                        Log.w("RTM", "Call not active on server: status=${callState.status}, isExpired=${callState.isExpired}")
+                        Log.w("APP", "Call not active on server: status=${callState.status}, isExpired=${callState.isExpired}")
                         return@launch
                     }
                     
                     // 3️⃣ Call is valid - emit event to show UI
-                    Log.d("RTM", "Restoring valid pending call: ${pending.callId}")
+                    Log.d("APP", "Restoring valid pending call: ${pending.callId}")
                     CallEventBus.emit(
                         CallEvent.Incoming(
                             callId = pending.callId,
@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
                     )
                 }
                 is com.example.app.core.network.ApiResult.Error -> {
-                    Log.w("RTM", "Failed to verify call state: ${result.message}")
+                    Log.w("APP", "Failed to verify call state: ${result.message}")
                     // Don't show call UI if we can't verify with server
                 }
             }

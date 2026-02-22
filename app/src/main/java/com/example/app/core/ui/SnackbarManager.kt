@@ -30,12 +30,12 @@ object SnackbarManager {
         duration: Long = 3000L
     ) {
         // Log all snackbar events
-        when (type) {
-            SnackbarType.ERROR -> Log.e("Snackbar", "ERROR: $message")
-            SnackbarType.WARNING -> Log.w("Snackbar", "WARNING: $message")
-            SnackbarType.INFO -> Log.i("Snackbar", "INFO: $message")
-            SnackbarType.SUCCESS -> Log.d("Snackbar", "SUCCESS: $message")
-        }
+//        when (type) {
+//            SnackbarType.ERROR -> Log.e("Snackbar", "ERROR: $message")
+//            SnackbarType.WARNING -> Log.w("Snackbar", "WARNING: $message")
+//            SnackbarType.INFO -> Log.i("Snackbar", "INFO: $message")
+//            SnackbarType.SUCCESS -> Log.d("Snackbar", "SUCCESS: $message")
+//        }
         
         _snackbarState.value = SnackbarData(message, type, duration)
     }

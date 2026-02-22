@@ -1,5 +1,6 @@
 package com.example.app.feature.call.ui
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.app.core.call.CallEvent
@@ -217,61 +218,35 @@ class CallViewModel @Inject constructor(
         calleeName: String,
         calleeAvatar: String?
     ) {
-        // Generate temporary callId for optimistic UI
-        val tempCallId = java.util.UUID.randomUUID().toString()
-        
-        // 1️⃣ Emit event IMMEDIATELY (optimistic UI)
-        CallEventBus.emit(
-            CallEvent.Outgoing(
-                tempCallId,
-                callerAccountId,
-                calleeAccountId,
-                callType,
-                calleeName,
-                calleeAvatar
-            )
-        )
-        
-        // 2️⃣ Make API call in background
+
+        // 1️⃣ Call backend
         viewModelScope.launch {
             when (val result = startCallUseCase(
-                callType, callerAccountId, calleeAccountId, calleeName, calleeAvatar
+                callType,
+                callerAccountId,
+                calleeAccountId,
+                calleeName,
+                calleeAvatar
             )) {
                 is ApiResult.Success -> {
-                    val call = result.data
-                    // Update only callId and channel, keep status as OUTGOING_CONNECTING
-                    // Status will change to OUTGOING_RINGING when we receive CallReceived event
-                    val current = CallStore.current()
-                    if (current != null && current.callId == tempCallId) {
-                        CallStore.set(
-                            current.copy(
-                                callId = call.callId,
-                                channel = call.channel
-                            )
+
+                    val serverCall = result.data
+
+                    // 2️⃣NOW create real call session
+                    CallEventBus.emit(
+                        CallEvent.Outgoing(
+                            serverCall.callId,
+                            callerAccountId,
+                            calleeAccountId,
+                            callType,
+                            calleeName,
+                            calleeAvatar
                         )
-                    }
+                    )
                 }
 
                 is ApiResult.Error -> {
-                    val errorMessage = result.message ?: "Unable to start call"
-                    
-                    // Hangup the call
-                    CallEventBus.emit(CallEvent.Ended(tempCallId))
-                    
-                    // Check if it's an insufficient balance error
-                    if (result.exception != null && ApiErrorHandler.isInsufficientBalance(result.exception)) {
-                        SnackbarManager.showError(errorMessage, duration = 4000L)
-                        // Trigger navigation to wallet after a short delay
-                        viewModelScope.launch {
-                            delay(500)
-                            _navigateToWallet.emit(Unit)
-                        }
-                    } else {
-                        // Regular error handling
-                        SnackbarManager.showError(errorMessage)
-                    }
-                    
-                    error.value = errorMessage
+                    SnackbarManager.showError(result.message ?: "Unable to start call")
                 }
             }
         }
@@ -329,7 +304,8 @@ class CallViewModel @Inject constructor(
                 call.status,
                 call.callType
             )
-            if (res is ApiResult.Error) error.value = res.message ?: "End call failed"
+            if (res is ApiResult.Error)
+                error.value = res.message ?: "End call failed"
         }
     }
 

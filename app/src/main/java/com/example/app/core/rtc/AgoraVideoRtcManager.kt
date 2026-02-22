@@ -39,12 +39,12 @@ class AgoraVideoRtcManager @Inject constructor(
                 uid: Int,
                 elapsed: Int
             ) {
-                Log.d("RTM", "Video onJoinChannelSuccess")
+                Log.d("APP:RTM", "Video onJoinChannelSuccess")
                 _events.tryEmit(RtcEvent.Connected)
             }
 
             override fun onUserJoined(uid: Int, elapsed: Int) {
-                Log.d("RTM", "Video onUserJoined uid=$uid")
+                Log.d("APP:RTM", "Video onUserJoined uid=$uid")
                 _events.tryEmit(RtcEvent.RemoteJoined(uid))
             }
 
@@ -57,14 +57,14 @@ class AgoraVideoRtcManager @Inject constructor(
             }
 
             override fun onError(err: Int) {
-                Log.e("RTM", "Agora Video RTC error=$err")
+                Log.e("APP:RTM", "Agora Video RTC error=$err")
                 _events.tryEmit(RtcEvent.Error(err))
             }
         }
 
         val engine = try {
             Log.d(
-                "RTM",
+                "APP:RTM",
                 "Creating VIDEO RTC Engine | appId=${BuildConfig.AGORA_APP_ID.take(8)}..."
             )
             RtcEngine.create(
@@ -73,7 +73,7 @@ class AgoraVideoRtcManager @Inject constructor(
                 rtcListener
             )
         } catch (e: Exception) {
-            Log.e("RTM", "Creating Video RTC Engine Failed", e)
+            Log.e("APP:RTM", "Creating Video RTC Engine Failed", e)
             null
         }
 
@@ -112,7 +112,7 @@ class AgoraVideoRtcManager @Inject constructor(
 
     override fun join(callId: String, channel: String, token: String?) {
         if (activeCallId == callId) {
-            Log.w("RTM", "Already joined video callId=$callId")
+            Log.w("APP:RTM", "Already joined video callId=$callId")
             return
         }
 
@@ -175,7 +175,7 @@ class AgoraVideoRtcManager @Inject constructor(
         val engine = rtcEngine ?: return
 
         Handler(Looper.getMainLooper()).post {
-            Log.d("RTM", "setupRemoteVideo on main | uid=$uid view=$view")
+            Log.d("APP:RTM", "setupRemoteVideo on main | uid=$uid view=$view")
             engine.setupRemoteVideo(
                 VideoCanvas(view, VideoCanvas.RENDER_MODE_HIDDEN, uid)
             )
