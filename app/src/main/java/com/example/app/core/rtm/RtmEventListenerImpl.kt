@@ -24,6 +24,7 @@ class RtmEventListenerImpl(
     }
 
     private val acceptedCalls = ConcurrentHashMap.newKeySet<String>()
+    private val incomingCalls = ConcurrentHashMap.newKeySet<String>()
 
 
     override fun onMessageEvent(event: MessageEvent) {
@@ -49,6 +50,12 @@ class RtmEventListenerImpl(
 //                )
                 when (signal.event) {
                     AppConstants.EVENT_INCOMING_CALL -> {
+                        // Deduplicate incoming calls
+                        if (!incomingCalls.add(signal.callId)) {
+                            Log.w("RTM", "Duplicate incoming call ignored for callId=${signal.callId}")
+                            return@launch
+                        }
+                        
                         CallEventBus.emit(
                             CallEvent.Incoming(
                                 callId = signal.callId,

@@ -86,12 +86,12 @@ class CallRtcController @Inject constructor(
 
         // wait until RTM delivers both
         if (channel.isNullOrBlank() || token.isNullOrBlank()) {
-            Log.d("RTC", "Waiting for RTC credentials…")
+            Log.d("RTM", "Waiting for RTC credentials…")
             return
         }
 
         if (rtcJoinStarted) {
-            Log.w("RTC", "Join already started, ignoring")
+            Log.w("RTM", "Join already started, ignoring")
             return
         }
 
@@ -102,7 +102,7 @@ class CallRtcController @Inject constructor(
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
 
         if (!hasMicPermission) {
-            Log.e("RTC", "Cannot join channel: RECORD_AUDIO permission not granted")
+            Log.e("RTM", "Cannot join channel: RECORD_AUDIO permission not granted")
             // For incoming calls, UI will handle permission request
             // For outgoing calls, this shouldn't happen as we check before calling
             // Only end call if it's not an incoming call (to avoid silent failure)
@@ -117,7 +117,7 @@ class CallRtcController @Inject constructor(
 
         rtcJoinStarted = true
 
-        Log.d("RTC", "Joining channel=$channel")
+        Log.d("RTM", "Joining channel=$channel")
 
         rtcManager = rtcManagerFactory.create(call.callType).also { manager ->
 
@@ -225,12 +225,12 @@ class CallRtcController @Inject constructor(
                 when (event) {
                     // ----- video specific -----
                     is RtcEvent.RemoteJoined -> {
-                        Log.d("RTC", "Remote joined uid=${event.uid}")
+                        Log.d("RTM", "Remote joined uid=${event.uid}")
                         _remoteUid.value = event.uid
                     }
 
                     is RtcEvent.RemoteLeft -> {
-                        Log.d("RTC", "Remote left")
+                        Log.d("RTM", "Remote left")
                         _remoteUid.value = null
                     }
 
@@ -267,7 +267,7 @@ class CallRtcController @Inject constructor(
         connectTimeoutJob?.cancel()
         connectTimeoutJob = scope.launch {
             delay(15_000)   // 15s
-            Log.w("RTC", "Connect timeout")
+            Log.w("RTM", "Connect timeout")
             val call = CallStore.current() ?: return@launch
             CallEventBus.emit(CallEvent.Ended(call.callId))
         }
@@ -283,7 +283,7 @@ class CallRtcController @Inject constructor(
     // ------------------------------------------------------------
 
     private fun cleanup() {
-        Log.d("RTC", "Cleanup called")
+        Log.d("RTM", "Cleanup called")
 
         stopCallService()
 

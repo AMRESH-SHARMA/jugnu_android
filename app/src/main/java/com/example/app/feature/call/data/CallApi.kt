@@ -2,6 +2,7 @@ package com.example.app.feature.call.data
 
 import com.example.app.core.network.BaseResponse
 import retrofit2.http.Body
+import retrofit2.http.GET
 import retrofit2.http.POST
 
 interface CallApi {
@@ -36,4 +37,9 @@ interface CallApi {
     suspend fun callReceived(
         @Body req: CallReceivedRequest
     ): BaseResponse<Unit>
+    
+    @GET("call/{callId}/state")
+    suspend fun getCallState(
+        @retrofit2.http.Path("callId") callId: String
+    ): BaseResponse<CallStateDto>
 }

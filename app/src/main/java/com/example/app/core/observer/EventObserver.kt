@@ -16,6 +16,7 @@ import com.example.app.core.websocket.PresenceEventBus
 import com.example.app.core.websocket.PresenceManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,6 +39,8 @@ class EventObserver @Inject constructor(
     private val networkStateTracker: NetworkStateTracker,
     private val userSession: com.example.app.core.session.UserSession,
     private val rtmCallSignaling: com.example.app.core.rtm.RtmCallSignaling,
+    private val callRepository: com.example.app.feature.call.data.CallRepository,
+    private val presenceWebSocketManager: com.example.app.core.websocket.PresenceWebSocketManager,
     @ApplicationContext private val appContext: Context,
     @ApplicationScope private val scope: CoroutineScope
 ) {
@@ -55,8 +58,7 @@ class EventObserver @Inject constructor(
         
         observeCallEvents()
         observePresenceEvents()
-        observeAppLifecycle()
-        observeNetworkChanges()
+        observeWebSocketConnectionState()
         
         Log.d(TAG, "EventObserver: All observers started")
     }
@@ -77,7 +79,15 @@ class EventObserver @Inject constructor(
                         callManager.onIncoming(event)
                         presenceManager.onCallStarted()
                         
-                        // Send acknowledgment back to caller that we received the call
+                        // Send acknowledgment to backend (required for watchdog)
+                        scope.launch {
+                            callRepository.callReceived(
+                                callId = event.callId,
+                                calleeAccountId = event.calleeAccountId
+                            )
+                        }
+                        
+                        // Send acknowledgment back to caller via RTM
                         rtmCallSignaling.sendCallEvent(
                             channel = com.example.app.core.rtm.RtmChannels.user(event.callerAccountId),
                             payload = com.example.app.core.rtm.CallSignalPayload(
@@ -174,22 +184,11 @@ class EventObserver @Inject constructor(
         // -------------------------
         scope.launch {
             appForegroundTracker.isForeground.collect { isForeground ->
-                val isLoggedIn = userSession.isLoggedIn()
-                val accountId = userSession.accountId
-                val sessionId = userSession.sessionId
-                
-                Log.d(TAG, "EventObserver: App foreground state changed - isForeground=$isForeground, isLoggedIn=$isLoggedIn, accountId=$accountId, sessionId=$sessionId")
+                Log.d(TAG, "EventObserver: App foreground state changed - isForeground=$isForeground")
                 
                 if (isForeground) {
-                    // Only connect WebSocket if user is logged in
-                    if (isLoggedIn) {
-                        Log.d(TAG, "EventObserver: App foreground + logged in → connecting WebSocket")
-                        presenceManager.onAppForeground()
-                    } else {
-                        Log.d(TAG, "EventObserver: App foreground but NOT logged in → skipping WebSocket connect")
-                    }
+                    presenceManager.onAppForeground()
                 } else {
-                    Log.d(TAG, "EventObserver: App background → disconnecting WebSocket")
                     presenceManager.onAppBackground()
                 }
             }
@@ -202,19 +201,42 @@ class EventObserver @Inject constructor(
         // -------------------------
         scope.launch {
             networkStateTracker.isNetworkAvailable.collect { isAvailable ->
-                val isLoggedIn = userSession.isLoggedIn()
-                Log.d(TAG, "EventObserver: Network state changed - isAvailable=$isAvailable, isLoggedIn=$isLoggedIn")
+                Log.d(TAG, "EventObserver: Network state changed - isAvailable=$isAvailable")
                 
                 if (isAvailable) {
-                    if (isLoggedIn) {
-                        Log.d(TAG, "EventObserver: Network available + logged in → attempting reconnect")
-                        presenceManager.onNetworkAvailable()
-                    } else {
-                        Log.d(TAG, "EventObserver: Network available but NOT logged in → skipping reconnect")
-                    }
+                    presenceManager.onNetworkAvailable()
                 } else {
-                    Log.d(TAG, "EventObserver: Network lost → notifying presence manager")
                     presenceManager.onNetworkLost()
+                }
+            }
+        }
+    }
+
+    private fun observeWebSocketConnectionState() {
+        // -------------------------
+        // State-driven WebSocket connection management
+        // Combines all conditions into single flow to avoid race conditions
+        // -------------------------
+        scope.launch {
+            kotlinx.coroutines.flow.combine(
+                userSession.sessionFlow,
+                userSession.sessionIdFlow,
+                networkStateTracker.isNetworkAvailable,
+                appForegroundTracker.isForeground
+            ) { (accountId, _), sessionId, networkAvailable, isForeground ->
+                val isLoggedIn = accountId > 0 && sessionId.isNotBlank()
+                isLoggedIn && networkAvailable && isForeground
+            }
+            .distinctUntilChanged()
+            .collect { shouldConnect ->
+                Log.d(TAG, "EventObserver: WebSocket connection state changed - shouldConnect=$shouldConnect")
+                
+                if (shouldConnect) {
+                    Log.d(TAG, "EventObserver: Conditions met → connecting WebSocket")
+                    presenceWebSocketManager.connect()
+                } else {
+                    Log.d(TAG, "EventObserver: Conditions not met → disconnecting WebSocket")
+                    presenceWebSocketManager.disconnect()
                 }
             }
         }

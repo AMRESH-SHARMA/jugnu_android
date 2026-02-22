@@ -34,6 +34,9 @@ import javax.inject.Inject
 class MainActivity : ComponentActivity() {
     @Inject
     lateinit var pendingCallStore: PendingCallStore
+    
+    @Inject
+    lateinit var callRepository: com.example.app.feature.call.data.CallRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -119,22 +122,40 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             val pending = pendingCallStore.consume() ?: return@launch
             
-            // Validate call is not expired (Option 2: Timestamp validation)
+            // 1️⃣ Client-side TTL check (fast path - avoid unnecessary API call)
             val age = System.currentTimeMillis() - pending.timestamp
             if (age > AppConstants.CALL_PENDING_STORE_TTL) {
-                Log.w("Call", "Pending call expired (${age}ms old), ignoring")
+                Log.w("RTM", "Pending call expired locally (${age}ms old), skipping")
                 return@launch
             }
             
-            CallEventBus.emit(
-                CallEvent.Incoming(
-                    callId = pending.callId,
-                    callType = pending.callType,
-                    callerAccountId = pending.callerAccountId,
-                    calleeAccountId = SessionManager.userAccountId,
-                    channel = null
-                )
-            )
+            // 2️⃣ Server verification (authoritative - prevents ghost calls)
+            val result = callRepository.getCallState(pending.callId)
+            when (result) {
+                is com.example.app.core.network.ApiResult.Success -> {
+                    val callState = result.data
+                    if (!callState.isActive || callState.isExpired) {
+                        Log.w("RTM", "Call not active on server: status=${callState.status}, isExpired=${callState.isExpired}")
+                        return@launch
+                    }
+                    
+                    // 3️⃣ Call is valid - emit event to show UI
+                    Log.d("RTM", "Restoring valid pending call: ${pending.callId}")
+                    CallEventBus.emit(
+                        CallEvent.Incoming(
+                            callId = pending.callId,
+                            callType = pending.callType,
+                            callerAccountId = pending.callerAccountId,
+                            calleeAccountId = SessionManager.userAccountId,
+                            channel = null
+                        )
+                    )
+                }
+                is com.example.app.core.network.ApiResult.Error -> {
+                    Log.w("RTM", "Failed to verify call state: ${result.message}")
+                    // Don't show call UI if we can't verify with server
+                }
+            }
         }
     }
     

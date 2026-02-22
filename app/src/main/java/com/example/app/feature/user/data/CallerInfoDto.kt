@@ -7,5 +7,5 @@ data class CallerInfoDto(
 data class CustomerProfileDto(
     val name: String,
     val balanceCoins: Long,
-    val isProfileComplete: Boolean = false
+    val isProfileComplete: Boolean = true
 )

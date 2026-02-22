@@ -87,7 +87,6 @@ class OtpViewModel @Inject constructor(
                             id = data.accountId,
                             role = userRole
                         )
-                        userPreferencesRepository.saveProfileComplete(data.isProfileComplete)
                     }
 
                     _otpVerifyState.value = OtpUiState.Success(data)

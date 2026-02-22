@@ -63,4 +63,10 @@ class CallRepository @Inject constructor(
         val res = api.callReceived(CallReceivedRequest(callId, calleeAccountId))
         if (!res.success) throw Exception(res.message)
     }
+    
+    suspend fun getCallState(callId: String): ApiResult<CallStateDto> = safeApiCall {
+        val res = api.getCallState(callId)
+        if (!res.success) throw Exception(res.message)
+        res.data
+    }
 }

@@ -11,5 +11,6 @@ data class CallSignalPayload(
     val callerAccountId: Long? = null,
     val calleeAccountId: Long? = null,
     val channel: String? = null,
-    val rtcToken: String? = null
+    val rtcToken: String? = null,
+    val startedAt: Long? = null
 )

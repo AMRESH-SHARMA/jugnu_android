@@ -119,6 +119,8 @@ fun AppNavGraph() {
     }
 
     // Determine start destination based on login state and active call
+    // NOTE: SessionManager.isProfileComplete is guaranteed to be accurate here
+    // because AppRoot only shows AppNavGraph after loadSession() completes
     val startDestination = if (SessionManager.userAccountId != 0L && SessionManager.userRole != null) {
         // Check if there's an active ongoing call - prioritize call screen
         val activeCall = callState

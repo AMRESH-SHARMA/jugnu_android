@@ -133,7 +133,6 @@ class HomeViewModel @Inject constructor(
                     
                     // Update profile completion status from server (source of truth)
                     com.example.app.core.session.SessionManager.isProfileComplete = res.data.isProfileComplete
-                    userPrefs.saveProfileComplete(res.data.isProfileComplete)
                 }
                 is ApiResult.Error -> { /* ignore */ }
             }

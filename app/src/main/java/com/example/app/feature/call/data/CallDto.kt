@@ -52,3 +52,11 @@ data class RejectCallDto(
     val callId: String,
     val status: String
 )
+
+data class CallStateDto(
+    val callId: String,
+    val status: String,
+    val isActive: Boolean,
+    val isExpired: Boolean,
+    val startedAt: Long
+)

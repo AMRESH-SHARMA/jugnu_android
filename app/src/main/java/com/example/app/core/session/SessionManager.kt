@@ -16,7 +16,7 @@ object SessionManager {
         }
     var userRole: UserRole? = null  // Null until set after OTP verification
     var fcmToken: String? = null
-    var isProfileComplete: Boolean = false
+    var isProfileComplete: Boolean = true
 
     // Runtime-only values (not persisted)
     var sessionId: String = ""

@@ -17,5 +17,5 @@ data class VerifyOtpResult(
     val accountId: Long,
     val isNewUser: Boolean,
     val userRole: String,  // "CUSTOMER" or "LISTENER" from backend
-    val isProfileComplete: Boolean = false
+    val isProfileComplete: Boolean = true
 ) : Parcelable

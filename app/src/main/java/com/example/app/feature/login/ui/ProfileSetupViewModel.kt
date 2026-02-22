@@ -36,8 +36,7 @@ class ProfileSetupViewModel @Inject constructor(
                     // Save interested in preference locally
                     userPreferencesRepository.saveInterestedIn(interestedIn)
                     
-                    // Mark profile as complete
-                    userPreferencesRepository.saveProfileComplete(true)
+                    // Mark profile as complete in SessionManager
                     com.example.app.core.session.SessionManager.isProfileComplete = true
                     
                     _setupState.value = ProfileSetupUiState.Success("Profile setup complete")

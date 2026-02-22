@@ -12,7 +12,7 @@ data class PendingIncomingCall(
     val callId: String,
     val callType: CallType,
     val callerAccountId: Long,
-    val timestamp: Long = System.currentTimeMillis()
+    val timestamp: Long // Server's startedAt timestamp
 )
 
 @Singleton
@@ -24,9 +24,9 @@ class PendingCallStore @Inject constructor(
         private const val KEY_PENDING_CALL = "pending_incoming_call"
     }
 
-    fun save(callId: String, callType: CallType, callerAccountId: Long) {
+    fun save(callId: String, callType: CallType, callerAccountId: Long, startedAt: Long) {
         val json = Json.encodeToString(
-            PendingIncomingCall(callId, callType, callerAccountId)
+            PendingIncomingCall(callId, callType, callerAccountId, startedAt)
         )
         prefs.edit().putString(KEY_PENDING_CALL, json).apply()
     }

@@ -14,7 +14,7 @@ class CallManager @Inject constructor(
     private fun log(action: String) {
         val current = CallStore.current()
         Log.w(
-            "CALL_MANAGER",
+            "RTM",
             "$action | currentStatus=${current?.status} callId=${current?.callId} thread=${Thread.currentThread().name}"
         )
     }
@@ -44,7 +44,12 @@ class CallManager @Inject constructor(
 
     fun onIncoming(event: CallEvent.Incoming) {
         log("onIncoming()")
-        if (CallStore.current() != null) return
+        
+        val current = CallStore.current()
+        if (current != null) {
+            Log.w("RTM", "Incoming call rejected: already have active call ${current.callId}")
+            return
+        }
 
         CallStore.set(
             CallModel(
@@ -65,7 +70,13 @@ class CallManager @Inject constructor(
         log("onCallReceived()")
         val current = CallStore.current() ?: return
         
-        // Only update if we're still in OUTGOING_CONNECTING state
+        // Validate transition
+        if (!CallLifecycle.canTransition(current.status, CallStatus.OUTGOING_RINGING)) {
+            Log.w("RTM", "Cannot transition to OUTGOING_RINGING from ${current.status}")
+            return
+        }
+        
+        // Only update if we're in the right state and it's the same call
         if (current.callId == event.callId && current.status == CallStatus.OUTGOING_CONNECTING) {
             CallStore.update {
                 it.copy(status = CallStatus.OUTGOING_RINGING)
@@ -77,7 +88,20 @@ class CallManager @Inject constructor(
     // ACCEPTED (RTM)
     // ------------------------------------------------------------
     fun onAccepted(event: CallEvent.Accepted) {
+        log("onAccepted()")
         val current = CallStore.current() ?: return
+
+        // Validate state transition
+        val transitionResult = CallLifecycle.transitionTo(
+            currentStatus = current.status,
+            newStatus = CallStatus.CONNECTING,
+            callId = current.callId
+        )
+        
+        if (transitionResult.isFailure) {
+            Log.w("RTM", "Cannot accept call: ${transitionResult.exceptionOrNull()?.message}")
+            return
+        }
 
         val newChannel = event.channel ?: current.channel
         val newToken = event.rtcToken.ifBlank { current.rtcToken }
@@ -105,6 +129,14 @@ class CallManager @Inject constructor(
     // ------------------------------------------------------------
     fun onConnected() {
         log("onConnected()")
+        val current = CallStore.current() ?: return
+        
+        // Validate transition
+        if (!CallLifecycle.canTransition(current.status, CallStatus.CONNECTED)) {
+            Log.w("RTM", "Cannot transition to CONNECTED from ${current.status}")
+            return
+        }
+        
         CallStore.update {
             it.copy(status = CallStatus.CONNECTED)
         }
@@ -115,12 +147,28 @@ class CallManager @Inject constructor(
     // ------------------------------------------------------------
     fun onRejected() {
         log("onRejected()")
+        val current = CallStore.current()
+        
+        // Validate transition if there's an active call
+        if (current != null && !CallLifecycle.canTransition(current.status, CallStatus.REJECTED)) {
+            Log.w("RTM", "Cannot reject call from ${current.status}")
+            return
+        }
+        
         pendingCallStore.clear()
         CallStore.clear()
     }
 
     fun onEnded() {
         log("onEnded()")
+        val current = CallStore.current()
+        
+        // Validate transition if there's an active call
+        if (current != null && !CallLifecycle.canTransition(current.status, CallStatus.ENDED)) {
+            Log.w("RTM", "Cannot end call from ${current.status}")
+            return
+        }
+        
         pendingCallStore.clear()
         CallStore.clear()
     }

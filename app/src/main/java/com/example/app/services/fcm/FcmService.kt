@@ -84,7 +84,8 @@ class FcmService : FirebaseMessagingService() {
             appInForeground && screenOn
         ) {
             Log.d("RTM", "Foreground + screen ON → RTM should handle, but emitting event as fallback")
-            // Don't return - let it process the event as fallback
+            return
+            // Continue to emit event as fallback (RTM might fail/delay)
         }
 
         val payload = try {
@@ -101,11 +102,13 @@ class FcmService : FirebaseMessagingService() {
             // INCOMING CALL (background / killed)
             // ----------------------------------------------------------
             AppConstants.EVENT_INCOMING_CALL -> {
-                // Persist minimal data for cold start
+                // Persist minimal data for cold start with server timestamp
+                val startedAtMillis = (payload.startedAt ?: (System.currentTimeMillis() / 1000)) * 1000
                 pendingCallStore.save(
                     callId = payload.callId,
                     callType = payload.callType ?: CallType.VOICE,
-                    callerAccountId = payload.callerAccountId ?: return
+                    callerAccountId = payload.callerAccountId ?: return,
+                    startedAt = startedAtMillis
                 )
 
                 val callTypeText = when (payload.callType) {

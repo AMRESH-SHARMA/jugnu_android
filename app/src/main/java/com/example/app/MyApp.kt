@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import com.example.app.core.session.SessionManager
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @HiltAndroidApp
 class MyApp : Application() {
@@ -55,7 +56,7 @@ class MyApp : Application() {
     @Inject
     lateinit var presenceWebSocketManager: PresenceWebSocketManager
 
-    private val rtmInitialized = AtomicBoolean(false)
+    val rtmInitialized = AtomicBoolean(false)
 
     override fun onCreate() {
         super.onCreate()
@@ -96,10 +97,10 @@ class MyApp : Application() {
             
             Log.d("RTM", "MyApp: Valid session loaded, starting services")
             
-            // Now start reactive services
+            // Start services (but NOT RTM - moved to AppRoot after config check)
             tokenManager.start()
             eventObserver.start()
-            observeUserSession()
+            observeUserSession()  // Only for WebSocket, not RTM
         }
     }
     
@@ -122,14 +123,16 @@ class MyApp : Application() {
     }
 
     private fun observeUserSession() {
-        Log.d("RTM", "MyApp: Starting to observe user session flow")
+        Log.d("RTM", "MyApp: Starting to observe user session flow (WebSocket only)")
         appScope.launch(Dispatchers.IO) {
             combine(
                 userSession.sessionFlow,
                 userSession.sessionIdFlow
             ) { (accountId, role), sessionId ->
                 Triple(accountId, role, sessionId)
-            }.collect { (accountId, role, sessionId) ->
+            }
+            .distinctUntilChanged()
+            .collect { (accountId, role, sessionId) ->
                 val isLoggedIn = accountId > 0 && !sessionId.isNullOrBlank()
                 
                 Log.d("RTM", "MyApp: Session state - accountId=$accountId, role=$role, sessionId=$sessionId, isLoggedIn=$isLoggedIn")
@@ -137,22 +140,16 @@ class MyApp : Application() {
                 if (isLoggedIn) {
                     Log.d("RTM", "MyApp: Valid session detected → connecting WebSocket")
                     presenceWebSocketManager.connect()
-
-                    if (rtmInitialized.compareAndSet(false, true)) {
-                        Log.d("RTM", "MyApp: Initializing RTM for first time")
-                        initAndLoginRtm(accountId)
-                    } else {
-                        Log.d("RTM", "MyApp: RTM already initialized, skipping")
-                    }
                 } else {
-                    Log.d("RTM", "MyApp: No valid session (accountId=$accountId, sessionId=$sessionId) → disconnecting WebSocket")
+                    Log.d("RTM", "MyApp: No valid session → disconnecting WebSocket")
                     presenceWebSocketManager.disconnect()
                 }
             }
         }
     }
 
-    private suspend fun initAndLoginRtm(accountId: Long) {
+    // RTM initialization moved to AppRoot (after app config check)
+    suspend fun initAndLoginRtm(accountId: Long) {
 
         when (val result = apiRepository.getRtmToken(accountId)) {
 

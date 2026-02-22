@@ -48,11 +48,13 @@ class AppConfigViewModel @Inject constructor(
 
     private fun loadSessionAndConfig() {
         viewModelScope.launch {
-            // Only load session if not already loaded
+            // Load session first (suspends until API completes)
+            // This ensures SessionManager.isProfileComplete is accurate before navigation
             if (SessionManager.userAccountId == 0L) {
-                sessionInitializer.loadSession()
+                sessionInitializer.loadSession()  // ✅ Suspends until complete
             }
-            // Then load app config
+            
+            // Then load app config (only after session is loaded)
             load()
             savedStateHandle[KEY_IS_INITIALIZED] = true
         }
