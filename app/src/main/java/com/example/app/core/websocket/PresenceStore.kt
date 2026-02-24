@@ -18,7 +18,7 @@ class PresenceStore @Inject constructor() {
     val state: StateFlow<PresenceState> = _state
 
     fun setState(newState: PresenceState) {
-        Log.d(TAG, "PresenceStore: setState() - ${_state.value} -> $newState")
+//        Log.d(TAG, "PresenceStore: setState() - ${_state.value} -> $newState")
         _state.value = newState
     }
 

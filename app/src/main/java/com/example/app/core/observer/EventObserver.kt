@@ -38,7 +38,6 @@ class EventObserver @Inject constructor(
     private val appForegroundTracker: AppForegroundTracker,
     private val networkStateTracker: NetworkStateTracker,
     private val userSession: com.example.app.core.session.UserSession,
-    private val rtmCallSignaling: com.example.app.core.rtm.RtmCallSignaling,
     private val callRepository: com.example.app.feature.call.data.CallRepository,
     private val presenceWebSocketManager: com.example.app.core.websocket.PresenceWebSocketManager,
     @ApplicationContext private val appContext: Context,
@@ -88,18 +87,6 @@ class EventObserver @Inject constructor(
                                 calleeAccountId = event.calleeAccountId
                             )
                         }
-                        
-                        // Send acknowledgment back to caller via RTM
-                        rtmCallSignaling.sendCallEvent(
-                            channel = com.example.app.core.rtm.RtmChannels.user(event.callerAccountId),
-                            payload = com.example.app.core.rtm.CallSignalPayload(
-                                event = com.example.app.AppConstants.EVENT_CALL_RECEIVED,
-                                callId = event.callId,
-                                callType = event.callType,
-                                callerAccountId = event.callerAccountId,
-                                calleeAccountId = event.calleeAccountId
-                            )
-                        )
                     }
 
                     is CallEvent.CallReceived -> {
@@ -148,7 +135,7 @@ class EventObserver @Inject constructor(
         // -------------------------
         scope.launch {
             PresenceEventBus.events.collect { event ->
-                Log.d(TAG, "EventObserver: Presence event received - $event")
+//                Log.d(TAG, "EventObserver: Presence event received - $event")
                 when (event) {
 
                     // ---- Socket connected → ONLINE (unless already BUSY)
@@ -167,10 +154,10 @@ class EventObserver @Inject constructor(
                         
                         // Only update local state if this is OUR status change
                         if (event.accountId == currentUserId) {
-                            Log.d(TAG, "EventObserver: Status change for SELF - updating local presence")
+//                            Log.d(TAG, "EventObserver: Status change for SELF - updating local presence")
                             presenceManager.onRemoteStateChanged(event.state)
                         } else {
-                            Log.d(TAG, "EventObserver: Status change for OTHER user (${event.accountId}) - ignoring for local presence")
+//                            Log.d(TAG, "EventObserver: Status change for OTHER user (${event.accountId}) - ignoring for local presence")
                             // Remote user status changes are already handled by RemotePresenceStore
                             // No need to update local presence
                         }
@@ -203,7 +190,7 @@ class EventObserver @Inject constructor(
         // -------------------------
         scope.launch {
             networkStateTracker.isNetworkAvailable.collect { isAvailable ->
-                Log.d(TAG, "EventObserver: Network state changed - isAvailable=$isAvailable")
+//                Log.d(TAG, "EventObserver: Network state changed - isAvailable=$isAvailable")
                 
                 if (isAvailable) {
                     presenceManager.onNetworkAvailable()
@@ -231,13 +218,13 @@ class EventObserver @Inject constructor(
             }
             .distinctUntilChanged()
             .collect { shouldConnect ->
-                Log.d(TAG, "EventObserver: WebSocket connection state changed - shouldConnect=$shouldConnect")
+//                Log.d(TAG, "EventObserver: WebSocket connection state changed - shouldConnect=$shouldConnect")
                 
                 if (shouldConnect) {
-                    Log.d(TAG, "EventObserver: Conditions met → connecting WebSocket")
+//                    Log.d(TAG, "EventObserver: Conditions met → connecting WebSocket")
                     presenceWebSocketManager.connect()
                 } else {
-                    Log.d(TAG, "EventObserver: Conditions not met → disconnecting WebSocket")
+//                    Log.d(TAG, "EventObserver: Conditions not met → disconnecting WebSocket")
                     presenceWebSocketManager.disconnect()
                 }
             }

@@ -34,34 +34,34 @@ object RtmManager {
 
         try {
             rtmClient = RtmClient.create(config)
-            Log.d("RTM", "RTM client created")
+            Log.d("APP:RTMMANAGER", "RTM client created")
         } catch (e: Exception) {
-            Log.e("RTM", "Failed to create RTM client", e)
+            Log.e("APP:RTMMANAGER", "Failed to create RTM client", e)
         }
     }
 
     fun login(token: String) {
         rtmClient?.login(token, object : ResultCallback<Void?> {
             override fun onSuccess(responseInfo: Void?) {
-                Log.d("RTM", "RTM login success")
+                Log.d("APP:RTMMANAGER", "RTM login success")
                 // 🔑 SUBSCRIBE TO OWN CHANNEL
                 val channelName = "account_$currentUserId"
                 subscribe(
                     channelName = channelName,
                     callback = object : ResultCallback<Void?> {
                         override fun onSuccess(responseInfo: Void?) {
-                            Log.d("RTM", "Subscribed to $channelName")
+                            Log.d("APP:RTMMANAGER", "Subscribed to $channelName")
                         }
 
                         override fun onFailure(errorInfo: ErrorInfo) {
-                            Log.e("RTM", "Subscribe failed: $errorInfo")
+                            Log.e("APP:RTMMANAGER", "Subscribe failed: $errorInfo")
                         }
                     }
                 )
             }
 
             override fun onFailure(errorInfo: ErrorInfo) {
-                Log.e("RTM", "RTM login failed: $errorInfo")
+                Log.e("APP:RTMMANAGER", "RTM login failed: $errorInfo")
             }
         })
     }
@@ -70,11 +70,11 @@ object RtmManager {
         // 1️⃣ Logout (async, best-effort)
         rtmClient?.logout(object : ResultCallback<Void?> {
             override fun onSuccess(responseInfo: Void?) {
-                Log.d("RTM", "RTM logout success")
+                Log.d("APP:RTMMANAGER", "RTM logout success")
             }
 
             override fun onFailure(errorInfo: ErrorInfo) {
-                Log.e("RTM", "RTM logout failed: $errorInfo")
+                Log.e("APP:RTMMANAGER", "RTM logout failed: $errorInfo")
             }
         })
         // 2️⃣ Remove listener (important)

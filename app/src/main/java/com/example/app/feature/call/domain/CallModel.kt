@@ -27,7 +27,7 @@ enum class CallStatus {
     INCOMING_RINGING,
     OUTGOING_CONNECTING,  // Before server confirms call creation
     OUTGOING_RINGING,     // After server confirms, waiting for callee
-    CONNECTING,
+    CONNECTING,           // Call was accepted, now connecting to RTC media channel (both caller and callee use this)
     CONNECTED,
     ENDED,
     CANCELLED,

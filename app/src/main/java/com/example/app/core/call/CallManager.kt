@@ -14,7 +14,7 @@ class CallManager @Inject constructor(
     private fun log(action: String) {
         val current = CallStore.current()
         Log.w(
-            "RTM",
+            "APP:CALLMANAGER",
             "$action | currentStatus=${current?.status} callId=${current?.callId} thread=${Thread.currentThread().name}"
         )
     }
@@ -47,7 +47,7 @@ class CallManager @Inject constructor(
         
         val current = CallStore.current()
         if (current != null) {
-            Log.w("RTM", "Incoming call rejected: already have active call ${current.callId}")
+            Log.w("APP:CALLMANAGER", "Incoming call rejected: already have active call ${current.callId}")
             return
         }
 
@@ -72,7 +72,7 @@ class CallManager @Inject constructor(
         
         // Validate transition
         if (!CallLifecycle.canTransition(current.status, CallStatus.OUTGOING_RINGING)) {
-            Log.w("RTM", "Cannot transition to OUTGOING_RINGING from ${current.status}")
+            Log.w("APP:CALLMANAGER", "Cannot transition to OUTGOING_RINGING from ${current.status}")
             return
         }
         
@@ -99,22 +99,15 @@ class CallManager @Inject constructor(
         )
         
         if (transitionResult.isFailure) {
-            Log.w("RTM", "Cannot accept call: ${transitionResult.exceptionOrNull()?.message}")
+            Log.w("APP:CALLMANAGER", "Cannot accept call: ${transitionResult.exceptionOrNull()?.message}")
             return
         }
 
         val newChannel = event.channel ?: current.channel
         val newToken = event.rtcToken.ifBlank { current.rtcToken }
 
-        // 🔒 IDENTITY CHECK — nothing new to apply
-        if (
-            current.status == CallStatus.CONNECTING &&
-            current.channel == newChannel &&
-            current.rtcToken == newToken
-        ) {
-            return
-        }
-
+        // Always update when transitioning to CONNECTING (even if channel/token unchanged)
+        // This ensures UI gets notified of state change from OUTGOING_RINGING -> CONNECTING
         CallStore.update {
             it.copy(
                 status = CallStatus.CONNECTING,
@@ -133,7 +126,7 @@ class CallManager @Inject constructor(
         
         // Validate transition
         if (!CallLifecycle.canTransition(current.status, CallStatus.CONNECTED)) {
-            Log.w("RTM", "Cannot transition to CONNECTED from ${current.status}")
+            Log.w("APP:CALLMANAGER", "Cannot transition to CONNECTED from ${current.status}")
             return
         }
         
@@ -151,7 +144,7 @@ class CallManager @Inject constructor(
         
         // Validate transition if there's an active call
         if (current != null && !CallLifecycle.canTransition(current.status, CallStatus.REJECTED)) {
-            Log.w("RTM", "Cannot reject call from ${current.status}")
+            Log.w("APP:CALLMANAGER", "Cannot reject call from ${current.status}")
             return
         }
         
@@ -165,7 +158,7 @@ class CallManager @Inject constructor(
         
         // Validate transition if there's an active call
         if (current != null && !CallLifecycle.canTransition(current.status, CallStatus.ENDED)) {
-            Log.w("RTM", "Cannot end call from ${current.status}")
+            Log.w("APP:CALLMANAGER", "Cannot end call from ${current.status}")
             return
         }
         

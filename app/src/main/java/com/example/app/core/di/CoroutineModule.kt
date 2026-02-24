@@ -20,7 +20,7 @@ object CoroutineModule {
     fun provideGlobalExceptionHandler(): CoroutineExceptionHandler =
         CoroutineExceptionHandler { _, throwable ->
             // 🔥 central logging place
-            Log.e("RTM", "GlobalError Unhandled: ${throwable.message}", throwable)
+            Log.e("APP:GLOBALERROR", "GlobalError Unhandled: ${throwable.message}", throwable)
             // Later: Crashlytics, Sentry, snackbar dispatcher, etc.
         }
 

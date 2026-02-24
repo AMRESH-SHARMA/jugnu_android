@@ -9,7 +9,7 @@ import com.example.app.feature.call.domain.CallStatus
  */
 object CallLifecycle {
 
-    private const val TAG = "RTM"
+    private const val TAG = "APP:CALLLIFECYCLE"
 
     // Define allowed state transitions
     private val allowedTransitions = mapOf(
@@ -24,6 +24,7 @@ object CallLifecycle {
         // Outgoing call flow
         CallStatus.OUTGOING_CONNECTING to setOf(
             CallStatus.OUTGOING_RINGING,
+            CallStatus.CONNECTING,  // Allow direct transition if call_received is missed
             CallStatus.CANCELLED,
             CallStatus.REJECTED,
             CallStatus.ENDED

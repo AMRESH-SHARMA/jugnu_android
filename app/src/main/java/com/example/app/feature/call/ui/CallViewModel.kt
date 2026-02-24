@@ -255,9 +255,6 @@ class CallViewModel @Inject constructor(
     fun acceptCall() {
         val call = CallStore.current() ?: return
 
-        // optimistic accept
-        CallEventBus.emit(CallEvent.Accepted(call.callId, null, ""))
-
         viewModelScope.launch {
             when (val result = acceptCallUseCase(
                 call.callId, call.callType, call.callerAccountId, call.calleeAccountId
@@ -294,18 +291,35 @@ class CallViewModel @Inject constructor(
     fun endCall() {
         val call = CallStore.current() ?: return
 
-        CallEventBus.emit(CallEvent.Cancelled(call.callId, call.calleeAccountId))
+        // Optimistically update UI immediately
+        when (call.status) {
+            CallStatus.OUTGOING_CONNECTING,
+            CallStatus.OUTGOING_RINGING,
+            CallStatus.INCOMING_RINGING -> {
+                // Pre-connected → treat as cancelled locally
+                CallEventBus.emit(
+                    CallEvent.Cancelled(call.callId, call.calleeAccountId)
+                )
+            }
 
+            CallStatus.CONNECTING,
+            CallStatus.CONNECTED -> {
+                // Active call → treat as ended locally
+                CallEventBus.emit(
+                    CallEvent.Ended(call.callId)
+                )
+            }
+
+            else -> return
+        }
+
+        // Always call unified backend endpoint
         viewModelScope.launch {
-            val res = endCallUseCase(
-                call.callId,
-                call.callerAccountId,
-                call.calleeAccountId,
-                call.status,
-                call.callType
-            )
-            if (res is ApiResult.Error)
-                error.value = res.message ?: "End call failed"
+            val result = endCallUseCase(call.callId)
+
+            if (result is ApiResult.Error) {
+                error.value = result.message ?: "Failed to end call"
+            }
         }
     }
 

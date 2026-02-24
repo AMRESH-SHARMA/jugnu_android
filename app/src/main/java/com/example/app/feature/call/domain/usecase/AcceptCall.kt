@@ -14,7 +14,6 @@ import javax.inject.Inject
 
 class AcceptCall @Inject constructor(
     private val repo: CallRepository,
-    private val rtmCallSignaling: RtmCallSignaling
 ) {
     suspend operator fun invoke(
         callId: String,
@@ -32,23 +31,7 @@ class AcceptCall @Inject constructor(
                 val rtcChannel = dto.channel
                 val rtcToken = dto.rtcToken
 
-                Log.d("RTM", "acceptCall API → channel=$rtcChannel : rtcToken $rtcToken")
-
-                // FAST PATH (notify caller)
-                val payload = CallSignalPayload(
-                    event = AppConstants.EVENT_CALL_ACCEPTED,
-                    callId = callId,
-                    callType = callType,
-                    callerAccountId = callerAccountId,
-                    calleeAccountId = calleeAccountId,
-                    channel = rtcChannel,
-                    rtcToken = rtcToken
-                )
-
-                rtmCallSignaling.sendCallEvent(
-                    channel = RtmChannels.user(callerAccountId),
-                    payload = payload
-                )
+                Log.d("APP:CALLAPI", "acceptCall API → channel=$rtcChannel : rtcToken $rtcToken")
 
                 ApiResult.Success(
                     AcceptCallDto(
@@ -70,54 +53,3 @@ class AcceptCall @Inject constructor(
         }
     }
 }
-
-/*
-class AcceptCall @Inject constructor(
-    private val repo: CallRepository,
-    private val rtmCallSignaling: RtmCallSignaling
-) {
-
-    suspend operator fun invoke(
-        callId: String,
-        callType: CallType,
-        callerAccountId: Long,
-        calleeAccountId: Long
-    ): ApiResult<AcceptCallDto> {
-        // 1️⃣ SLOW PATH — Backend source of truth
-        // 1️⃣  First (get RTC channel) from Backend and persists call state
-        val result = repo.acceptCall(callId)
-
-
-        val rtcChannel = result.channel
-        val rtcToken = result.rtcToken
-
-        Log.d("RTM", "acceptCall API hit → channel=$rtcChannel : rtcToken $rtcToken")
-
-        // 2️⃣ FAST PATH — Notify caller via RTM
-        // RTM event drives UI + RTC join on BOTH devices
-        val payload = CallSignalPayload(
-            event = AppConstants.EVENT_CALL_ACCEPTED,
-            callId = callId,
-            callType = callType,
-            callerAccountId = callerAccountId,
-            calleeAccountId = calleeAccountId,
-            channel = rtcChannel,
-            rtcToken = rtcToken
-        )
-
-        // Send to caller
-        rtmCallSignaling.sendCallEvent(
-            channel = RtmChannels.user(callerAccountId),
-            payload = payload
-        )
-
-        // ✅ RETURN DATA TO VIEWMODEL
-        return AcceptCallDto(
-            callId = callId,
-            status = CallStatus.CONNECTED,
-            channel = rtcChannel,
-            rtcToken = rtcToken,
-        )
-    }
-}
-*/

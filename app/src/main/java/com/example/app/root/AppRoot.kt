@@ -7,56 +7,83 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.app.MyApp
-import com.example.app.core.session.SessionManager
 import com.example.app.feature.navigation.ui.AppNavGraph
+import com.example.app.feature.session.SessionViewModel
+import com.example.app.MyApp
 
 @Composable
 fun AppRoot() {
-    val vm: AppConfigViewModel = hiltViewModel()
-    val state by vm.appConfig.collectAsState()
-    
+
+    // -----------------------------
+    // ViewModels
+    // -----------------------------
+    val configVm: AppConfigViewModel = hiltViewModel()
+    val sessionVm: SessionViewModel = hiltViewModel()
+
+    val configState by configVm.appConfig.collectAsState()
+    val sessionState by sessionVm.session.sessionFlow.collectAsState()
+
+    val accountId = sessionState.first
+
     val context = LocalContext.current
     val myApp = context.applicationContext as MyApp
 
-    // 🚨 Listen globally for 426 events (backend forces update mid-session)
+    // -----------------------------
+    // Force update global listener
+    // -----------------------------
     LaunchedEffect(Unit) {
         ForceUpdateBus.events.collect {
-            vm.setForceUpdate()
+            configVm.setForceUpdate()
         }
     }
-    
-    // Initialize RTM after app config check passes
-    LaunchedEffect(state.isLoading, state.forceUpdate) {
-        if (!state.isLoading && !state.forceUpdate && SessionManager.userAccountId != 0L) {
+
+    // -----------------------------
+    // RTM Initialization
+    // -----------------------------
+    LaunchedEffect(
+        configState.isLoading,
+        configState.forceUpdate,
+        accountId
+    ) {
+        if (!configState.isLoading &&
+            !configState.forceUpdate &&
+            accountId > 0
+        ) {
             if (myApp.rtmInitialized.compareAndSet(false, true)) {
-                Log.d("APP:ROOT", "AppRoot: Initializing RTM after config check")
-                myApp.initAndLoginRtm(SessionManager.userAccountId)
+
+                Log.d(
+                    "APP:ROOT",
+                    "Initializing RTM for accountId=$accountId"
+                )
+
+                myApp.initAndLoginRtm(accountId)
             }
         }
     }
 
+    // -----------------------------
+    // UI Routing
+    // -----------------------------
     when {
-        state.isLoading -> SplashScreen()
+        configState.isLoading -> SplashScreen()
 
-        state.errorType == ErrorType.NO_INTERNET -> NoInternetScreen(
-            onRetry = { vm.retry() }
+        configState.errorType == ErrorType.NO_INTERNET -> NoInternetScreen(
+            onRetry = { configVm.retry() }
         )
 
-        state.errorType == ErrorType.SERVER_UNREACHABLE -> ServerUnreachableScreen(
-            onRetry = { vm.retry() }
+        configState.errorType == ErrorType.SERVER_UNREACHABLE -> ServerUnreachableScreen(
+            onRetry = { configVm.retry() }
         )
 
-        state.errorType == ErrorType.TIMEOUT -> TimeoutScreen(
-            onRetry = { vm.retry() }
+        configState.errorType == ErrorType.TIMEOUT -> TimeoutScreen(
+            onRetry = { configVm.retry() }
         )
 
-        state.forceUpdate -> ForceUpdateScreen(
-            message = state.forceMessage,
-            playStoreUrl = state.playStoreUrl
+        configState.forceUpdate -> ForceUpdateScreen(
+            message = configState.forceMessage,
+            playStoreUrl = configState.playStoreUrl
         )
 
-        // Only show AppNavGraph after session is fully loaded
         else -> AppNavGraph()
     }
 }

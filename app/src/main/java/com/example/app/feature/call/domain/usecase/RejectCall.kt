@@ -11,7 +11,6 @@ import javax.inject.Inject
 
 class RejectCall @Inject constructor(
     private val repo: CallRepository,
-    private val rtmCallSignaling: RtmCallSignaling
 ) {
     suspend operator fun invoke(
         callId: String,
@@ -20,19 +19,6 @@ class RejectCall @Inject constructor(
         calleeAccountId: Long
     ): ApiResult<Unit> {
 
-        // FAST PATH → notify caller immediately
-        rtmCallSignaling.sendCallEvent(
-            channel = RtmChannels.user(callerAccountId),
-            payload = CallSignalPayload(
-                event = AppConstants.EVENT_CALL_REJECTED,
-                callId = callId,
-                callType = callType,
-                callerAccountId = callerAccountId,
-                calleeAccountId = calleeAccountId
-            )
-        )
-
-        // SLOW PATH → persist rejection
         return when (val result = repo.rejectCall(callId)) {
             is ApiResult.Success -> {
                 ApiResult.Success(Unit) // nothing to return to VM
@@ -48,33 +34,3 @@ class RejectCall @Inject constructor(
         }
     }
 }
-
-
-/*
-class RejectCall @Inject constructor(
-    private val repo: CallRepository,
-    private val rtmCallSignaling: RtmCallSignaling
-) {
-    suspend operator fun invoke(
-        callId: String,
-        callType: CallType,
-        callerAccountId: Long,
-        calleeAccountId: Long
-    ) {
-        // 1️⃣ FAST PATH — notify caller immediately
-        rtmCallSignaling.sendCallEvent(
-            channel = RtmChannels.user(callerAccountId),
-            payload = CallSignalPayload(
-                event = AppConstants.EVENT_CALL_REJECTED,
-                callId = callId,
-                callType = callType,
-                callerAccountId = callerAccountId,
-                calleeAccountId = calleeAccountId
-            )
-        )
-
-        // 2️⃣ SLOW PATH — persist rejection in backend
-        repo.rejectCall(callId)
-    }
-}
-*/
