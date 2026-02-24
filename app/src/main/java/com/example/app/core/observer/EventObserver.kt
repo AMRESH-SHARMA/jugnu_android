@@ -94,6 +94,7 @@ class EventObserver @Inject constructor(
                     }
 
                     is CallEvent.Accepted -> {
+                        incomingCallNotificationManager.dismiss()
                         callManager.onAccepted(event)
                     }
 
